@@ -94,8 +94,8 @@ namespace
     theme.shineEnabled = true;
     theme.shineTint = ccc3(0xff, 0xe6, 0xf4);
     theme.shineCoreColor = ccc3(0xff, 0xff, 0xff);
-    // 0.5 s before, 2.5 times faster
-    theme.shineDuration = 0.2f;
+    // A little slower than 0.2 s (the glow's longer reach makes the path longer too)
+    theme.shineDuration = 0.28f;
     theme.shineBandWidth = 0.7f;
     // Over 1: the band's opaque part is wider
     theme.shineIntensity = 0.95f;
@@ -104,11 +104,11 @@ namespace
     theme.shineFadeOut = 0.12f;
     theme.shineFreeze = -1;
     // Like MiSide's: white by the letters, a wide soft halo
-    theme.shineGlowRadius = 12;
-    theme.shineGlowIntensity = 2.6f;
-    theme.shineGlowInnerRadius = 2;
-    theme.shineGlowInnerIntensity = 1.4f;
-    theme.shineGlowSpread = 1.5f;
+    theme.shineGlowRadius = 16;
+    theme.shineGlowIntensity = 3.0f;
+    theme.shineGlowInnerRadius = 2.5f;
+    theme.shineGlowInnerIntensity = 1.1f;
+    theme.shineGlowSpread = 2.0f;
     theme.shineGlowColor = ccc3(0xff, 0xff, 0xff);
     theme.rowGlowColor = ccc3(0xff, 0x5f, 0xb4);
     theme.rowGlowOpacity = 110;
