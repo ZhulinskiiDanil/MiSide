@@ -13,10 +13,6 @@ namespace ms
   // The theme's font (or `font`), or the system font when it's missing (it has Cyrillic too)
   cocos2d::CCNode* createLabel(std::string const& text, std::string const& font = "");
 
-  // The window has a stencil buffer: shapes can be cut to the letters (CCClippingNode). Without one a clipped
-  // effect would show as a plain rectangle, so it isn't made
-  bool canClip();
-
   struct Text
   {
     // The label with its shadow under it. Its opacity fades both; anchored at the left middle

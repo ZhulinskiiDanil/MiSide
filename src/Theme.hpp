@@ -106,14 +106,18 @@ struct Theme
   float soundVolume = 0;
 
   // ! --- Hover and the Exit button --- !
-  // One soft light through the letters when the mouse comes onto an item: a narrow core, a wider glow
+  // One light band through the letters when an item lights up: white in its middle, the tint at its edges,
+  // only where the letters are. Its width is a share of the label's width; intensity 1 makes the middle white
   bool shineEnabled = false;
-  cocos2d::ccColor3B shineColor;
+  cocos2d::ccColor3B shineTint;
   cocos2d::ccColor3B shineCoreColor;
-  GLubyte shineOpacity = 0;
   float shineDuration = 0;
-  float shineWidth = 0;
-  float shineCoreWidth = 0;
+  float shineBandWidth = 0;
+  float shineIntensity = 0;
+  // The white middle's share of the band
+  float shineCore = 0;
+  // How much the band leans: its top is this many label widths ahead of its bottom
+  float shineSlant = 0;
   float shineFadeOut = 0;
   // A soft glow around the highlighted row
   cocos2d::ccColor3B rowGlowColor;

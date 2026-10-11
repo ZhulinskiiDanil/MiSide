@@ -20,7 +20,8 @@ namespace
     theme.rowPressedColor = ccc3(0xd9, 0x47, 0x9f);
     theme.rowDisabledColor = ccc3(0x35, 0x10, 0x2e);
     theme.itemColor = ccc3(0xf4, 0xc9, 0xea);
-    theme.itemHoverColor = ccc3(0xff, 0xf1, 0xfa);
+    // Lighter than the items' color, still pink: the shine's white shows on it
+    theme.itemHoverColor = ccc3(0xff, 0xd3, 0xec);
     theme.itemPressedColor = ccc3(0xff, 0xff, 0xff);
     theme.subtitleColor = ccc3(0xff, 0xff, 0xff);
     theme.shadowColor = ccc3(0x2a, 0x0b, 0x26);
@@ -91,12 +92,15 @@ namespace
 
     // ! --- Hover and the Exit button --- !
     theme.shineEnabled = true;
-    theme.shineColor = ccc3(0xff, 0x9c, 0xd2);
-    theme.shineCoreColor = ccc3(0xff, 0xf4, 0xfb);
-    theme.shineOpacity = 230;
-    theme.shineDuration = 0.5f;
-    theme.shineWidth = 16;
-    theme.shineCoreWidth = 5;
+    theme.shineTint = ccc3(0xff, 0x4f, 0xa8);
+    theme.shineCoreColor = ccc3(0xff, 0xff, 0xff);
+    // 0.5 s before, 2.5 times faster
+    theme.shineDuration = 0.2f;
+    theme.shineBandWidth = 0.2f;
+    // Over 1: the band's opaque part is wider
+    theme.shineIntensity = 1.4f;
+    theme.shineCore = 0.5f;
+    theme.shineSlant = 0.15f;
     theme.shineFadeOut = 0.12f;
     theme.rowGlowColor = ccc3(0xff, 0x5f, 0xb4);
     theme.rowGlowOpacity = 110;
@@ -278,12 +282,13 @@ namespace
     field("sound-volume", theme.soundVolume);
 
     field("shine-enabled", theme.shineEnabled);
-    field("shine-color", theme.shineColor);
+    field("shine-tint", theme.shineTint);
     field("shine-core-color", theme.shineCoreColor);
-    field("shine-opacity", theme.shineOpacity);
     field("shine-duration", theme.shineDuration);
-    field("shine-width", theme.shineWidth);
-    field("shine-core-width", theme.shineCoreWidth);
+    field("shine-band-width", theme.shineBandWidth);
+    field("shine-intensity", theme.shineIntensity);
+    field("shine-core", theme.shineCore);
+    field("shine-slant", theme.shineSlant);
     field("shine-fade-out", theme.shineFadeOut);
     field("row-glow-color", theme.rowGlowColor);
     field("row-glow-opacity", theme.rowGlowOpacity);

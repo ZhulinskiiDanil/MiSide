@@ -32,21 +32,6 @@ namespace ms
     return CCLabelTTF::create(text.c_str(), theme.fallbackFont.c_str(), theme.fallbackFontSize);
   }
 
-  bool canClip()
-  {
-    // Asked once: the window's buffers don't change
-    static int s_bits = -1;
-    if (s_bits < 0)
-    {
-      GLint bits = 0;
-      glGetIntegerv(GL_STENCIL_BITS, &bits);
-      s_bits = bits;
-      if (s_bits <= 0)
-        log::warn("No stencil buffer: the shine on the items is left out");
-    }
-    return s_bits > 0;
-  }
-
   void cascadeOpacity(CCNode* node)
   {
     if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node))

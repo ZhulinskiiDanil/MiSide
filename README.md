@@ -10,7 +10,7 @@ The background art is in `resources/background/`, the font and the sounds are fr
 
 - **The menu on the left**: a small logo, "MAIN MENU" under it, then a compact column of low purple-pink plates (148×14 pt, one every 16 pt): PLAY, WARDROBE, CREATE, SETTINGS, ACHIEVEMENTS, STATISTICS (in Russian or English, upper case, a condensed bold font). EXIT stands apart, shorter, near the bottom. The whole plate is clickable; hover and the arrow keys light up the same way (the plate's color, no movement), Enter chooses. When the mouse leaves, the keyboard's choice is lit again
 - **Rounded type**: M PLUS Rounded 1c Bold for the items, ExtraBold for "MAIN MENU" and the logo, pink-lilac text with a soft shadow on muted translucent lilac plates; the lit row is lighter and pinker with a soft glow
-- **One shine** runs through the letters of an item when the mouse comes onto it (or the arrow keys choose it): a soft pink band with a bright core, cut to the letters' shape, once, about half a second
+- **One shine** runs through the letters of an item when the mouse comes onto it (or the arrow keys choose it): a white band with pink edges, a fifth of the label wide, from hidden on the left to gone on the right in 0.2 s, only where the letters are. A white copy of the label is rendered once into a texture and drawn over it with the menu's own shader, so the band is measured in the whole label's width at any DPI; each item has its own pass, by the time that passed
 - **EXIT leans away** from the mouse as if held to its place by a spring: the closer the mouse, the further (up to 11 pt), stretched and tilted a little, back with a damped spring when the mouse leaves. It always stays under a mouse that aims at it and holds still while pressed, so it's always clickable. Keyboard only: it doesn't move
 - **The logo**: an image (`resources/logo/miside-like-gd-logo.png`) shown as it is over "MAIN MENU", its drawn part's left edge with the items, 220 pt wide; its transparent margins are measured from the file, so they don't push it off
 - **Each item presses its vanilla button** through `activate()`, so every mod hooking `onPlay`, `onGarage`, `onCreator`, `onOptions` and the others keeps working. No vanilla button, no item
@@ -48,7 +48,7 @@ Colors, fonts, sprites, sounds, spacing and timings all come from the theme (`sr
 }
 ```
 
-New keys (all with defaults; a missing or wrong one keeps its default): `title-font`; `shine-enabled`, `shine-color`, `shine-core-color`, `shine-opacity`, `shine-duration`, `shine-width`, `shine-core-width`, `shine-fade-out`; `row-glow-color`, `row-glow-opacity`, `row-glow-spread`; `exit-dodge-enabled`, `exit-dodge-radius` (55), `exit-dodge-max` (11), `exit-dodge-vertical`, `exit-dodge-stretch` (0.04), `exit-dodge-tilt` (3°), `exit-dodge-stiffness`, `exit-dodge-damping`; `pattern-sprite`, `pattern-color`, `pattern-opacity` (16), `pattern-tile`; `vignette-sprite`, `vignette-color`, `vignette-opacity`; `particle-count` (14), `particle-color`, `particle-opacity`, `particle-size-min/max`, `particle-speed`, `particle-life`; `logo-sprite`, `logo-left` (59), `logo-bottom` (236), `logo-width` (220: the drawn part's, on screen); `mita-outline-enabled`, `mita-outline-color`, `mita-outline-opacity`, `mita-outline-width`.
+New keys (all with defaults; a missing or wrong one keeps its default): `title-font`; `shine-enabled`, `shine-duration` (0.2 s), `shine-band-width` (0.2 of the label's width), `shine-intensity` (1.4), `shine-tint` (its edges), `shine-core-color` (its middle), `shine-core` (the middle's share), `shine-slant`, `shine-fade-out`; `row-glow-color`, `row-glow-opacity`, `row-glow-spread`; `exit-dodge-enabled`, `exit-dodge-radius` (55), `exit-dodge-max` (11), `exit-dodge-vertical`, `exit-dodge-stretch` (0.04), `exit-dodge-tilt` (3°), `exit-dodge-stiffness`, `exit-dodge-damping`; `pattern-sprite`, `pattern-color`, `pattern-opacity` (16), `pattern-tile`; `vignette-sprite`, `vignette-color`, `vignette-opacity`; `particle-count` (14), `particle-color`, `particle-opacity`, `particle-size-min/max`, `particle-speed`, `particle-life`; `logo-sprite`, `logo-left` (59), `logo-bottom` (236), `logo-width` (220: the drawn part's, on screen); `mita-outline-enabled`, `mita-outline-color`, `mita-outline-opacity`, `mita-outline-width`.
 
 Mita's keys: `mita-enabled` (true), `mita-x` / `mita-y` (414.5, 0: her bottom middle), `mita-scale` (0.4444444444 points per pixel of her 640×720 canvas, so as high as the screen), `mita-fps` (24; 0 takes the manifest's), `mita-parallax-enabled` (false), `mita-parallax-max-x` / `mita-parallax-max-y` (3, 2; down only, so the cut at the bottom never shows a gap), `mita-freeze-frame` (-1 plays; 0…126 holds that frame still, to check frames one at a time). On a narrower window she stays against the right edge and is cut there rather than covering the buttons.
 
@@ -116,7 +116,7 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] Clicking the card opens your profile, like the vanilla button; with an account name changed, the card shows the new one at the next menu
 - [ ] Nothing (a vanilla menu, a mod's button or label) is over the column's items or right next to them; the log says (debug level) which nodes were moved
 - [ ] Behind the plates: only the dark background, no stripes; the hearts/stars/flowers pattern barely visible, never over the text or her face; a few motes drifting slowly up
-- [ ] Without a stencil buffer (the log says so once): no shine on the items, nothing else changes
+- [ ] If the log says the shine shader doesn't compile: no shine, nothing else changes
 - [ ] The window and the curtain on the right aren't washed out; the glow tints them, it doesn't whiten them
 - [ ] The logo image over "MAIN MENU": its drawn left edge in line with the items, not touching the subtitle or Mita, its proportions kept, no grid, shadow or sparkles over it; as sharp at Low, Medium and High
 
@@ -138,7 +138,8 @@ To go through by hand in the game before a release. Each line: what to do, then 
 
 **Hover and EXIT**
 
-- [ ] Move onto each item: one shine runs through its letters, left to right, in about half a second, and stops; the letters stay readable; no white rectangle over the plate
+- [ ] Move onto each item: one white-and-pink band runs through its letters, left to right, in 0.2 s, clearly visible the first time, and stops; inside it the letters turn white; no light outside the letters, no rectangle; short (PLAY) and long (ACHIEVEMENTS) labels alike, at Low, Medium and High
+- [ ] Keep the mouse still on an item: no second pass; move off and back: a new one; two items quickly: each its own pass, no light left on either
 - [ ] Run the mouse quickly up and down over all the items: no shine left glowing, nothing piling up; moving back onto an item starts a new one
 - [ ] The arrow keys: the same highlight and one shine per move
 - [ ] Bring the mouse near EXIT from each side: it leans away, more the closer the mouse is, stretched and tilted a little, then springs back with a little bounce when the mouse leaves; no jitter with the mouse resting on it, no jumps

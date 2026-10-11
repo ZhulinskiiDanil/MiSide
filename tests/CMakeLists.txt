@@ -14,3 +14,8 @@ add_test(NAME mita-plan COMMAND mita-plan-test)
 add_executable(dodge-spring-test dodge_spring_test.cpp)
 target_include_directories(dodge-spring-test PRIVATE ../src/ui)
 add_test(NAME dodge-spring COMMAND dodge-spring-test)
+
+# The shine's pass alone
+add_executable(shine-pass-test shine_pass_test.cpp)
+target_include_directories(shine-pass-test PRIVATE ../src/ui)
+add_test(NAME shine-pass COMMAND shine-pass-test)

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "DodgeSpring.hpp"
+#include "MSShine.hpp"
+#include "ShinePass.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -39,8 +41,6 @@ public:
 protected:
   bool init(std::string const& text, cocos2d::CCMenuItem* target, Callback callback, float width);
   void addShine(std::string const& text);
-  void playShine();
-  void fadeShine();
   void refresh(bool animate);
   void update(float dt) override;
 
@@ -53,11 +53,9 @@ protected:
   cocos2d::CCNode* m_text = nullptr;
   cocos2d::CCNode* m_label = nullptr;
   cocos2d::CCNode* m_accent = nullptr;
-  // The shine: a soft band cut to the letters' shape, hidden between passes
-  cocos2d::CCClippingNode* m_shine = nullptr;
-  cocos2d::CCNode* m_shineBand = nullptr;
-  // Each pass's number: a pass that ended doesn't hide a newer one
-  int m_shinePass = 0;
+  // The shine over the label (drawn only during a pass), and this item's own pass
+  MSShine* m_shine = nullptr;
+  ShinePass m_shinePass;
   float m_textX = 0;
   bool m_highlighted = false;
   bool m_pressed = false;

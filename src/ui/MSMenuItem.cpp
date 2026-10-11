@@ -13,22 +13,8 @@ namespace
   constexpr int STATE_ACTION = 0x4d53;
   // The intro's own tag: a state change doesn't cut it short
   constexpr int INTRO_ACTION = 0x4d54;
-  // The shine's: its pass and its fade run side by side
-  constexpr int SHINE_MOVE = 0x4d55;
-  constexpr int SHINE_FADE = 0x4d56;
-  // The letters' alpha above this is where the shine shows
-  constexpr float LETTER_ALPHA = 0.1f;
-  // The shine band is this much taller than the line, so it covers the letters' tops and tails
-  constexpr float SHINE_HEIGHT = 1.3f;
   // The Exit button's tilt is at its most at this speed, in points a second
   constexpr float TILT_SPEED = 120;
-
-  // Light added to what's under it: a glow, not a cover
-  void additive(CCNode* node)
-  {
-    if (auto sprite = typeinfo_cast<CCSprite*>(node))
-      sprite->setBlendFunc({GL_SRC_ALPHA, GL_ONE});
-  }
 
   void run(CCNode* node, CCAction* action, int tag = STATE_ACTION)
   {
@@ -145,10 +131,11 @@ void MSMenuItem::setHighlighted(bool highlighted, bool shine)
     return;
   m_highlighted = highlighted;
   this->refresh(true);
-  if (highlighted && shine)
-    this->playShine();
+  // A new pass on lighting up (from its start, whatever the last one did); leaving fades the pass out
+  if (highlighted && shine && m_shine)
+    m_shinePass.start();
   else if (!highlighted)
-    this->fadeShine();
+    m_shinePass.leave();
 }
 
 // ! --- The shine --- !
@@ -156,79 +143,14 @@ void MSMenuItem::setHighlighted(bool highlighted, bool shine)
 void MSMenuItem::addShine(std::string const& text)
 {
   auto const& theme = Theme::get();
-  if (!theme.shineEnabled || theme.shineDuration <= 0 || !ms::resourceExists(theme.glowSprite) || !ms::canClip())
+  if (!theme.shineEnabled || theme.shineDuration <= 0 || theme.shineIntensity <= 0)
     return;
-  // The same letters as the label, in the same place: only their shape shows the light (alpha-tested stencil)
-  auto stencil = ms::createLabel(text);
-  if (!stencil)
-    return;
-  stencil->setScale(theme.itemScale);
-  stencil->setAnchorPoint({0, 0});
-  m_shine = CCClippingNode::create(stencil);
-  m_shine->setAlphaThreshold(LETTER_ALPHA);
-
-  auto size = m_text->getContentSize();
-  auto band = CCNodeRGBA::create();
-  band->setCascadeOpacityEnabled(true);
-  // A wide soft glow, and a narrow bright core in it
-  auto halo = ms::createStretched(theme.glowSprite, {theme.shineWidth, size.height * SHINE_HEIGHT}, theme.shineColor,
-                                  255);
-  auto core = ms::createStretched(theme.glowSprite, {theme.shineCoreWidth, size.height * SHINE_HEIGHT},
-                                  theme.shineCoreColor, 255);
-  for (auto piece : {halo, core})
-  {
-    if (!piece)
-      continue;
-    piece->setAnchorPoint({0.5f, 0.5f});
-    additive(piece);
-    ms::cascadeOpacity(piece);
-    band->addChild(piece);
-  }
-  band->setPosition({-theme.shineWidth, size.height / 2});
-  m_shine->addChild(band);
-  m_shineBand = band;
-  // Nothing drawn (and no stencil work) between passes
-  m_shine->setVisible(false);
-  m_text->addChild(m_shine);
-}
-
-void MSMenuItem::playShine()
-{
+  // A white copy of the label, made once, over the label in the same place and size; the hit area stays the row
+  m_shine = MSShine::create(text, theme.itemScale, theme.font);
   if (!m_shine)
     return;
-  auto const& theme = Theme::get();
-  // A new pass replaces the one running: nothing piles up when the mouse runs over the items
-  auto pass = ++m_shinePass;
-  m_shineBand->stopActionByTag(SHINE_MOVE);
-  m_shineBand->stopActionByTag(SHINE_FADE);
-  auto y = m_shineBand->getPositionY();
-  m_shineBand->setPositionX(-theme.shineWidth);
-  ms::setOpacity(m_shineBand, theme.shineOpacity);
-  m_shine->setVisible(true);
-  auto end = m_text->getContentWidth() + theme.shineWidth;
-  auto move = CCSequence::createWithTwoActions(
-    CCEaseSineInOut::create(CCMoveTo::create(theme.shineDuration, {end, y})), CallFuncExt::create([this, pass] {
-      if (pass == m_shinePass)
-        m_shine->setVisible(false);
-    }));
-  move->setTag(SHINE_MOVE);
-  m_shineBand->runAction(move);
-}
-
-void MSMenuItem::fadeShine()
-{
-  if (!m_shine || !m_shine->isVisible())
-    return;
-  auto const& theme = Theme::get();
-  auto pass = m_shinePass;
-  m_shineBand->stopActionByTag(SHINE_FADE);
-  auto fade = CCSequence::createWithTwoActions(CCFadeTo::create(theme.shineFadeOut, 0),
-                                               CallFuncExt::create([this, pass] {
-                                                 if (pass == m_shinePass)
-                                                   m_shine->setVisible(false);
-                                               }));
-  fade->setTag(SHINE_FADE);
-  m_shineBand->runAction(fade);
+  m_shine->setPosition({0, 0});
+  m_text->addChild(m_shine);
 }
 
 // ! --- Exit leaning away --- !
@@ -285,8 +207,17 @@ void MSMenuItem::stepDodge(float dt, CCPoint const* mouse)
   this->setRotation(theme.exitDodgeTilt * std::clamp(m_dodge.velocity().x / TILT_SPEED, -1.f, 1.f));
 }
 
-void MSMenuItem::update(float)
+void MSMenuItem::update(float dt)
 {
+  // The shine's pass, by the time that passed
+  if (m_shine)
+  {
+    auto const& theme = Theme::get();
+    m_shinePass.advance(dt, theme.shineDuration, theme.shineFadeOut);
+    auto strength = m_shinePass.active() ? theme.shineIntensity * m_shinePass.fade() : 0.f;
+    m_shine->setPass(m_shinePass.center(theme.shineDuration, theme.shineBandWidth), strength);
+  }
+
   auto unavailable = this->isUnavailable();
   if (unavailable == m_unavailable)
     return;
