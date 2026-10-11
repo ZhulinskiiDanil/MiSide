@@ -17,6 +17,15 @@ public:
     m_active = true;
   }
 
+  // Gone at once (the item hid, or its screen changed)
+  void stop()
+  {
+    m_elapsed = 0;
+    m_fade = 1;
+    m_leaving = false;
+    m_active = false;
+  }
+
   // The mouse left: it fades out over `fadeOut` seconds instead of stopping short
   void leave()
   {

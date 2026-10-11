@@ -14,6 +14,12 @@ public:
   // stats: label and value, left to right
   static MSPauseInfo* create(std::string const& name, std::vector<std::pair<std::string, std::string>> const& stats);
 
+  // Each piece at its own opacity times this (a 9-slice plate takes cascaded opacity as its own)
+  void setOpacity(GLubyte opacity) override;
+
 protected:
   bool init(std::string const& name, std::vector<std::pair<std::string, std::string>> const& stats);
+  void add(cocos2d::CCNode* node, GLubyte opacity);
+
+  std::vector<std::pair<cocos2d::CCNode*, GLubyte>> m_pieces;
 };

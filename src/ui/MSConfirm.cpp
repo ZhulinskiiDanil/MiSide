@@ -115,7 +115,7 @@ void MSConfirm::open()
   for (auto item : m_items)
   {
     item->setEnabled(true);
-    item->setHighlighted(false);
+    item->resetLook();
   }
   m_shown = -1;
   this->setVisible(true);
@@ -128,10 +128,13 @@ void MSConfirm::close()
 {
   auto const& theme = Theme::get();
   m_open = false;
-  // Nothing is chosen from now, though it's still fading out
+  // Nothing is chosen from now, though it's still fading out; back at rest, the shine stopped
   for (auto item : m_items)
+  {
     item->setEnabled(false);
-  this->highlight(-1, false);
+    item->resetLook();
+  }
+  m_shown = -1;
   this->setShown(0, theme.confirmDuration);
   this->stopActionByTag(FADE_ACTION);
   auto hide = CCSequence::createWithTwoActions(CCDelayTime::create(std::max(theme.confirmDuration, 0.f)),

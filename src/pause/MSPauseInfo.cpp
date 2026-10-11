@@ -28,7 +28,6 @@ bool MSPauseInfo::init(std::string const& name, std::vector<std::pair<std::strin
   if (!CCNodeRGBA::init())
     return false;
   auto const& theme = Theme::get();
-  this->setCascadeOpacityEnabled(true);
   auto winSize = CCDirector::get()->getWinSize();
   auto left = theme.pauseBarLeft;
   auto width = std::max(winSize.width - theme.pauseBarRightMargin - left, 40.f);
@@ -44,14 +43,12 @@ bool MSPauseInfo::init(std::string const& name, std::vector<std::pair<std::strin
   border->ignoreAnchorPointForPosition(false);
   border->setContentSize({width + 1.2f, height + 1.2f});
   border->setPosition({width / 2, height / 2});
-  ms::cascadeOpacity(border);
-  this->addChild(border);
+  this->add(border, theme.pauseBarBorderOpacity);
   auto bar = ms::createPanel(theme.rowSprite, theme.pauseBarColor, theme.pauseBarOpacity);
   bar->setAnchorPoint({0, 0});
   bar->ignoreAnchorPointForPosition(false);
   bar->setContentSize({width, height});
-  ms::cascadeOpacity(bar);
-  this->addChild(bar);
+  this->add(bar, theme.pauseBarOpacity);
 
   // The level's name in the middle, smaller when it's too long for the bar
   if (auto label = ms::createText(name, theme.pauseBarTextScale, theme.pauseBarTextColor, theme.titleFont, ms::Shadow{});
@@ -62,7 +59,7 @@ bool MSPauseInfo::init(std::string const& name, std::vector<std::pair<std::strin
     label.node->setScale(scale);
     label.node->setAnchorPoint({0.5f, 0.5f});
     label.node->setPosition({width / 2, height / 2 - CAP_RAISE * theme.pauseBarTextScale * scale});
-    this->addChild(label.node);
+    this->add(label.node, 255);
   }
 
   // The numbers under the bar, from its right end leftwards: a small plate each, the label pink, the value white
@@ -86,16 +83,28 @@ bool MSPauseInfo::init(std::string const& name, std::vector<std::pair<std::strin
     chip->setContentSize(CCSize{chipWidth, chipHeight} * 2);
     chip->setScale(0.5f);
     chip->setPosition({x, y});
-    ms::cascadeOpacity(chip);
-    this->addChild(chip);
+    this->add(chip, theme.pauseStatsOpacity);
     auto textY = y - CAP_RAISE * theme.pauseStatsScale;
     labelText.node->setAnchorPoint({0, 0.5f});
     labelText.node->setPosition({x - chipWidth + padding, textY});
-    this->addChild(labelText.node);
+    this->add(labelText.node, 255);
     valueText.node->setAnchorPoint({0, 0.5f});
     valueText.node->setPosition({x - chipWidth + padding + labelText.node->getContentWidth(), textY});
-    this->addChild(valueText.node);
+    this->add(valueText.node, 255);
     x -= chipWidth + theme.pauseStatsGap;
   }
   return true;
+}
+
+void MSPauseInfo::add(CCNode* node, GLubyte opacity)
+{
+  this->addChild(node);
+  m_pieces.emplace_back(node, opacity);
+}
+
+void MSPauseInfo::setOpacity(GLubyte opacity)
+{
+  CCNodeRGBA::setOpacity(opacity);
+  for (auto const& [node, own] : m_pieces)
+    ms::setOpacity(node, static_cast<GLubyte>(own * opacity / 255));
 }

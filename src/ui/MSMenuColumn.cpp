@@ -177,15 +177,14 @@ void MSMenuColumn::setConfirming(bool confirming)
   if (confirming)
   {
     m_keysOnExit = m_hover < 0 && m_shown >= 0 && m_items[m_shown] == m_exit;
-    if (m_shown >= 0)
-      m_items[m_shown]->setHighlighted(false);
-    m_shown = -1;
-    m_hover = -1;
   }
+  m_shown = -1;
+  m_hover = -1;
   for (auto item : m_items)
   {
-    // Nothing is chosen from the first frame of fading out; back, only once it's shown again
+    // Nothing is chosen from the first frame of fading out; each one back at rest, its shine stopped
     item->setEnabled(!confirming);
+    item->resetLook();
     item->stopActionByTag(0x4d56);
     if (confirming)
     {

@@ -247,12 +247,13 @@ void MSPauseColumn::setShown(bool shown, bool animate)
   auto time = animate ? std::max(Theme::get().pauseDuration, 0.f) : 0.f;
   m_dragging = nullptr;
   m_resetting = nullptr;
-  this->highlight(-1, false);
+  m_shown = -1;
   this->stopActionByTag(HIDE_ACTION);
   for (auto item : m_items)
   {
-    // Nothing is chosen from the first frame of fading out
+    // Nothing is chosen from the first frame of fading out; each one back at rest, its shine stopped
     item->setEnabled(shown);
+    item->resetLook();
     item->fadeTo(time, shown ? 255 : 0);
   }
   for (auto& row : m_sliders)

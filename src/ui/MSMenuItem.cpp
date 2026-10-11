@@ -9,27 +9,18 @@ using namespace geode::prelude;
 
 namespace
 {
-  // One tag for every state animation, so a new one replaces the running one
-  constexpr int STATE_ACTION = 0x4d53;
-  // The intro's own tag: a state change doesn't cut it short
-  constexpr int INTRO_ACTION = 0x4d54;
   // The Exit button's tilt is at its most at this speed, in points a second
   constexpr float TILT_SPEED = 120;
 
-  void run(CCNode* node, CCAction* action, int tag = STATE_ACTION)
+  float mix(float from, float to, float t) { return from + (to - from) * t; }
+
+  ccColor3B mix(ccColor3B from, ccColor3B to, float t)
   {
-    if (!node)
-      return;
-    node->stopActionByTag(tag);
-    action->setTag(tag);
-    node->runAction(action);
+    auto channel = [t](GLubyte a, GLubyte b) { return static_cast<GLubyte>(std::lround(mix(a, b, t))); };
+    return {channel(from.r, to.r), channel(from.g, to.g), channel(from.b, to.b)};
   }
 
-  CCAction* tintAndFade(float time, ccColor3B color, GLubyte opacity)
-  {
-    return CCSpawn::createWithTwoActions(CCTintTo::create(time, color.r, color.g, color.b),
-                                         CCFadeTo::create(time, opacity));
-  }
+  GLubyte toByte(float value) { return static_cast<GLubyte>(std::lround(std::clamp(value, 0.f, 255.f))); }
 } // namespace
 
 MSMenuItem::Style MSMenuItem::Style::row()
@@ -118,9 +109,9 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   m_style = style;
   CCSize size{width, style.height};
 
-  // Its opacity fades the plate, the text and the accent bar together
+  // Holds the plate, the text and the accent bar, and scales them when pressed. Its own opacity stays full: each piece
+  // gets its own (see apply())
   auto content = CCNodeRGBA::create();
-  content->setCascadeOpacityEnabled(true);
   content->setContentSize(size);
   content->setAnchorPoint({0.5f, 0.5f});
   content->setPosition(size / 2);
@@ -132,7 +123,6 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   m_plate->setAnchorPoint({0, 0});
   m_plate->ignoreAnchorPointForPosition(false);
   m_plate->setContentSize(size);
-  ms::cascadeOpacity(m_plate);
 
   // A soft glow around the row when it's lit: under the plate, hidden otherwise
   if (style.glow && theme.rowGlowOpacity > 0 && ms::resourceExists(theme.glowSprite))
@@ -141,7 +131,6 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
                                  theme.rowGlowColor, theme.rowGlowOpacity);
     m_glow->setAnchorPoint({0.5f, 0.5f});
     m_glow->setPosition(size / 2);
-    ms::cascadeOpacity(m_glow);
     ms::setOpacity(m_glow, 0);
     m_content->addChild(m_glow);
   }
@@ -156,7 +145,6 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
     {
       m_accent->setAnchorPoint({0, 0.5f});
       m_accent->setPosition({0, size.height / 2});
-      ms::cascadeOpacity(m_accent);
       ms::setOpacity(m_accent, 0);
       m_content->addChild(m_accent);
       m_textX += theme.accentWidth + theme.accentGap;
@@ -294,9 +282,38 @@ void MSMenuItem::update(float dt)
       center = -travel / 2 + std::clamp(theme.shineFreeze, 0.f, 1.f) * (1 + travel);
       strength = m_highlighted ? theme.shineIntensity : 0.f;
     }
+    // Faded with the item
+    strength *= m_visibility;
     m_shine->setPass(center, strength);
     m_shineGlow->setPass(center, strength);
   }
+
+  // The look's change and the visibility's, by the time that passed
+  auto changed = false;
+  if (m_lookTime < m_lookDuration)
+  {
+    m_lookTime = std::min(m_lookTime + dt, m_lookDuration);
+    auto t = m_lookTime / m_lookDuration;
+    m_look = {mix(m_from.plate, m_to.plate, t),     mix(m_from.plateOpacity, m_to.plateOpacity, t),
+              mix(m_from.text, m_to.text, t),       mix(m_from.textOpacity, m_to.textOpacity, t),
+              mix(m_from.accent, m_to.accent, t),   mix(m_from.glow, m_to.glow, t),
+              mix(m_from.textX, m_to.textX, t),     mix(m_from.scale, m_to.scale, t)};
+    changed = true;
+  }
+  if (m_visibility != m_visibilityTo)
+  {
+    if (m_visibilityDelay > 0)
+      m_visibilityDelay -= dt;
+    else
+    {
+      m_visibilityTime = std::min(m_visibilityTime + dt, m_visibilityDuration);
+      auto t = m_visibilityDuration > 0 ? m_visibilityTime / m_visibilityDuration : 1.f;
+      m_visibility = t >= 1 ? m_visibilityTo : mix(m_visibilityFrom, m_visibilityTo, t);
+      changed = true;
+    }
+  }
+  if (changed)
+    this->apply();
 
   auto unavailable = this->isUnavailable();
   if (unavailable == m_unavailable)
@@ -305,7 +322,7 @@ void MSMenuItem::update(float dt)
   this->refresh(true);
 }
 
-void MSMenuItem::refresh(bool animate)
+MSMenuItem::Look MSMenuItem::target() const
 {
   auto const& theme = Theme::get();
   ccColor3B row = m_style.plate;
@@ -334,31 +351,58 @@ void MSMenuItem::refresh(bool animate)
     textOpacity = theme.itemHoverOpacity;
     lit = true;
   }
-  auto x = m_textX + (lit ? theme.hoverShift : 0);
-  auto scale = m_pressed ? theme.pressedScale : 1.f;
-  GLubyte accent = lit ? theme.itemHoverOpacity : 0;
-  GLubyte glow = lit ? theme.rowGlowOpacity : 0;
+  Look look;
+  look.plate = row;
+  look.plateOpacity = rowOpacity;
+  look.text = text;
+  look.textOpacity = textOpacity;
+  look.accent = lit ? theme.itemHoverOpacity : 0;
+  look.glow = lit ? theme.rowGlowOpacity : 0;
+  look.textX = m_textX + (lit ? theme.hoverShift : 0);
+  look.scale = m_pressed ? theme.pressedScale : 1.f;
+  return look;
+}
 
-  if (!animate || theme.hoverDuration <= 0)
+void MSMenuItem::refresh(bool animate)
+{
+  auto const& theme = Theme::get();
+  m_from = m_look;
+  m_to = this->target();
+  m_lookTime = 0;
+  m_lookDuration = animate ? std::max(theme.hoverDuration, 0.f) : 0.f;
+  if (m_lookDuration <= 0)
   {
-    ms::setColor(m_plate, row);
-    ms::setOpacity(m_plate, rowOpacity);
-    ms::setColor(m_label, text);
-    ms::setOpacity(m_text, textOpacity);
-    ms::setOpacity(m_accent, accent);
-    ms::setOpacity(m_glow, glow);
-    m_text->setPositionX(x);
-    m_content->setScale(scale);
-    return;
+    m_look = m_to;
+    this->apply();
   }
-  auto time = theme.hoverDuration;
-  run(m_plate, tintAndFade(time, row, rowOpacity));
-  run(m_label, CCTintTo::create(time, text.r, text.g, text.b));
-  run(m_text, CCSpawn::createWithTwoActions(CCFadeTo::create(time, textOpacity),
-                                            CCMoveTo::create(time, {x, m_text->getPositionY()})));
-  run(m_accent, CCFadeTo::create(time, accent));
-  run(m_glow, CCFadeTo::create(time, glow));
-  run(m_content, CCScaleTo::create(time, scale));
+}
+
+void MSMenuItem::apply()
+{
+  auto const& look = m_look;
+  auto visible = std::clamp(m_visibility, 0.f, 1.f);
+  ms::setColor(m_plate, look.plate);
+  ms::setOpacity(m_plate, toByte(look.plateOpacity * visible));
+  ms::setColor(m_label, look.text);
+  // The text node passes it on to the label and its shadow, each keeping its own
+  ms::setOpacity(m_text, toByte(look.textOpacity * visible));
+  ms::setOpacity(m_accent, toByte(look.accent * visible));
+  ms::setOpacity(m_glow, toByte(look.glow * visible));
+  m_text->setPositionX(look.textX);
+  m_content->setScale(look.scale);
+}
+
+void MSMenuItem::resetLook()
+{
+  m_highlighted = false;
+  m_pressed = false;
+  m_shinePass.stop();
+  if (m_shine)
+  {
+    m_shine->setPass(0, 0);
+    m_shineGlow->setPass(0, 0);
+  }
+  this->refresh(false);
 }
 
 void MSMenuItem::playIntro(float delay)
@@ -373,20 +417,27 @@ void MSMenuItem::playIntro(float delay)
     this->runAction(CCSequence::createWithTwoActions(
       CCDelayTime::create(delay), CCEaseOut::create(CCMoveTo::create(theme.introDuration, position), 2.f)));
   }
-  ms::setOpacity(m_content, 0);
-  run(m_content, CCSequence::createWithTwoActions(CCDelayTime::create(delay), CCFadeTo::create(theme.introDuration, 255)),
-      INTRO_ACTION);
+  m_visibility = 0;
+  m_visibilityFrom = 0;
+  m_visibilityTo = 1;
+  m_visibilityTime = 0;
+  m_visibilityDuration = theme.introDuration;
+  m_visibilityDelay = std::max(delay, 0.f);
+  this->apply();
 }
 
 void MSMenuItem::fadeTo(float time, GLubyte opacity)
 {
-  if (time <= 0)
+  m_visibilityFrom = m_visibility;
+  m_visibilityTo = opacity / 255.f;
+  m_visibilityTime = 0;
+  m_visibilityDuration = std::max(time, 0.f);
+  m_visibilityDelay = 0;
+  if (m_visibilityDuration <= 0)
   {
-    m_content->stopActionByTag(INTRO_ACTION);
-    ms::setOpacity(m_content, opacity);
-    return;
+    m_visibility = m_visibilityTo;
+    this->apply();
   }
-  run(m_content, CCFadeTo::create(time, opacity), INTRO_ACTION);
 }
 
 void MSMenuItem::selected()
