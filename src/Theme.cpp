@@ -25,10 +25,6 @@ namespace
     theme.subtitleColor = ccc3(0xff, 0xff, 0xff);
     theme.shadowColor = ccc3(0x2a, 0x0b, 0x26);
     theme.accentColor = ccc3(0xff, 0x6f, 0x91);
-    theme.logoColor = ccc3(0xff, 0x3d, 0x9e);
-    theme.logoHighlightColor = ccc3(0xff, 0xc6, 0xe6);
-    theme.logoShadowColor = ccc3(0x3b, 0x0a, 0x2f);
-    theme.logoDecorColor = ccc3(0xff, 0x8a, 0xc8);
     theme.backgroundTint = ccc3(0xa0, 0x62, 0x8f);
     theme.darkenColor = ccc3(0x15, 0x05, 0x1a);
     theme.leftShadeColor = ccc3(0x08, 0x05, 0x0d);
@@ -73,20 +69,6 @@ namespace
     theme.popupTitleScale = 0.9f;
     theme.shadowSteps = 2;
     theme.shadowOffset = 0.6f;
-    theme.logoShadowOffset = 1.4f;
-    theme.logoHighlightOffset = 0.7f;
-    theme.logoDecorSize = 0.4f;
-    theme.logoGradientTop = ccc3(0xff, 0xc9, 0xe8);
-    theme.logoGradientBottom = ccc3(0xff, 0x2e, 0x93);
-    theme.logoDepthColor = ccc3(0x9e, 0x16, 0x5c);
-    theme.logoSparkleColor = ccc3(0xff, 0xff, 0xff);
-    theme.logoGridColor = ccc3(0xff, 0x8a, 0xc8);
-    theme.logoDepthSteps = 3;
-    theme.logoDepthOffset = 0.7f;
-    theme.logoSparkles = 4;
-    theme.logoSparkleSize = 3.5f;
-    theme.logoGridStep = 7;
-    theme.logoGridOpacity = 34;
 
     // ! --- Sprites and sounds --- !
     theme.layers = {
@@ -96,7 +78,7 @@ namespace
       {"bg-light.png"_spr, 0.f, true, 35},
     };
     theme.rowSprite = "row-plate.png"_spr;
-    theme.logoSprite = "";
+    theme.logoSprite = "miside-like-gd-logo.png"_spr;
     theme.glowSprite = "glow-soft.png"_spr;
     theme.characterSprite = "";
     theme.accentSprite = "item-accent.png"_spr;
@@ -130,9 +112,10 @@ namespace
 
     // ! --- The menu --- !
     theme.columnLeft = 59;
+    // Over the subtitle (its top at 229), left of Mita's hair (from about x 305 at that height): 220 x 36 points
+    theme.logoLeft = 59;
     theme.logoBottom = 236;
-    theme.logoWidth = 176;
-    theme.logoTop = 294;
+    theme.logoWidth = 220;
     theme.subtitleTop = 229;
     theme.firstRowY = 195;
     theme.rowPitch = 17;
@@ -239,10 +222,6 @@ namespace
     field("subtitle-color", theme.subtitleColor);
     field("shadow-color", theme.shadowColor);
     field("accent-color", theme.accentColor);
-    field("logo-color", theme.logoColor);
-    field("logo-highlight-color", theme.logoHighlightColor);
-    field("logo-shadow-color", theme.logoShadowColor);
-    field("logo-decor-color", theme.logoDecorColor);
     field("background-tint", theme.backgroundTint);
     field("background-darken-color", theme.darkenColor);
     field("left-shade-color", theme.leftShadeColor);
@@ -284,20 +263,6 @@ namespace
     field("popup-title-scale", theme.popupTitleScale);
     field("shadow-steps", theme.shadowSteps);
     field("shadow-offset", theme.shadowOffset);
-    field("logo-shadow-offset", theme.logoShadowOffset);
-    field("logo-highlight-offset", theme.logoHighlightOffset);
-    field("logo-decor-size", theme.logoDecorSize);
-    field("logo-gradient-top", theme.logoGradientTop);
-    field("logo-gradient-bottom", theme.logoGradientBottom);
-    field("logo-depth-color", theme.logoDepthColor);
-    field("logo-sparkle-color", theme.logoSparkleColor);
-    field("logo-grid-color", theme.logoGridColor);
-    field("logo-depth-steps", theme.logoDepthSteps);
-    field("logo-depth-offset", theme.logoDepthOffset);
-    field("logo-sparkles", theme.logoSparkles);
-    field("logo-sparkle-size", theme.logoSparkleSize);
-    field("logo-grid-step", theme.logoGridStep);
-    field("logo-grid-opacity", theme.logoGridOpacity);
 
     field("layers", theme.layers);
     field("row-sprite", theme.rowSprite);
@@ -333,9 +298,9 @@ namespace
     field("exit-dodge-damping", theme.exitDodgeDamping);
 
     field("column-left", theme.columnLeft);
+    field("logo-left", theme.logoLeft);
     field("logo-bottom", theme.logoBottom);
     field("logo-width", theme.logoWidth);
-    field("logo-top", theme.logoTop);
     field("subtitle-top", theme.subtitleTop);
     field("first-row-y", theme.firstRowY);
     field("row-pitch", theme.rowPitch);

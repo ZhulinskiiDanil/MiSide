@@ -36,10 +36,6 @@ struct Theme
   cocos2d::ccColor3B subtitleColor;
   cocos2d::ccColor3B shadowColor;
   cocos2d::ccColor3B accentColor;
-  cocos2d::ccColor3B logoColor;
-  cocos2d::ccColor3B logoHighlightColor;
-  cocos2d::ccColor3B logoShadowColor;
-  cocos2d::ccColor3B logoDecorColor;
   cocos2d::ccColor3B backgroundTint;
   cocos2d::ccColor3B darkenColor;
   cocos2d::ccColor3B leftShadeColor;
@@ -75,7 +71,7 @@ struct Theme
   // ! --- Fonts --- !
   // A BMFont with Cyrillic; when it's missing, the system font below
   std::string font;
-  // The subtitle's and the logo's, heavier
+  // The subtitle's, heavier
   std::string titleFont;
   std::string fallbackFont;
   float fallbackFontSize = 0;
@@ -89,31 +85,13 @@ struct Theme
   // Copies of the text under it, each one `shadowOffset` further down and to the right
   float shadowSteps = 0;
   float shadowOffset = 0;
-  // The text logo: a dark copy down and to the right, a light copy up
-  float logoShadowOffset = 0;
-  float logoHighlightOffset = 0;
-  // The text logo's cube and spike, as a share of the text's line height
-  float logoDecorSize = 0;
-  // The logo's letters: a gradient from top to bottom, a few darker copies under them for depth, sparkles on
-  // them, a thin grid behind
-  cocos2d::ccColor3B logoGradientTop;
-  cocos2d::ccColor3B logoGradientBottom;
-  cocos2d::ccColor3B logoDepthColor;
-  cocos2d::ccColor3B logoSparkleColor;
-  cocos2d::ccColor3B logoGridColor;
-  float logoDepthSteps = 0;
-  float logoDepthOffset = 0;
-  float logoSparkles = 0;
-  float logoSparkleSize = 0;
-  float logoGridStep = 0;
-  GLubyte logoGridOpacity = 0;
 
   // ! --- Sprites and sounds --- !
   // Back to front
   std::vector<Layer> layers;
   // A 9-slice plate under every item
   std::string rowSprite;
-  // The logo's art. Empty or missing: the text logo
+  // The logo image, shown as it is (its transparent margins left out). Missing: no logo
   std::string logoSprite;
   // White, soft round light tinted with `glow-color`
   std::string glowSprite;
@@ -155,11 +133,12 @@ struct Theme
   float exitDodgeDamping = 0;
 
   // ! --- The menu --- !
-  // The left edge of the logo, the subtitle and the items
+  // The left edge of the subtitle and the items
   float columnLeft = 0;
+  // The logo's drawn part: its left edge (with the items), its bottom edge (over the subtitle) and its width
+  float logoLeft = 0;
   float logoBottom = 0;
   float logoWidth = 0;
-  float logoTop = 0;
   // The subtitle's top edge
   float subtitleTop = 0;
   // The first item's middle, then one every `row-pitch` points down (from middle to middle)

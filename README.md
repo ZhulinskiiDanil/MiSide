@@ -12,7 +12,7 @@ The background art is in `resources/background/`, the font and the sounds are fr
 - **Rounded type**: M PLUS Rounded 1c Bold for the items, ExtraBold for "MAIN MENU" and the logo, pink-lilac text with a soft shadow on muted translucent lilac plates; the lit row is lighter and pinker with a soft glow
 - **One shine** runs through the letters of an item when the mouse comes onto it (or the arrow keys choose it): a soft pink band with a bright core, cut to the letters' shape, once, about half a second
 - **EXIT leans away** from the mouse as if held to its place by a spring: the closer the mouse, the further (up to 11 pt), stretched and tilted a little, back with a damped spring when the mouse leaves. It always stays under a mouse that aims at it and holds still while pressed, so it's always clickable. Keyboard only: it doesn't move
-- **The logo**: "Geometry Dash" in the heavy rounded font with a pink gradient, depth, a shadow, sparkles and a thin grid behind (a text logo; the theme's `logo-sprite` takes real art)
+- **The logo**: an image (`resources/logo/miside-like-gd-logo.png`) shown as it is over "MAIN MENU", its drawn part's left edge with the items, 220 pt wide; its transparent margins are measured from the file, so they don't push it off
 - **Each item presses its vanilla button** through `activate()`, so every mod hooking `onPlay`, `onGarage`, `onCreator`, `onOptions` and the others keeps working. No vanilla button, no item
 - **The tray**: one row in the bottom right corner, every button scaled to the same small slot: the buttons other mods add (the Geode button too) and the vanilla ones that do something and have no item (the daily chest, Newgrounds). At its end, **"…"** opens a popup with RobTop, the social links and More Games
 - **The profile card** in the bottom left corner, small and quiet: a round avatar with the player's cube in their colors, and their name. It opens the profile like the vanilla button (which it presses with `activate()`)
@@ -48,7 +48,7 @@ Colors, fonts, sprites, sounds, spacing and timings all come from the theme (`sr
 }
 ```
 
-New keys (all with defaults; a missing or wrong one keeps its default): `title-font`; `shine-enabled`, `shine-color`, `shine-core-color`, `shine-opacity`, `shine-duration`, `shine-width`, `shine-core-width`, `shine-fade-out`; `row-glow-color`, `row-glow-opacity`, `row-glow-spread`; `exit-dodge-enabled`, `exit-dodge-radius` (55), `exit-dodge-max` (11), `exit-dodge-vertical`, `exit-dodge-stretch` (0.04), `exit-dodge-tilt` (3°), `exit-dodge-stiffness`, `exit-dodge-damping`; `pattern-sprite`, `pattern-color`, `pattern-opacity` (16), `pattern-tile`; `vignette-sprite`, `vignette-color`, `vignette-opacity`; `particle-count` (14), `particle-color`, `particle-opacity`, `particle-size-min/max`, `particle-speed`, `particle-life`; `logo-width`, `logo-gradient-top/bottom`, `logo-depth-color/steps/offset`, `logo-sparkle-color`, `logo-sparkles`, `logo-sparkle-size`, `logo-grid-color/step/opacity`; `mita-outline-enabled`, `mita-outline-color`, `mita-outline-opacity`, `mita-outline-width`.
+New keys (all with defaults; a missing or wrong one keeps its default): `title-font`; `shine-enabled`, `shine-color`, `shine-core-color`, `shine-opacity`, `shine-duration`, `shine-width`, `shine-core-width`, `shine-fade-out`; `row-glow-color`, `row-glow-opacity`, `row-glow-spread`; `exit-dodge-enabled`, `exit-dodge-radius` (55), `exit-dodge-max` (11), `exit-dodge-vertical`, `exit-dodge-stretch` (0.04), `exit-dodge-tilt` (3°), `exit-dodge-stiffness`, `exit-dodge-damping`; `pattern-sprite`, `pattern-color`, `pattern-opacity` (16), `pattern-tile`; `vignette-sprite`, `vignette-color`, `vignette-opacity`; `particle-count` (14), `particle-color`, `particle-opacity`, `particle-size-min/max`, `particle-speed`, `particle-life`; `logo-sprite`, `logo-left` (59), `logo-bottom` (236), `logo-width` (220: the drawn part's, on screen); `mita-outline-enabled`, `mita-outline-color`, `mita-outline-opacity`, `mita-outline-width`.
 
 Mita's keys: `mita-enabled` (true), `mita-x` / `mita-y` (414.5, 0: her bottom middle), `mita-scale` (0.4444444444 points per pixel of her 640×720 canvas, so as high as the screen), `mita-fps` (24; 0 takes the manifest's), `mita-parallax-enabled` (false), `mita-parallax-max-x` / `mita-parallax-max-y` (3, 2; down only, so the cut at the bottom never shows a gap), `mita-freeze-frame` (-1 plays; 0…126 holds that frame still, to check frames one at a time). On a narrower window she stays against the right edge and is cut there rather than covering the buttons.
 
@@ -116,9 +116,9 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] Clicking the card opens your profile, like the vanilla button; with an account name changed, the card shows the new one at the next menu
 - [ ] Nothing (a vanilla menu, a mod's button or label) is over the column's items or right next to them; the log says (debug level) which nodes were moved
 - [ ] Behind the plates: only the dark background, no stripes; the hearts/stars/flowers pattern barely visible, never over the text or her face; a few motes drifting slowly up
-- [ ] Without a stencil buffer (the log says so once): no shine and a plain pink logo, nothing else changes
+- [ ] Without a stencil buffer (the log says so once): no shine on the items, nothing else changes
 - [ ] The window and the curtain on the right aren't washed out; the glow tints them, it doesn't whiten them
-- [ ] The logo fits its area over "MAIN MENU" and doesn't touch the buttons at the top left
+- [ ] The logo image over "MAIN MENU": its drawn left edge in line with the items, not touching the subtitle or Mita, its proportions kept, no grid, shadow or sparkles over it; as sharp at Low, Medium and High
 
 **Mods that add buttons or popups to the main menu** (each alone, then all together)
 

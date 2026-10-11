@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MSLogo.hpp"
 #include "MSMenuItem.hpp"
 
 #include <Geode/Geode.hpp>
@@ -21,7 +22,7 @@ public:
   void addEntry(std::string const& text, cocos2d::CCMenuItem* target);
   // Quit: shorter, on its own at `exit-y`, the last for the arrow keys
   void setExit(std::string const& text, cocos2d::CCMenuItem* target);
-  void setLogo(cocos2d::CCNode* logo);
+  void setLogo(MSLogo* logo);
   void setSubtitle(std::string const& text);
   // Places everything and plays the intro
   void finish();
@@ -53,6 +54,7 @@ protected:
   std::vector<MSMenuItem*> m_rows;
   MSMenuItem* m_exit = nullptr;
   cocos2d::CCMenuItem* m_logo = nullptr;
+  MSLogo* m_logoArt = nullptr;
   cocos2d::CCMenuItem* m_subtitle = nullptr;
   cocos2d::CCNode* m_subtitleText = nullptr;
   int m_hover = -1;

@@ -3,6 +3,8 @@
 #include "../Theme.hpp"
 #include "MSStyle.hpp"
 
+#include <cmath>
+
 using namespace geode::prelude;
 
 MSMenuColumn* MSMenuColumn::create(Choose choose)
@@ -62,10 +64,12 @@ CCMenuItem* MSMenuColumn::wrap(CCNode* node)
   return item;
 }
 
-void MSMenuColumn::setLogo(CCNode* logo)
+void MSMenuColumn::setLogo(MSLogo* logo)
 {
-  if (logo)
-    m_logo = this->wrap(logo);
+  if (!logo)
+    return;
+  m_logoArt = logo;
+  m_logo = this->wrap(logo);
 }
 
 void MSMenuColumn::setSubtitle(std::string const& text)
@@ -83,8 +87,13 @@ void MSMenuColumn::finish()
   auto const& theme = Theme::get();
   if (m_logo)
   {
+    // Its drawn part as wide as the theme says on the screen, whatever the parents' scale; its drawn bottom left
+    // corner at the theme's place
+    auto world = this->nodeToWorldTransform();
+    m_logoArt->fit(std::sqrt(world.a * world.a + world.b * world.b));
+    m_logo->setContentSize(m_logoArt->getContentSize());
     m_logo->setAnchorPoint({0, 0});
-    m_logo->setPosition({theme.columnLeft, theme.logoBottom});
+    m_logo->setPosition({theme.logoLeft, theme.logoBottom});
   }
   if (m_subtitle)
   {

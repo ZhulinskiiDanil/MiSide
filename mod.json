@@ -51,6 +51,7 @@
 	"resources": {
 		"sprites": [
 			"resources/background/*.png",
+			"resources/logo/miside-like-gd-logo.png",
 			"resources/placeholders/row-plate.png",
 			"resources/placeholders/glow-soft.png",
 			"resources/placeholders/item-accent.png",
