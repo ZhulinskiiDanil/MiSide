@@ -368,6 +368,14 @@ struct Theme
   cocos2d::ccColor3B loadingFillEndColor;
   cocos2d::ccColor3B loadingHeadColor;
   float loadingTipY = 0;
+  // Geode's two lines under the tip: the lower one's middle, and each one's height
+  float loadingLineY = 0;
+  float loadingLineHeight = 0;
+  // The tip kept this far from the bar on both sides
+  float loadingTextGap = 0;
+  // Each of MiSide's jokes over the bar shows this long, changing over twice this fade
+  float loadingPhraseDuration = 0;
+  float loadingPhraseFade = 0;
   float loadingTipCap = 0;
   cocos2d::ccColor3B loadingTipColor;
 

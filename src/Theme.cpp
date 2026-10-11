@@ -313,7 +313,12 @@ namespace
     theme.loadingFillStartColor = ccc3(0x66, 0x20, 0x71);
     theme.loadingFillEndColor = ccc3(0xc5, 0x61, 0x95);
     theme.loadingHeadColor = ccc3(0xff, 0xc8, 0xc0);
-    theme.loadingTipY = 9;
+    theme.loadingTipY = 15.5f;
+    theme.loadingLineY = 3.2f;
+    theme.loadingLineHeight = 5.5f;
+    theme.loadingTextGap = 8;
+    theme.loadingPhraseDuration = 2.4f;
+    theme.loadingPhraseFade = 0.2f;
     theme.loadingTipCap = 3;
     theme.loadingTipColor = ccc3(0xff, 0xd0, 0xe6);
 
@@ -706,6 +711,11 @@ namespace
     field("loading-fill-end-color", theme.loadingFillEndColor);
     field("loading-head-color", theme.loadingHeadColor);
     field("loading-tip-y", theme.loadingTipY);
+    field("loading-line-y", theme.loadingLineY);
+    field("loading-line-height", theme.loadingLineHeight);
+    field("loading-text-gap", theme.loadingTextGap);
+    field("loading-phrase-duration", theme.loadingPhraseDuration);
+    field("loading-phrase-fade", theme.loadingPhraseFade);
     field("loading-tip-cap", theme.loadingTipCap);
     field("loading-tip-color", theme.loadingTipColor);
 

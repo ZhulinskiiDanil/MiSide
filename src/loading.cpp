@@ -24,13 +24,37 @@ namespace
 
   // The mod's resources aren't in cocos' search paths this early (Geode adds them later in the loading): a file by
   // its full path, under its plain name. GD's file utils add the texture quality's -hd / -uhd themselves (a name that
-  // has it already would get it twice and not be found)
+  // has it already would get it twice and not be found). With forward slashes: cocos finds a font's atlas next to
+  // its .fnt by the last '/', and a Windows path has none (the atlas wasn't found, the font never loaded)
   std::string resource(std::string const& name)
   {
     std::error_code error;
     auto plain = Mod::get()->getResourcesDir() / name;
-    return std::filesystem::exists(plain, error) ? plain.string() : std::string();
+    return std::filesystem::exists(plain, error) ? plain.generic_string() : std::string();
   }
+
+  // MiSide's own lines from its first loading (Data/Languages/<language>/Menu.txt, lines 67-72), one after another;
+  // the last one when the loading is done
+  constexpr char const* PHRASES_RU[] = {
+    "Компилирую шейдеры — это займёт два часа, подождите, пожалуйста",
+    "А, какая компиляция? Это мы сделали за вас!",
+    "Создаю реалистичную трассировку теней — это займёт 10 минут",
+    "Шучу, здесь нет такой графики",
+    "Эм-м...",
+    "А, точно, загрузились!",
+  };
+  constexpr char const* PHRASES_EN[] = {
+    "Compiling shaders, estimated wait time: 2 hours.",
+    "2-hour compilation?! That's bogus! We've done that for you already!",
+    "Creating realistic shadow tracing—estimated to take 10 minutes.",
+    "Just kidding, we don't use those fancy things here.",
+    "Umm...",
+    "Oh, we are ready!",
+  };
+  constexpr int PHRASE_COUNT = 6;
+  // The loading's share from which it's done: the last line
+  constexpr float DONE = 0.97f;
+  constexpr int PHRASE_ACTION = 0x4c50;
 
   // The mod's font, if its atlas really loads: read the .fnt GD resolves, load the page it names. Else empty (GD's
   // font instead): a label made from a font whose atlas didn't load crashes cocos
@@ -287,9 +311,12 @@ class $modify(MSLoadingLayer, LoadingLayer)
   {
     CCNode* m_fill = nullptr;
     CCNode* m_head = nullptr;
-    CCLabelBMFont* m_dots = nullptr;
+    CCLabelBMFont* m_caption = nullptr;
+    // The line shown, and the time since it came
+    int m_phrase = 0;
+    float m_phraseTime = 0;
+    bool m_english = false;
     float m_shown = 0;
-    float m_time = 0;
     float m_barWidth = 0;
     float m_barHeight = 0;
   };
@@ -398,22 +425,17 @@ class $modify(MSLoadingLayer, LoadingLayer)
       this->addChild(clear, -7);
     }
 
-    // LOADING... and the bar under it, bottom left
+    // MiSide's jokes in LOADING's place, one after another, and the bar under them, bottom left
     auto en = Mod::get()->getSettingValue<std::string>("menu-language") == "EN";
+    m_fields->m_english = en;
     auto left = theme.loadingLeft;
-    if (auto caption = label(en ? "LOADING" : "ЗАГРУЗКА", theme.loadingCaptionCap, theme.loadingCaptionColor))
+    if (auto caption = label(en ? PHRASES_EN[0] : PHRASES_RU[0], theme.loadingCaptionCap, theme.loadingCaptionColor))
     {
       caption->setAnchorPoint({0, 0.5f});
       caption->setPosition({left, theme.loadingCaptionCapTop - theme.loadingCaptionCap / 2 -
                                     FONT_RAISE * caption->getScale()});
       this->addChild(caption, 5);
-      if (auto dots = label("...", theme.loadingCaptionCap, theme.loadingCaptionColor))
-      {
-        dots->setAnchorPoint({0, 0.5f});
-        dots->setPosition(caption->getPosition() + CCPoint{caption->getScaledContentSize().width, 0});
-        this->addChild(dots, 5);
-        m_fields->m_dots = dots;
-      }
+      m_fields->m_caption = caption;
     }
     auto barWidth = theme.loadingBarWidth;
     auto barHeight = theme.loadingBarHeight;
@@ -450,12 +472,13 @@ class $modify(MSLoadingLayer, LoadingLayer)
       }
     }
 
-    // GD's tip in MiSide's warning's place, bottom middle; Geode's lines under it
+    // GD's tip in MiSide's warning's place, bottom middle, clear of the bar; Geode's two lines (the mods it loads)
+    // under it, all of them on the screen
+    auto clear = winSize.width - 2 * (left + barWidth + theme.loadingTextGap);
     if (auto tip = label(upper(this->getLoadingString()), theme.loadingTipCap, theme.loadingTipColor))
     {
-      auto most = winSize.width - 24;
-      if (tip->getScaledContentSize().width > most)
-        tip->setScale(tip->getScale() * most / tip->getScaledContentSize().width);
+      if (tip->getScaledContentSize().width > clear && clear > 0)
+        tip->setScale(tip->getScale() * clear / tip->getScaledContentSize().width);
       tip->setPosition({winSize.width / 2, theme.loadingTipY});
       this->addChild(tip, 5);
     }
@@ -464,13 +487,16 @@ class $modify(MSLoadingLayer, LoadingLayer)
       auto line = typeinfo_cast<CCLabelBMFont*>(this->getChildByID(id));
       if (!line)
         return;
-      line->setScale(0.3f);
+      line->setScale(1);
+      auto height = line->getContentSize().height;
+      if (height > 0)
+        line->setScale(theme.loadingLineHeight / height);
       line->setColor(color);
       line->setPosition({winSize.width / 2, y});
       line->setZOrder(5);
     };
-    restyle("geode-small-label", theme.loadingTipY - theme.loadingTipCap * 2.4f, theme.loadingCaptionColor);
-    restyle("geode-small-label-2", theme.loadingTipY - theme.loadingTipCap * 4.6f, theme.loadingCaptionColor);
+    restyle("geode-small-label", theme.loadingLineY + theme.loadingLineHeight, theme.loadingCaptionColor);
+    restyle("geode-small-label-2", theme.loadingLineY, theme.loadingCaptionColor);
 
     this->schedule(schedule_selector(MSLoadingLayer::stepBar));
   }
@@ -491,12 +517,30 @@ class $modify(MSLoadingLayer, LoadingLayer)
       f.m_head->setPositionX(Theme::get().loadingLeft + width);
       f.m_head->setVisible(width > 0.5f);
     }
-    // The dots counting up
-    f.m_time += dt;
-    if (f.m_dots)
-    {
-      static char const* const DOTS[] = {"", ".", "..", "..."};
-      f.m_dots->setString(DOTS[static_cast<int>(f.m_time * 2.5f) % 4]);
-    }
+    // The next joke after its time (not while the intro plays: the loading waits too), holding on the one before the
+    // last; the last when the loading is done
+    if (!f.m_caption || s_introPlaying)
+      return;
+    auto const& theme = Theme::get();
+    f.m_phraseTime += dt;
+    auto next = f.m_phrase;
+    if (progress >= DONE)
+      next = PHRASE_COUNT - 1;
+    else if (f.m_phraseTime >= theme.loadingPhraseDuration && f.m_phrase < PHRASE_COUNT - 2)
+      next = f.m_phrase + 1;
+    if (next == f.m_phrase)
+      return;
+    f.m_phrase = next;
+    f.m_phraseTime = 0;
+    // Out, the new line in
+    auto text = f.m_english ? PHRASES_EN[next] : PHRASES_RU[next];
+    auto fade = std::max(theme.loadingPhraseFade, 0.f);
+    auto caption = f.m_caption;
+    caption->stopActionByTag(PHRASE_ACTION);
+    auto change = CCSequence::create(CCFadeTo::create(fade, 0), CallFuncExt::create([caption, text] {
+      caption->setString(text);
+    }), CCFadeTo::create(fade, 255), nullptr);
+    change->setTag(PHRASE_ACTION);
+    caption->runAction(change);
   }
 };
