@@ -16,6 +16,8 @@ class MSLevelList : public cocos2d::CCMenu
 {
 public:
   static MSLevelList* create(std::vector<std::string> const& names, std::function<void(int)> chosen);
+  // The row under the mouse, as soon as it comes on (-1: off the rows)
+  void setOnHover(std::function<void(int)> hover);
 
   // Chooses it and scrolls it into view
   void choose(int index, bool sound = false);
@@ -41,6 +43,7 @@ protected:
   bool canUse();
 
   std::function<void(int)> m_onChosen;
+  std::function<void(int)> m_onHover;
   std::vector<MSMenuItem*> m_rows;
   cocos2d::CCNode* m_track = nullptr;
   cocos2d::CCNode* m_thumb = nullptr;

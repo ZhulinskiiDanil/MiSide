@@ -165,7 +165,16 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
         m_fields->m_card->show(m_fields->m_levels[index]);
     });
     if (f.m_list)
+    {
+      // The row under the mouse shows on the card at once; off the rows, the chosen one comes back
+      f.m_list->setOnHover([this](int index) {
+        auto& fields = *m_fields.self();
+        auto shown = index >= 0 ? index : fields.m_list->chosen();
+        if (fields.m_card && shown >= 0 && shown < static_cast<int>(fields.m_levels.size()))
+          fields.m_card->show(fields.m_levels[shown]);
+      });
       this->addChild(f.m_list, MENU_Z);
+    }
 
     // BACK and MORE under the list, as MiSide's BACK
     auto bottom = CCMenu::create();

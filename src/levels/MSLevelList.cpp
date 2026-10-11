@@ -83,6 +83,8 @@ bool MSLevelList::init(std::vector<std::string> const& names, std::function<void
   return true;
 }
 
+void MSLevelList::setOnHover(std::function<void(int)> hover) { m_onHover = std::move(hover); }
+
 int MSLevelList::visible() const
 {
   return std::max(1, std::min(static_cast<int>(Theme::get().levelsVisibleRows), static_cast<int>(m_rows.size())));
@@ -262,6 +264,8 @@ void MSLevelList::update(float dt)
     m_rows[m_hover]->setHighlighted(true, true);
     ms::playSound(Theme::get().hoverSound);
   }
+  if (m_onHover)
+    m_onHover(m_hover);
 }
 
 CCRect MSLevelList::trackRect() const

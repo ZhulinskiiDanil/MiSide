@@ -4,8 +4,11 @@
 
 #include <Geode/modify/PlayLayer.hpp>
 
+#include <Geode/modify/GJBaseGameLayer.hpp>
+
 #include <filesystem>
 #include <map>
+#include <thread>
 
 using namespace geode::prelude;
 
@@ -14,8 +17,10 @@ namespace
   // The official levels' IDs
   constexpr int FIRST_LEVEL = 1;
   constexpr int LAST_LEVEL = 22;
-  // From the level's start: the transition is over and the player is at the spawn
-  constexpr float CAPTURE_DELAY = 0.6f;
+  // The picture is taken once the attempt is past this share of the level and the player has clicked (there's
+  // something going on), or at the latest at FORCE_PERCENT
+  constexpr float CLICKED_PERCENT = 1;
+  constexpr float FORCE_PERCENT = 5;
 
   std::filesystem::path previewPath(int levelID)
   {
@@ -32,9 +37,54 @@ namespace
 
   std::map<int, Ref<CCTexture2D>> s_textures;
 
-  // The level drawn once at the window's size (so anything in it that sets the viewport back still fits), read back,
-  // shrunk on the CPU by averaging to `levels-preview-width`, saved as PNG. Its interface hidden meanwhile
-  bool capture(PlayLayer* level, std::filesystem::path const& path)
+  // Shrunk by averaging to `outWidth` (the shape kept), rows turned to go down, saved as PNG. Pure CPU: off the
+  // main thread
+  bool shrinkAndSave(std::vector<uint8_t> const& pixels, int width, int height, int outWidth,
+                     std::filesystem::path const& path)
+  {
+    auto outHeight = std::max(1, height * outWidth / width);
+    std::vector<uint8_t> shrunk(static_cast<size_t>(outWidth) * outHeight * 4);
+    for (int y = 0; y < outHeight; y++)
+    {
+      auto y0 = y * height / outHeight;
+      auto y1 = std::max(y0 + 1, (y + 1) * height / outHeight);
+      for (int x = 0; x < outWidth; x++)
+      {
+        auto x0 = x * width / outWidth;
+        auto x1 = std::max(x0 + 1, (x + 1) * width / outWidth);
+        unsigned sum[3] = {0, 0, 0};
+        for (int sy = y0; sy < y1; sy++)
+        {
+          auto row = pixels.data() + (static_cast<size_t>(sy) * width + x0) * 4;
+          for (int sx = x0; sx < x1; sx++, row += 4)
+          {
+            sum[0] += row[0];
+            sum[1] += row[1];
+            sum[2] += row[2];
+          }
+        }
+        auto count = static_cast<unsigned>((y1 - y0) * (x1 - x0));
+        auto out = shrunk.data() + (static_cast<size_t>(outHeight - 1 - y) * outWidth + x) * 4;
+        out[0] = static_cast<uint8_t>(sum[0] / count);
+        out[1] = static_cast<uint8_t>(sum[1] / count);
+        out[2] = static_cast<uint8_t>(sum[2] / count);
+        out[3] = 255;
+      }
+    }
+    std::error_code error;
+    std::filesystem::create_directories(path.parent_path(), error);
+    auto image = new CCImage();
+    auto saved = image->initWithImageData(shrunk.data(), static_cast<int>(shrunk.size()), CCImage::kFmtRawData,
+                                          outWidth, outHeight, 8) &&
+                 image->saveToFile(path.string().c_str(), false);
+    image->release();
+    return saved;
+  }
+
+  // The level drawn once at the window's size (so anything in it that sets the viewport back still fits) and read
+  // back, its interface hidden meanwhile; the shrinking and saving go to a thread, so the game only pauses for the
+  // drawing and reading
+  bool capture(PlayLayer* level, int levelID)
   {
     auto director = CCDirector::get();
     auto frame = CCEGLView::sharedOpenGLView()->getFrameSize();
@@ -114,45 +164,17 @@ namespace
     if (pixels.empty())
       return false;
 
-    // Averaged down to the theme's width, the window's shape kept; rows from the top for the image
     auto outWidth = std::clamp(static_cast<int>(Theme::get().levelsPreviewWidth), 64, width);
-    auto outHeight = std::max(1, height * outWidth / width);
-    std::vector<uint8_t> shrunk(static_cast<size_t>(outWidth) * outHeight * 4);
-    for (int y = 0; y < outHeight; y++)
-    {
-      auto y0 = y * height / outHeight;
-      auto y1 = std::max(y0 + 1, (y + 1) * height / outHeight);
-      for (int x = 0; x < outWidth; x++)
-      {
-        auto x0 = x * width / outWidth;
-        auto x1 = std::max(x0 + 1, (x + 1) * width / outWidth);
-        unsigned sum[3] = {0, 0, 0};
-        for (int sy = y0; sy < y1; sy++)
-        {
-          auto row = pixels.data() + (static_cast<size_t>(sy) * width + x0) * 4;
-          for (int sx = x0; sx < x1; sx++, row += 4)
-          {
-            sum[0] += row[0];
-            sum[1] += row[1];
-            sum[2] += row[2];
-          }
-        }
-        auto count = static_cast<unsigned>((y1 - y0) * (x1 - x0));
-        auto out = shrunk.data() + (static_cast<size_t>(outHeight - 1 - y) * outWidth + x) * 4;
-        out[0] = static_cast<uint8_t>(sum[0] / count);
-        out[1] = static_cast<uint8_t>(sum[1] / count);
-        out[2] = static_cast<uint8_t>(sum[2] / count);
-        out[3] = 255;
-      }
-    }
-    std::error_code error;
-    std::filesystem::create_directories(path.parent_path(), error);
-    auto image = new CCImage();
-    auto saved = image->initWithImageData(shrunk.data(), static_cast<int>(shrunk.size()), CCImage::kFmtRawData, outWidth,
-                                          outHeight, 8) &&
-                 image->saveToFile(path.string().c_str(), false);
-    image->release();
-    return saved;
+    std::thread([pixels = std::move(pixels), width, height, outWidth, levelID] {
+      auto saved = shrinkAndSave(pixels, width, height, outWidth, previewPath(levelID));
+      Loader::get()->queueInMainThread([saved, levelID] {
+        if (!saved)
+          return log::warn("Level {}'s picture couldn't be saved", levelID);
+        log::info("Level {}'s picture saved for the level list", levelID);
+        s_textures.erase(levelID);
+      });
+    }).detach();
+    return true;
   }
 } // namespace
 
@@ -187,31 +209,56 @@ namespace preview
   void forget() { s_textures.clear(); }
 } // namespace preview
 
-// The first time an official level is played, a frame of its start is kept for the level list
+// The first time an official level is played, a frame of it is kept for the level list: once the attempt is past 1%
+// and the player has clicked, or at 5% at the latest
 class $modify(MSPreviewPlayLayer, PlayLayer)
 {
+  struct Fields
+  {
+    bool m_wanted = false;
+    bool m_clicked = false;
+  };
+
   bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects)
   {
     if (!PlayLayer::init(level, useReplay, dontCreateObjects))
       return false;
     std::error_code error;
-    if (official(level) && !std::filesystem::exists(previewPath(level->m_levelID.value()), error))
-      this->scheduleOnce(schedule_selector(MSPreviewPlayLayer::capturePreview), CAPTURE_DELAY);
+    m_fields->m_wanted = official(level) && !std::filesystem::exists(previewPath(level->m_levelID.value()), error);
     return true;
   }
 
-  void capturePreview(float)
+  void resetLevel()
   {
-    // From a start position, the frame isn't the level's start
-    if (m_isTestMode || !m_level)
+    m_fields->m_clicked = false;
+    PlayLayer::resetLevel();
+  }
+
+  void postUpdate(float dt)
+  {
+    PlayLayer::postUpdate(dt);
+    auto& f = *m_fields.self();
+    // From a start position, it isn't the level as it comes; a dead player's frame isn't one either
+    if (!f.m_wanted || m_isTestMode || !m_level || !m_player1 || m_player1->m_isDead)
       return;
-    auto id = m_level->m_levelID.value();
-    if (capture(this, previewPath(id)))
-    {
-      log::info("Level {}'s picture saved for the level list", id);
-      s_textures.erase(id);
-    }
-    else
-      log::warn("Level {}'s picture couldn't be made", id);
+    auto percent = this->getCurrentPercent();
+    if (percent < FORCE_PERCENT && (percent < CLICKED_PERCENT || !f.m_clicked))
+      return;
+    f.m_wanted = false;
+    if (!capture(this, m_level->m_levelID.value()))
+      log::warn("Level {}'s picture couldn't be made", m_level->m_levelID.value());
+  }
+};
+
+// The player's first click of the attempt: from then on the picture can be taken
+class $modify(MSPreviewGameLayer, GJBaseGameLayer)
+{
+  void handleButton(bool down, int button, bool isPlayer1)
+  {
+    GJBaseGameLayer::handleButton(down, button, isPlayer1);
+    if (!down)
+      return;
+    if (auto level = PlayLayer::get(); level && static_cast<GJBaseGameLayer*>(level) == this)
+      static_cast<MSPreviewPlayLayer*>(level)->m_fields->m_clicked = true;
   }
 };
