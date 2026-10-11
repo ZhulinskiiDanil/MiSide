@@ -285,6 +285,49 @@ namespace
     theme.pauseExtraMenus = "left-button-menu,right-button-menu,bottom-button-menu";
     theme.pauseDuration = 0.2f;
 
+    // ! --- The official levels --- !
+    // Measured on MiSide's load screen: title capitals 8.7 pt, rows 136×14.9 pt every 16.2 from 275.8, 13 in view,
+    // the scroll bar at 202, BACK at 56, the floppy from 252 to 461 and 30 to 272
+    theme.levelsEnabled = true;
+    theme.levelsBackdropTop = ccc3(0x52, 0x0c, 0x49);
+    theme.levelsBackdropBottom = ccc3(0x26, 0x05, 0x22);
+    theme.levelsTitleLeft = 59.8f;
+    theme.levelsTitleCapTop = 292.4f;
+    theme.levelsRowLeft = 62;
+    theme.levelsRowWidth = 136;
+    theme.levelsRowHeight = 14.9f;
+    theme.levelsRowPitch = 16.2f;
+    theme.levelsFirstRowTop = 275.8f;
+    theme.levelsVisibleRows = 13;
+    theme.levelsRowColor = ccc3(0x63, 0x17, 0x6f);
+    theme.levelsRowOpacity = 240;
+    theme.levelsRowChosenColor = ccc3(0x82, 0x14, 0x8c);
+    theme.levelsRowHoverColor = ccc3(0x92, 0x2c, 0x9c);
+    theme.levelsTextColor = ccc3(0xf6, 0xa0, 0xfd);
+    theme.levelsTextChosenColor = ccc3(0xff, 0xd2, 0xff);
+    theme.levelsScrollLeft = 202;
+    theme.levelsScrollWidth = 5;
+    theme.levelsScrollTrackColor = ccc3(0x68, 0x00, 0x84);
+    theme.levelsScrollThumbColor = ccc3(0xff, 0xff, 0xff);
+    theme.levelsBackTop = 56;
+    theme.levelsBackWidth = 100;
+    theme.levelsMoreWidth = 44;
+    theme.levelsCardLeft = 252;
+    theme.levelsCardRight = 461;
+    theme.levelsCardTop = 272;
+    theme.levelsCardBottom = 30;
+    theme.levelsCardColor = ccc3(0xfe, 0xde, 0xf2);
+    theme.levelsCardFrameColor = ccc3(0xfc, 0x4c, 0xa0);
+    theme.levelsCardShadowColor = ccc3(0x3a, 0x0b, 0x37);
+    theme.levelsCardLabelColor = ccc3(0xff, 0xff, 0xff);
+    theme.levelsCardTextColor = ccc3(0x5a, 0x12, 0x60);
+    theme.levelsCardAccentColor = ccc3(0xff, 0x4f, 0xa8);
+    theme.levelsCardHoleColor = ccc3(0x49, 0x0e, 0x56);
+    theme.levelsPlayTextColor = ccc3(0xff, 0xff, 0xff);
+    theme.levelsPreviewEmptyColor = ccc3(0x2a, 0x06, 0x24);
+    theme.levelsPreviewFade = 0.25f;
+    theme.levelsPreviewWidth = 640;
+
     // ! --- Decoration over the room --- !
     theme.patternSprite = "pattern-tile.png"_spr;
     theme.patternColor = ccc3(0xff, 0xb8, 0xdc);
@@ -596,6 +639,46 @@ namespace
     field("pause-extra-enabled", theme.pauseExtraEnabled);
     field("pause-extra-menus", theme.pauseExtraMenus);
     field("pause-duration", theme.pauseDuration);
+
+    field("levels-enabled", theme.levelsEnabled);
+    field("levels-backdrop-top", theme.levelsBackdropTop);
+    field("levels-backdrop-bottom", theme.levelsBackdropBottom);
+    field("levels-title-left", theme.levelsTitleLeft);
+    field("levels-title-cap-top", theme.levelsTitleCapTop);
+    field("levels-row-left", theme.levelsRowLeft);
+    field("levels-row-width", theme.levelsRowWidth);
+    field("levels-row-height", theme.levelsRowHeight);
+    field("levels-row-pitch", theme.levelsRowPitch);
+    field("levels-first-row-top", theme.levelsFirstRowTop);
+    field("levels-visible-rows", theme.levelsVisibleRows);
+    field("levels-row-color", theme.levelsRowColor);
+    field("levels-row-opacity", theme.levelsRowOpacity);
+    field("levels-row-chosen-color", theme.levelsRowChosenColor);
+    field("levels-row-hover-color", theme.levelsRowHoverColor);
+    field("levels-text-color", theme.levelsTextColor);
+    field("levels-text-chosen-color", theme.levelsTextChosenColor);
+    field("levels-scroll-left", theme.levelsScrollLeft);
+    field("levels-scroll-width", theme.levelsScrollWidth);
+    field("levels-scroll-track-color", theme.levelsScrollTrackColor);
+    field("levels-scroll-thumb-color", theme.levelsScrollThumbColor);
+    field("levels-back-top", theme.levelsBackTop);
+    field("levels-back-width", theme.levelsBackWidth);
+    field("levels-more-width", theme.levelsMoreWidth);
+    field("levels-card-left", theme.levelsCardLeft);
+    field("levels-card-right", theme.levelsCardRight);
+    field("levels-card-top", theme.levelsCardTop);
+    field("levels-card-bottom", theme.levelsCardBottom);
+    field("levels-card-color", theme.levelsCardColor);
+    field("levels-card-frame-color", theme.levelsCardFrameColor);
+    field("levels-card-shadow-color", theme.levelsCardShadowColor);
+    field("levels-card-label-color", theme.levelsCardLabelColor);
+    field("levels-card-text-color", theme.levelsCardTextColor);
+    field("levels-card-accent-color", theme.levelsCardAccentColor);
+    field("levels-card-hole-color", theme.levelsCardHoleColor);
+    field("levels-play-text-color", theme.levelsPlayTextColor);
+    field("levels-preview-empty-color", theme.levelsPreviewEmptyColor);
+    field("levels-preview-fade", theme.levelsPreviewFade);
+    field("levels-preview-width", theme.levelsPreviewWidth);
 
     field("pattern-sprite", theme.patternSprite);
     field("pattern-color", theme.patternColor);

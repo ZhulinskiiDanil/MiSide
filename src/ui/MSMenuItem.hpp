@@ -28,6 +28,10 @@ public:
     GLubyte plateLitOpacity = 0;
     cocos2d::ccColor3B platePressed;
     GLubyte platePressedOpacity = 0;
+    // Chosen (a list's current entry), at rest; lit and pressed it's as any
+    cocos2d::ccColor3B plateChosen;
+    GLubyte plateChosenOpacity = 0;
+    cocos2d::ccColor3B textChosen;
     cocos2d::ccColor3B text;
     cocos2d::ccColor3B textLit;
     cocos2d::ccColor3B textPressed;
@@ -35,6 +39,8 @@ public:
     float textOffset = 0;
     float textPadding = 0;
     bool textShadow = true;
+    // A text wider than the row (padding on both sides) is made smaller to fit
+    bool fitText = false;
     // The soft glow around the lit row, and the shine through its letters
     bool glow = true;
     bool shine = true;
@@ -45,6 +51,8 @@ public:
     static Style confirm();
     // The pause menu's rows
     static Style pause();
+    // The official levels' list
+    static Style levels();
   };
 
   // width: the row's width
@@ -55,6 +63,8 @@ public:
   // Hover and the keyboard's choice look the same. shine: one light through the letters as it lights up
   void setHighlighted(bool highlighted, bool shine = true);
   bool isHighlighted() const;
+  // A list's current entry: its own look at rest
+  void setChosen(bool chosen);
   // Its vanilla button can't be pressed now
   bool isUnavailable() const;
   // Fades in when the menu opens
@@ -128,6 +138,7 @@ protected:
   float m_visibilityDuration = 0;
   float m_visibilityDelay = 0;
   bool m_highlighted = false;
+  bool m_chosen = false;
   bool m_pressed = false;
   bool m_unavailable = false;
   bool m_dodging = false;

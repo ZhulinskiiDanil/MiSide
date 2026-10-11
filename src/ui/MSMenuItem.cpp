@@ -38,6 +38,9 @@ MSMenuItem::Style MSMenuItem::Style::row()
   style.text = theme.itemColor;
   style.textLit = theme.itemHoverColor;
   style.textPressed = theme.itemPressedColor;
+  style.plateChosen = style.plateLit;
+  style.plateChosenOpacity = style.plateLitOpacity;
+  style.textChosen = style.textLit;
   style.textScale = theme.itemScale;
   style.textOffset = theme.itemTextOffset;
   style.textPadding = theme.textPadding;
@@ -76,6 +79,9 @@ MSMenuItem::Style MSMenuItem::Style::pause()
   style.text = theme.pauseTextColor;
   style.textLit = theme.pauseTextHoverColor;
   style.textPressed = theme.pauseTextHoverColor;
+  style.plateChosen = style.plateLit;
+  style.plateChosenOpacity = style.plateLitOpacity;
+  style.textChosen = style.textLit;
   style.textScale = theme.pauseTextScale;
   style.textOffset = theme.pauseTextOffset;
   style.textPadding = theme.pauseTextPadding;
@@ -83,6 +89,27 @@ MSMenuItem::Style MSMenuItem::Style::pause()
   // MiSide's pause rows only get lighter
   style.glow = false;
   style.shine = theme.pauseShineEnabled;
+  return style;
+}
+
+MSMenuItem::Style MSMenuItem::Style::levels()
+{
+  auto const& theme = Theme::get();
+  auto style = pause();
+  style.height = theme.levelsRowHeight;
+  style.plate = theme.levelsRowColor;
+  style.plateOpacity = theme.levelsRowOpacity;
+  style.plateLit = theme.levelsRowHoverColor;
+  style.plateLitOpacity = 255;
+  style.platePressed = theme.levelsRowHoverColor;
+  style.platePressedOpacity = 255;
+  style.plateChosen = theme.levelsRowChosenColor;
+  style.plateChosenOpacity = 255;
+  style.text = theme.levelsTextColor;
+  style.textLit = theme.levelsTextChosenColor;
+  style.textPressed = theme.levelsTextChosenColor;
+  style.textChosen = theme.levelsTextChosenColor;
+  style.fitText = true;
   return style;
 }
 
@@ -155,9 +182,22 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   auto label = ms::createText(text, style.textScale, style.text, style.font, shadow);
   if (!label.node)
     return false;
+  // Too long for the row: made again smaller, the shine with it
+  if (style.fitText)
+  {
+    auto room = width - m_textX - style.textPadding;
+    if (auto wide = label.node->getContentWidth(); wide > room && room > 0)
+    {
+      m_style.textScale = style.textScale * room / wide;
+      m_style.textOffset = style.textOffset * room / wide;
+      label = ms::createText(text, m_style.textScale, style.text, style.font, shadow);
+      if (!label.node)
+        return false;
+    }
+  }
   m_text = label.node;
   m_label = label.label;
-  m_text->setPosition({m_textX, size.height / 2 + style.textOffset});
+  m_text->setPosition({m_textX, size.height / 2 + m_style.textOffset});
   m_content->addChild(m_text);
   this->addShine(text);
 
@@ -176,6 +216,14 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
 CCMenuItem* MSMenuItem::getTarget() const { return m_target; }
 
 bool MSMenuItem::isHighlighted() const { return m_highlighted; }
+
+void MSMenuItem::setChosen(bool chosen)
+{
+  if (m_chosen == chosen)
+    return;
+  m_chosen = chosen;
+  this->refresh(true);
+}
 
 // With no vanilla button it's always there: it only calls back
 bool MSMenuItem::isUnavailable() const { return m_target && !m_target->isEnabled(); }
@@ -350,6 +398,12 @@ MSMenuItem::Look MSMenuItem::target() const
     text = m_style.textLit;
     textOpacity = theme.itemHoverOpacity;
     lit = true;
+  }
+  else if (m_chosen)
+  {
+    row = m_style.plateChosen;
+    rowOpacity = m_style.plateChosenOpacity;
+    text = m_style.textChosen;
   }
   Look look;
   look.plate = row;

@@ -333,6 +333,54 @@ struct Theme
   // The list's states (the confirmation, More) fading into each other
   float pauseDuration = 0;
 
+  // ! --- The official levels --- !
+  // MiSide's save loading screen: "CHOOSE A LEVEL" over a scrolling list of rows on the left, BACK under it, a big
+  // white-pink floppy disk on the right with the level's picture and numbers. Points of the 569×320 screen, measured
+  // on MiSide's (2560×1440)
+  bool levelsEnabled = false;
+  cocos2d::ccColor3B levelsBackdropTop;
+  cocos2d::ccColor3B levelsBackdropBottom;
+  float levelsTitleLeft = 0;
+  float levelsTitleCapTop = 0;
+  float levelsRowLeft = 0;
+  float levelsRowWidth = 0;
+  float levelsRowHeight = 0;
+  float levelsRowPitch = 0;
+  float levelsFirstRowTop = 0;
+  float levelsVisibleRows = 0;
+  cocos2d::ccColor3B levelsRowColor;
+  GLubyte levelsRowOpacity = 0;
+  cocos2d::ccColor3B levelsRowChosenColor;
+  cocos2d::ccColor3B levelsRowHoverColor;
+  cocos2d::ccColor3B levelsTextColor;
+  cocos2d::ccColor3B levelsTextChosenColor;
+  // The scroll bar right of the list
+  float levelsScrollLeft = 0;
+  float levelsScrollWidth = 0;
+  cocos2d::ccColor3B levelsScrollTrackColor;
+  cocos2d::ccColor3B levelsScrollThumbColor;
+  // BACK and MORE under the list
+  float levelsBackTop = 0;
+  float levelsBackWidth = 0;
+  float levelsMoreWidth = 0;
+  // The floppy disk
+  float levelsCardLeft = 0;
+  float levelsCardRight = 0;
+  float levelsCardTop = 0;
+  float levelsCardBottom = 0;
+  cocos2d::ccColor3B levelsCardColor;
+  cocos2d::ccColor3B levelsCardFrameColor;
+  cocos2d::ccColor3B levelsCardShadowColor;
+  cocos2d::ccColor3B levelsCardLabelColor;
+  cocos2d::ccColor3B levelsCardTextColor;
+  cocos2d::ccColor3B levelsCardAccentColor;
+  cocos2d::ccColor3B levelsCardHoleColor;
+  cocos2d::ccColor3B levelsPlayTextColor;
+  cocos2d::ccColor3B levelsPreviewEmptyColor;
+  float levelsPreviewFade = 0;
+  // The level's picture: a frame of it saved the first time it's played, at this width in pixels
+  float levelsPreviewWidth = 0;
+
   // ! --- Decoration over the room --- !
   // A faint repeating pattern of hearts, stars and flowers (a white tile, tinted)
   std::string patternSprite;

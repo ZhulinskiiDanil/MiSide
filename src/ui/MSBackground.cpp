@@ -20,6 +20,42 @@ MSBackground* MSBackground::create(float strength)
   return nullptr;
 }
 
+MSBackground* MSBackground::createPlain(ccColor3B top, ccColor3B bottom)
+{
+  auto background = new MSBackground();
+  if (background->initPlain(top, bottom))
+  {
+    background->autorelease();
+    return background;
+  }
+  delete background;
+  return nullptr;
+}
+
+bool MSBackground::initPlain(ccColor3B top, ccColor3B bottom)
+{
+  if (!CCNode::init())
+    return false;
+  auto const& theme = Theme::get();
+  auto winSize = CCDirector::get()->getWinSize();
+  this->setContentSize(winSize);
+  auto gradient = CCLayerGradient::create(Theme::withAlpha(top, 255), Theme::withAlpha(bottom, 255));
+  gradient->setContentSize(winSize);
+  this->addChild(gradient);
+  this->addPattern();
+  if (auto particles = MSParticles::create())
+    this->addChild(particles);
+  if (theme.vignetteOpacity > 0 && ms::resourceExists(theme.vignetteSprite))
+  {
+    if (auto vignette = ms::createStretched(theme.vignetteSprite, winSize, theme.vignetteColor, theme.vignetteOpacity))
+    {
+      vignette->setAnchorPoint({0, 0});
+      this->addChild(vignette);
+    }
+  }
+  return true;
+}
+
 bool MSBackground::init(float strength)
 {
   if (!CCNode::init())

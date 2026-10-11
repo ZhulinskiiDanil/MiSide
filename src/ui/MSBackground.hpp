@@ -12,6 +12,8 @@ class MSBackground : public cocos2d::CCNode
 public:
   // strength: the parallax-strength setting, 0 keeps the layers still
   static MSBackground* create(float strength);
+  // No room: a gradient between these, then the same pattern, motes and dark edges
+  static MSBackground* createPlain(cocos2d::ccColor3B top, cocos2d::ccColor3B bottom);
 
   void update(float dt) override;
 
@@ -24,6 +26,7 @@ protected:
   };
 
   bool init(float strength);
+  bool initPlain(cocos2d::ccColor3B top, cocos2d::ccColor3B bottom);
   void addLayers();
   void addOverlays();
   void addCharacter();
