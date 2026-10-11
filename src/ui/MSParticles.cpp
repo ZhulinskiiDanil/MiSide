@@ -72,9 +72,16 @@ void MSParticles::respawn(Mote& mote, bool anyAge)
   mote.phase = TAU * unit(m_random);
   mote.rise = theme.particleSpeed * (0.6f + 0.8f * unit(m_random));
   auto size = theme.particleSizeMin + (theme.particleSizeMax - theme.particleSizeMin) * unit(m_random);
+  // A streak `particle-stretch` times longer than wide, as big as a round mote of `size` (its area kept), leaning
+  // `particle-angle` degrees (cocos turns clockwise)
   auto own = mote.sprite->getContentSize();
-  if (own.width > 0)
-    mote.sprite->setScale(size / own.width);
+  if (own.width > 0 && own.height > 0)
+  {
+    auto stretch = std::sqrt(std::max(theme.particleStretch, 1.f));
+    mote.sprite->setScaleX(size * stretch / own.width);
+    mote.sprite->setScaleY(size / stretch / own.height);
+  }
+  mote.sprite->setRotation(-theme.particleAngle);
 }
 
 void MSParticles::update(float dt)

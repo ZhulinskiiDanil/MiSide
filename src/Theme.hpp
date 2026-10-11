@@ -400,6 +400,10 @@ struct Theme
   float particleSizeMax = 0;
   float particleSpeed = 0;
   float particleLife = 0;
+  // Drawn as streaks, as MiSide's: this many times longer than wide, leaning by this many degrees (negative: from the
+  // top left down to the bottom right)
+  float particleStretch = 0;
+  float particleAngle = 0;
 
   // ! --- The background --- !
   // The point of the art kept on screen when it's cropped to cover it, as shares of its width and height
