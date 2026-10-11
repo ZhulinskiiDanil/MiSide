@@ -20,42 +20,6 @@ MSBackground* MSBackground::create(float strength)
   return nullptr;
 }
 
-MSBackground* MSBackground::createPlain(ccColor3B top, ccColor3B bottom)
-{
-  auto background = new MSBackground();
-  if (background->initPlain(top, bottom))
-  {
-    background->autorelease();
-    return background;
-  }
-  delete background;
-  return nullptr;
-}
-
-bool MSBackground::initPlain(ccColor3B top, ccColor3B bottom)
-{
-  if (!CCNode::init())
-    return false;
-  auto const& theme = Theme::get();
-  auto winSize = CCDirector::get()->getWinSize();
-  this->setContentSize(winSize);
-  auto gradient = CCLayerGradient::create(Theme::withAlpha(top, 255), Theme::withAlpha(bottom, 255));
-  gradient->setContentSize(winSize);
-  this->addChild(gradient);
-  this->addPattern();
-  if (auto particles = MSParticles::create())
-    this->addChild(particles);
-  if (theme.vignetteOpacity > 0 && ms::resourceExists(theme.vignetteSprite))
-  {
-    if (auto vignette = ms::createStretched(theme.vignetteSprite, winSize, theme.vignetteColor, theme.vignetteOpacity))
-    {
-      vignette->setAnchorPoint({0, 0});
-      this->addChild(vignette);
-    }
-  }
-  return true;
-}
-
 bool MSBackground::init(float strength)
 {
   if (!CCNode::init())
@@ -64,12 +28,37 @@ bool MSBackground::init(float strength)
   m_strength = std::max(strength, 0.f);
   this->setContentSize(CCDirector::get()->getWinSize());
 
-  this->addLayers();
+  if (theme.layers.empty())
+    this->addBackdrop();
+  else
+    this->addLayers();
   this->addOverlays();
 
   if (m_strength > 0 && theme.parallaxRange > 0)
     this->scheduleUpdate();
   return true;
+}
+
+float MSBackground::margin(float depth) const
+{
+  return Theme::get().parallaxRange * m_strength * std::abs(depth);
+}
+
+void MSBackground::addBackdrop()
+{
+  auto const& theme = Theme::get();
+  auto winSize = CCDirector::get()->getWinSize();
+  // Two gradients across, meeting at the middle color
+  auto split = winSize.width * std::clamp(theme.backdropMiddleX, 0.f, 1.f);
+  auto left = CCLayerGradient::create(Theme::withAlpha(theme.backdropLeft, 255),
+                                      Theme::withAlpha(theme.backdropMiddle, 255), {1, 0});
+  left->setContentSize({split, winSize.height});
+  this->addChild(left);
+  auto right = CCLayerGradient::create(Theme::withAlpha(theme.backdropMiddle, 255),
+                                       Theme::withAlpha(theme.backdropRight, 255), {1, 0});
+  right->setContentSize({winSize.width - split, winSize.height});
+  right->setPosition({split, 0});
+  this->addChild(right);
 }
 
 void MSBackground::addLayers()
@@ -81,7 +70,7 @@ void MSBackground::addLayers()
   auto deepest = 0.f;
   for (auto const& spec : theme.layers)
     deepest = std::max(deepest, std::abs(spec.depth));
-  auto margin = theme.parallaxRange * m_strength * deepest;
+  auto margin = this->margin(deepest);
   CCSize cover{winSize.width + margin * 2, winSize.height + margin * 2};
   // The art's focus point sits on the screen's: any crop stays inside the art
   auto focusX = std::clamp(theme.backgroundFocusX, 0.f, 1.f);
@@ -115,28 +104,26 @@ void MSBackground::addLayers()
     }
     if (!node)
     {
-      log::warn("Background layer {} not found{}", spec.sprite, i == 0 ? ", the theme's gradient instead" : "");
-      if (i > 0)
-        continue;
-      auto gradient = CCLayerGradient::create(Theme::withAlpha(theme.backdropTop, 255),
-                                              Theme::withAlpha(theme.backdropBottom, 255));
-      gradient->setContentSize(cover);
-      gradient->ignoreAnchorPointForPosition(false);
-      gradient->setAnchorPoint({focusX, focusY});
-      node = gradient;
+      log::warn("Background layer {} not found, left out", spec.sprite);
+      continue;
     }
     node->setPosition(home);
     this->addChild(node);
     m_layers.push_back({node, home, spec.depth});
   }
 
-  // Nothing at all: the gradient alone
+  // None of them there: the gradient
   if (m_layers.empty())
   {
-    auto gradient = CCLayerGradient::create(Theme::withAlpha(theme.backdropTop, 255),
-                                            Theme::withAlpha(theme.backdropBottom, 255));
-    gradient->setContentSize(winSize);
-    this->addChild(gradient);
+    this->addBackdrop();
+    return;
+  }
+  // Over the whole picture: darker
+  if (theme.darkenOpacity > 0)
+  {
+    auto darken = CCLayerColor::create(Theme::withAlpha(theme.darkenColor, theme.darkenOpacity));
+    darken->setContentSize(winSize);
+    this->addChild(darken);
   }
 }
 
@@ -145,17 +132,9 @@ void MSBackground::addOverlays()
   auto const& theme = Theme::get();
   auto winSize = CCDirector::get()->getWinSize();
 
-  // Over the whole scene: darker
-  if (theme.darkenOpacity > 0)
-  {
-    auto darken = CCLayerColor::create(Theme::withAlpha(theme.darkenColor, theme.darkenOpacity));
-    darken->setContentSize(winSize);
-    this->addChild(darken);
-  }
-
   this->addPattern();
 
-  // A soft crimson light on the right: a color, not a brightness
+  // A soft purple light behind Mita: a color, not a brightness
   if (theme.glowOpacity > 0 && theme.glowWidth > 0 && theme.glowHeight > 0)
   {
     if (ms::resourceExists(theme.glowSprite))
@@ -172,7 +151,7 @@ void MSBackground::addOverlays()
       log::warn("Glow sprite {} not found, no glow", theme.glowSprite);
   }
 
-  // Slow pink motes, over the room and under the menu
+  // The pink motes, under the menu
   if (auto particles = MSParticles::create())
     this->addChild(particles);
 
@@ -217,15 +196,21 @@ void MSBackground::addPattern()
   }
   ccTexParams params{GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT};
   texture->setTexParameters(&params);
-  // The texture repeats over the whole screen; the sprite is scaled so one tile is `pattern-tile` points
+  // The texture repeats over the whole screen and as far past its edges as it moves; the sprite is scaled so one
+  // tile is `pattern-tile` points
   auto winSize = CCDirector::get()->getWinSize();
+  auto margin = std::ceil(this->margin(theme.patternDepth));
   auto scale = theme.patternTile / tile.width;
-  sprite->setTextureRect({0, 0, winSize.width / scale, winSize.height / scale});
+  sprite->setTextureRect({0, 0, (winSize.width + margin * 2) / scale, (winSize.height + margin * 2) / scale});
   sprite->setScale(scale);
   sprite->setAnchorPoint({0, 0});
   sprite->setColor(theme.patternColor);
   sprite->setOpacity(theme.patternOpacity);
+  CCPoint home{-margin, -margin};
+  sprite->setPosition(home);
   this->addChild(sprite);
+  if (theme.patternDepth != 0)
+    m_layers.push_back({sprite, home, theme.patternDepth});
 }
 
 void MSBackground::addCharacter()

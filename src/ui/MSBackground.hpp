@@ -4,16 +4,16 @@
 
 #include <vector>
 
-// The scene behind the menu, back to front: the theme's layers (each tinted, following the mouse by its depth),
-// a darkening over all of them, a soft glow on the right, the character if the theme has one, and a shade on the
-// left under the menu. A missing layer is skipped; a missing back layer becomes the theme's gradient
+// The scene behind the menu and its screens, back to front, as MiSide's: a dark gradient across (nearly black on
+// the left, burgundy to the right), a faint pattern of thin outlined hearts, flowers and stars, a soft purple glow
+// behind Mita, the pink motes, a shade on the left under the menu and dark edges. A theme may put pictures behind
+// it all instead of the gradient (`layers`, each tinted, following the mouse by its depth, darkened together) and a
+// still character. The pattern and the layers follow the mouse
 class MSBackground : public cocos2d::CCNode
 {
 public:
-  // strength: the parallax-strength setting, 0 keeps the layers still
+  // strength: the parallax-strength setting, 0 keeps everything still
   static MSBackground* create(float strength);
-  // No room: a gradient between these, then the same pattern, motes and dark edges
-  static MSBackground* createPlain(cocos2d::ccColor3B top, cocos2d::ccColor3B bottom);
 
   void update(float dt) override;
 
@@ -26,12 +26,15 @@ protected:
   };
 
   bool init(float strength);
-  bool initPlain(cocos2d::ccColor3B top, cocos2d::ccColor3B bottom);
+  // The theme's pictures, darkened; none: the backdrop gradient
   void addLayers();
+  void addBackdrop();
   void addOverlays();
   void addCharacter();
-  // The faint repeating pattern over the room
+  // The faint repeating pattern
   void addPattern();
+  // How far the layer deepest in moves, either way: what's laid under the screen's edges
+  float margin(float depth) const;
 
   std::vector<Layer> m_layers;
   float m_strength = 0;

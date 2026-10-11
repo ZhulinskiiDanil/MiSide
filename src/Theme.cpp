@@ -13,8 +13,10 @@ namespace
     Theme theme;
 
     // ! --- Colors --- !
-    theme.backdropTop = ccc3(0x2a, 0x18, 0x30);
-    theme.backdropBottom = ccc3(0x12, 0x0a, 0x16);
+    // MiSide's: nearly black on the left, a deep burgundy towards the right
+    theme.backdropLeft = ccc3(0x0a, 0x03, 0x08);
+    theme.backdropMiddle = ccc3(0x26, 0x0a, 0x1c);
+    theme.backdropRight = ccc3(0x3a, 0x0e, 0x2c);
     theme.rowColor = ccc3(0x6e, 0x3c, 0x78);
     theme.rowHoverColor = ccc3(0xc2, 0x5a, 0xa6);
     theme.rowPressedColor = ccc3(0xd9, 0x47, 0x9f);
@@ -29,7 +31,8 @@ namespace
     theme.backgroundTint = ccc3(0xa0, 0x62, 0x8f);
     theme.darkenColor = ccc3(0x15, 0x05, 0x1a);
     theme.leftShadeColor = ccc3(0x08, 0x05, 0x0d);
-    theme.glowColor = ccc3(0xb0, 0x12, 0x7a);
+    // A soft purple light behind Mita
+    theme.glowColor = ccc3(0xa0, 0x1a, 0x80);
     theme.fadeColor = ccc3(0x09, 0x04, 0x0d);
     theme.trayColor = ccc3(0x1a, 0x10, 0x20);
     theme.slotColor = ccc3(0xff, 0xff, 0xff);
@@ -46,7 +49,7 @@ namespace
     theme.shadowOpacity = 110;
     theme.darkenOpacity = 115;
     theme.leftShadeOpacity = 190;
-    theme.glowOpacity = 100;
+    theme.glowOpacity = 105;
     theme.characterOpacity = 255;
     theme.fadeOpacity = 200;
     theme.trayOpacity = 80;
@@ -72,12 +75,8 @@ namespace
     theme.shadowOffset = 0.6f;
 
     // ! --- Sprites and sounds --- !
-    theme.layers = {
-      {"bg-far.png"_spr, 0.2f, false, 255},
-      {"bg-mid.png"_spr, 0.5f, false, 220},
-      {"bg-near.png"_spr, 1.f, false, 110},
-      {"bg-light.png"_spr, 0.f, true, 35},
-    };
+    // No pictures: the backdrop gradient with the pattern, as MiSide's menus
+    theme.layers = {};
     theme.rowSprite = "row-plate.png"_spr;
     theme.logoSprite = "miside-like-gd-logo.png"_spr;
     theme.glowSprite = "glow-soft.png"_spr;
@@ -322,8 +321,6 @@ namespace
     // Measured on MiSide's load screen: title capitals 8.7 pt, rows 136×14.9 pt every 16.2 from 275.8, 13 in view,
     // the scroll bar at 202, BACK at 56, the floppy from 252 to 461 and 30 to 272
     theme.levelsEnabled = true;
-    theme.levelsBackdropTop = ccc3(0x52, 0x0c, 0x49);
-    theme.levelsBackdropBottom = ccc3(0x26, 0x05, 0x22);
     theme.levelsTitleLeft = 59.8f;
     theme.levelsTitleCapTop = 292.4f;
     theme.levelsRowLeft = 62;
@@ -361,11 +358,13 @@ namespace
     theme.levelsPreviewFade = 0.25f;
     theme.levelsPreviewWidth = 640;
 
-    // ! --- Decoration over the room --- !
+    // ! --- Decoration over the backdrop --- !
+    // Faint: a pink line on the dark, never a row of bright marks
     theme.patternSprite = "pattern-tile.png"_spr;
-    theme.patternColor = ccc3(0xff, 0xb8, 0xdc);
-    theme.patternOpacity = 16;
-    theme.patternTile = 64;
+    theme.patternColor = ccc3(0xe0, 0x50, 0x9e);
+    theme.patternOpacity = 38;
+    theme.patternTile = 256;
+    theme.patternDepth = 0.3f;
     theme.vignetteSprite = "vignette-soft.png"_spr;
     theme.vignetteColor = ccc3(0x12, 0x03, 0x0e);
     theme.vignetteOpacity = 180;
@@ -386,13 +385,14 @@ namespace
     theme.particleFlockRadius = 60;
 
     // ! --- The background --- !
+    theme.backdropMiddleX = 0.45f;
     theme.backgroundFocusX = 0.5f;
     theme.backgroundFocusY = 0.5f;
     theme.leftShadeWidth = 260;
-    theme.glowX = 0.84f;
-    theme.glowY = 0.55f;
-    theme.glowWidth = 340;
-    theme.glowHeight = 300;
+    theme.glowX = 0.72f;
+    theme.glowY = 0.5f;
+    theme.glowWidth = 460;
+    theme.glowHeight = 420;
     theme.characterX = 0.71f;
     theme.characterHeight = 1.f;
     theme.characterDepth = 0.6f;
@@ -449,8 +449,9 @@ namespace
   template <class F>
   void fields(Theme& theme, F&& field)
   {
-    field("backdrop-top", theme.backdropTop);
-    field("backdrop-bottom", theme.backdropBottom);
+    field("backdrop-left", theme.backdropLeft);
+    field("backdrop-middle", theme.backdropMiddle);
+    field("backdrop-right", theme.backdropRight);
     field("row-color", theme.rowColor);
     field("row-hover-color", theme.rowHoverColor);
     field("row-pressed-color", theme.rowPressedColor);
@@ -709,8 +710,6 @@ namespace
     field("loading-tip-color", theme.loadingTipColor);
 
     field("levels-enabled", theme.levelsEnabled);
-    field("levels-backdrop-top", theme.levelsBackdropTop);
-    field("levels-backdrop-bottom", theme.levelsBackdropBottom);
     field("levels-title-left", theme.levelsTitleLeft);
     field("levels-title-cap-top", theme.levelsTitleCapTop);
     field("levels-row-left", theme.levelsRowLeft);
@@ -752,6 +751,7 @@ namespace
     field("pattern-color", theme.patternColor);
     field("pattern-opacity", theme.patternOpacity);
     field("pattern-tile", theme.patternTile);
+    field("pattern-depth", theme.patternDepth);
     field("vignette-sprite", theme.vignetteSprite);
     field("vignette-color", theme.vignetteColor);
     field("vignette-opacity", theme.vignetteOpacity);
@@ -768,6 +768,7 @@ namespace
     field("particle-speed", theme.particleSpeed);
     field("particle-life", theme.particleLife);
 
+    field("backdrop-middle-x", theme.backdropMiddleX);
     field("background-focus-x", theme.backgroundFocusX);
     field("background-focus-y", theme.backgroundFocusY);
     field("left-shade-width", theme.leftShadeWidth);

@@ -24,8 +24,11 @@ struct Theme
   };
 
   // ! --- Colors --- !
-  cocos2d::ccColor3B backdropTop;
-  cocos2d::ccColor3B backdropBottom;
+  // The background with no layers: a gradient across, from the left edge through the middle (at `backdrop-middle-x`
+  // of the width) to the right edge
+  cocos2d::ccColor3B backdropLeft;
+  cocos2d::ccColor3B backdropMiddle;
+  cocos2d::ccColor3B backdropRight;
   cocos2d::ccColor3B rowColor;
   cocos2d::ccColor3B rowHoverColor;
   cocos2d::ccColor3B rowPressedColor;
@@ -55,7 +58,7 @@ struct Theme
   GLubyte itemHoverOpacity = 0;
   // The nearest copy of the shadow; the farther ones are fainter
   GLubyte shadowOpacity = 0;
-  // Over the background, under the menu
+  // Over the background's layers, under the menu (none without layers)
   GLubyte darkenOpacity = 0;
   // At the left edge, down to nothing at `left-shade-width`
   GLubyte leftShadeOpacity = 0;
@@ -87,7 +90,7 @@ struct Theme
   float shadowOffset = 0;
 
   // ! --- Sprites and sounds --- !
-  // Back to front
+  // Pictures behind everything, back to front. None: the backdrop gradient
   std::vector<Layer> layers;
   // A 9-slice plate under every item
   std::string rowSprite;
@@ -373,8 +376,6 @@ struct Theme
   // white-pink floppy disk on the right with the level's picture and numbers. Points of the 569×320 screen, measured
   // on MiSide's (2560×1440)
   bool levelsEnabled = false;
-  cocos2d::ccColor3B levelsBackdropTop;
-  cocos2d::ccColor3B levelsBackdropBottom;
   float levelsTitleLeft = 0;
   float levelsTitleCapTop = 0;
   float levelsRowLeft = 0;
@@ -416,13 +417,14 @@ struct Theme
   // The level's picture: a frame of it saved the first time it's played, at this width in pixels
   float levelsPreviewWidth = 0;
 
-  // ! --- Decoration over the room --- !
-  // A faint repeating pattern of hearts, stars and flowers (a white tile, tinted)
+  // ! --- Decoration over the backdrop --- !
+  // A faint repeating pattern of thin outlined hearts, flowers and stars (a white tile, tinted)
   std::string patternSprite;
   cocos2d::ccColor3B patternColor;
   GLubyte patternOpacity = 0;
-  // One tile's size in points
+  // One tile's size in points, and how far it follows the mouse (as a layer's depth)
   float patternTile = 0;
+  float patternDepth = 0;
   // Dark edges
   std::string vignetteSprite;
   cocos2d::ccColor3B vignetteColor;
@@ -446,6 +448,7 @@ struct Theme
   float particleFlockRadius = 0;
 
   // ! --- The background --- !
+  float backdropMiddleX = 0;
   // The point of the art kept on screen when it's cropped to cover it, as shares of its width and height
   float backgroundFocusX = 0;
   float backgroundFocusY = 0;

@@ -144,7 +144,8 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
     if (m_scrollLayer)
       m_scrollLayer->setTouchEnabled(false);
 
-    if (auto background = MSBackground::createPlain(theme.levelsBackdropTop, theme.levelsBackdropBottom))
+    auto strength = static_cast<float>(Mod::get()->getSettingValue<double>("parallax-strength"));
+    if (auto background = MSBackground::create(strength))
     {
       this->addChild(background, BACKGROUND_Z);
       f.m_background = background;
