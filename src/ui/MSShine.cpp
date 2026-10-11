@@ -74,7 +74,7 @@ void main()
 }
 )";
 
-  // The glow: the blurred letters (already reaching past them) times the band, in the glow color. Not multiplied
+  // The glow: the blurred letters (already reaching past them) times the wave, in the glow color. Not multiplied
   // by the letters' own alpha, or it would be cut back to them
   constexpr char const* GLOW_FRAGMENT = R"(
 uniform vec3 u_glowColor;
@@ -217,7 +217,8 @@ MSShine::Pair MSShine::create(std::string const& text, float scale, std::string 
 
   // Room around the label for the glow, in whole points; rendered once at the label's size (the content scale
   // factor's pixels: as sharp as the label itself)
-  auto pad = std::ceil(std::max(theme.shineGlowRadius, 0.f) * 1.5f) + 1;
+  auto reach = std::max({theme.shineGlowRadius, theme.shineGlowInnerRadius, 0.f});
+  auto pad = std::ceil(reach * 1.5f) + 1;
   auto width = static_cast<int>(std::ceil(size.width + pad * 2));
   auto height = static_cast<int>(std::ceil(size.height + pad * 2));
   auto render = CCRenderTexture::create(width, height);
@@ -242,11 +243,24 @@ MSShine::Pair MSShine::create(std::string const& text, float scale, std::string 
     alpha[i] = data[i * 4 + 3] / 255.f;
   image->release();
 
-  // The glow's blur in this texture quality's pixels: about `shine-glow-radius` points on the screen
+  // The glow, like a bloom: a tight bright halo hugging the letters and a wide soft one, each blurred in this
+  // texture quality's pixels (about its radius in points on the screen), brought back up by its own gain (the blur
+  // spreads the letters thin) and laid together as light is (screen), so it's white by them and fades far out
   auto pixelsPerPoint = pixelsWide / static_cast<float>(width);
-  auto radius = static_cast<int>(std::round(std::max(theme.shineGlowRadius, 0.f) * pixelsPerPoint / 2 - 0.5f));
+  auto halo = [&](float radiusPoints, float gain)
+  {
+    auto radius = static_cast<int>(std::round(std::max(radiusPoints, 0.f) * pixelsPerPoint / 2 - 0.5f));
+    auto soft = blur(alpha, pixelsWide, pixelsHigh, std::max(radius, 0));
+    for (auto& value : soft)
+      value = std::clamp(value * std::max(gain, 0.f), 0.f, 1.f);
+    return soft;
+  };
+  auto glow = halo(theme.shineGlowInnerRadius, theme.shineGlowInnerIntensity);
+  auto wide = halo(theme.shineGlowRadius, theme.shineGlowIntensity);
+  for (size_t i = 0; i < glow.size(); i++)
+    glow[i] = 1 - (1 - glow[i]) * (1 - wide[i]);
   auto sharp = whiteTexture(alpha, pixelsWide, pixelsHigh);
-  auto soft = whiteTexture(blur(alpha, pixelsWide, pixelsHigh, std::max(radius, 0)), pixelsWide, pixelsHigh);
+  auto soft = whiteTexture(glow, pixelsWide, pixelsHigh);
   if (!sharp || !soft)
     return {};
 
@@ -284,7 +298,17 @@ MSShine::Pair MSShine::create(std::string const& text, float scale, std::string 
 
 float MSShine::margin() const
 {
-  return m_labelWidth > 0 ? std::max(Theme::get().shineGlowRadius, 0.f) / m_labelWidth : 0.f;
+  if (m_labelWidth <= 0)
+    return 0;
+  auto const& theme = Theme::get();
+  // The wide halo's reach, and the glow's own wave being wider than the letters'
+  auto reach = std::max({theme.shineGlowRadius, theme.shineGlowInnerRadius, 0.f}) / m_labelWidth;
+  return reach + (glowSpread() - 1) * std::max(theme.shineBandWidth, 0.f) / 2;
+}
+
+float MSShine::glowSpread()
+{
+  return std::max(Theme::get().shineGlowSpread, 1.f);
 }
 
 void MSShine::setPass(float center, float strength)
@@ -308,9 +332,12 @@ void MSShine::draw()
                                     std::max(texture->getMaxT(), 0.0001f));
   program->setUniformLocationWith4f(shine->frame, m_offset.x, m_offset.y, m_span.width, m_span.height);
   program->setUniformLocationWith1f(shine->center, m_center);
-  program->setUniformLocationWith1f(shine->width, theme.shineBandWidth);
+  // The glow's wave: the same bright middle, its fall longer, so the halo rounds off instead of ending in a
+  // straight edge where the letters' wave does
+  auto spread = m_layer == Layer::Core ? 1.f : glowSpread();
+  program->setUniformLocationWith1f(shine->width, theme.shineBandWidth * spread);
   program->setUniformLocationWith1f(shine->slant, theme.shineSlant);
-  program->setUniformLocationWith1f(shine->plateau, std::clamp(theme.shineCore, 0.f, 0.95f));
+  program->setUniformLocationWith1f(shine->plateau, std::clamp(theme.shineCore, 0.f, 0.95f) / spread);
   auto rgb = [](ccColor3B color) { return std::array<float, 3>{color.r / 255.f, color.g / 255.f, color.b / 255.f}; };
   if (m_layer == Layer::Core)
   {
@@ -322,8 +349,8 @@ void MSShine::draw()
   }
   else
   {
-    // The pass' strength (it fades when the mouse leaves) times the glow's own
-    program->setUniformLocationWith1f(shine->strength, m_strength * theme.shineGlowIntensity);
+    // The pass' strength (it fades when the mouse leaves); the halos' gains are in the texture
+    program->setUniformLocationWith1f(shine->strength, m_strength);
     auto glow = rgb(theme.shineGlowColor);
     program->setUniformLocationWith3f(shine->glowColor, glow[0], glow[1], glow[2]);
   }

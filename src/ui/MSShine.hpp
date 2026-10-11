@@ -8,9 +8,10 @@
 // label (with room around it, and without its shadow):
 // - the letters, over the label: near white in the wave's middle, back to their own color at its soft edges,
 //   their outlines sharp;
-// - the glow, under the label: the letters' alpha blurred wide, times the wave, in a pale pink, added to what's
-//   under it. It's never multiplied by the letters' own alpha again, so it reaches past them and the halos of
-//   neighbouring letters run together, but only near the wave.
+// - the glow, under the label and its shadow: the letters' alpha blurred twice, tight and wide (a bloom), times a
+//   wider wave, white, added to what's under it: white by the letters, fading far out. It's never multiplied by
+//   the letters' own alpha again, so it reaches past them and the halos of neighbouring letters run together, but
+//   only near the wave.
 // The band is placed in the whole label's width (0: its left edge, 1: its right edge), never in the font atlas'
 // per-letter coordinates. The shaders are the menu's own; each layer sets its pass right before it draws
 class MSShine : public cocos2d::CCSprite
@@ -42,6 +43,9 @@ public:
   void draw() override;
 
 protected:
+  // How much wider the glow's wave is than the letters'
+  static float glowSpread();
+
   Layer m_layer = Layer::Core;
   // The label inside the texture: its offset and the texture's size, in label widths and heights
   cocos2d::CCPoint m_offset;

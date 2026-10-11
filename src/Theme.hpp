@@ -121,9 +121,15 @@ struct Theme
   float shineFadeOut = 0;
   // 0..1: holds the wave at that point of the pass while an item is lit, to compare; -1: it moves
   float shineFreeze = 0;
-  // A soft pink glow around the letters the band is on, under the label: about this many points out from them
+  // A bloom around the letters the wave is on, under the label: a wide soft halo about this many points out from
+  // them, and a tight bright one hugging them. The intensities bring each back up after the blur spreads the letters
+  // thin; past about 1 it's white by them
   float shineGlowRadius = 0;
   float shineGlowIntensity = 0;
+  float shineGlowInnerRadius = 0;
+  float shineGlowInnerIntensity = 0;
+  // How much wider the glow's wave is than the letters', so the halo rounds off at its sides
+  float shineGlowSpread = 0;
   cocos2d::ccColor3B shineGlowColor;
   // A soft glow around the highlighted row
   cocos2d::ccColor3B rowGlowColor;

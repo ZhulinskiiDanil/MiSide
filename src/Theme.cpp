@@ -103,10 +103,13 @@ namespace
     theme.shineSlant = 0;
     theme.shineFadeOut = 0.12f;
     theme.shineFreeze = -1;
-    theme.shineGlowRadius = 7;
-    // The blur spreads the letters thin: this brings the halo by them back near full
-    theme.shineGlowIntensity = 0.9f;
-    theme.shineGlowColor = ccc3(0xff, 0xd9, 0xee);
+    // Like MiSide's: white by the letters, a wide soft halo
+    theme.shineGlowRadius = 12;
+    theme.shineGlowIntensity = 2.6f;
+    theme.shineGlowInnerRadius = 2;
+    theme.shineGlowInnerIntensity = 1.4f;
+    theme.shineGlowSpread = 1.5f;
+    theme.shineGlowColor = ccc3(0xff, 0xff, 0xff);
     theme.rowGlowColor = ccc3(0xff, 0x5f, 0xb4);
     theme.rowGlowOpacity = 110;
     theme.rowGlowSpread = 7;
@@ -298,6 +301,9 @@ namespace
     field("shine-freeze", theme.shineFreeze);
     field("shine-glow-radius", theme.shineGlowRadius);
     field("shine-glow-intensity", theme.shineGlowIntensity);
+    field("shine-glow-inner-radius", theme.shineGlowInnerRadius);
+    field("shine-glow-inner-intensity", theme.shineGlowInnerIntensity);
+    field("shine-glow-spread", theme.shineGlowSpread);
     field("shine-glow-color", theme.shineGlowColor);
     field("row-glow-color", theme.rowGlowColor);
     field("row-glow-opacity", theme.rowGlowOpacity);
