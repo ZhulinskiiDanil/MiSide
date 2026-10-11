@@ -63,6 +63,8 @@ bool MSModTray::init(std::vector<std::string> sources)
   auto const& theme = Theme::get();
   m_sources = std::move(sources);
   m_panel = ms::createPanel(theme.traySprite, theme.trayColor, theme.trayOpacity);
+  if (!m_panel)
+    return false;
   m_panel->setAnchorPoint({0, 0});
   m_panel->ignoreAnchorPointForPosition(false);
   m_panel->setVisible(false);

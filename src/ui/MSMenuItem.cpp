@@ -51,12 +51,16 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   m_callback = std::move(callback);
 
   m_label = ms::createLabel(text);
+  if (!m_label)
+    return false;
   m_label->setScale(theme.itemScale);
   m_label->setAnchorPoint({0, 0.5f});
   auto labelSize = m_label->getScaledContentSize();
 
   m_accent = ms::createStretched(theme.accentSprite, {theme.accentWidth, labelSize.height}, theme.accentColor,
                                  theme.itemHoverOpacity);
+  if (!m_accent)
+    return false;
   m_accent->setAnchorPoint({0, 0.5f});
   applyOpacity(m_accent, 0);
 

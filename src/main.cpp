@@ -101,6 +101,7 @@ class $modify(MSMenuLayer, MenuLayer)
     this->hideVanilla();
     this->addBackground();
     this->addColumn();
+    this->addTransition();
     this->addTray();
     return true;
   }
@@ -131,16 +132,17 @@ class $modify(MSMenuLayer, MenuLayer)
                     "editor-gamepad-icon"})
       hide(find(this, id, false));
 
-    // An invisible button can't be clicked or laid out, but activate() still runs it
-    for (auto id : {"play-button", "icon-kit-button", "editor-button"})
-      hide(findButton(this, "main-menu", id));
+    // The buttons with an item in the column (Play, Icon Kit, Editor and the others) are hidden in addColumn()
   }
 
   // ! --- The background --- !
 
   void addBackground()
   {
-    auto background = MSBackground::create(static_cast<float>(Mod::get()->getSettingValue<double>("parallax-strength")));
+    auto strength = static_cast<float>(Mod::get()->getSettingValue<double>("parallax-strength"));
+    auto background = MSBackground::create(strength);
+    if (!background)
+      return;
     background->setID("background"_spr);
     this->addChild(background, BACKGROUND_Z);
   }
@@ -150,6 +152,8 @@ class $modify(MSMenuLayer, MenuLayer)
   void addColumn()
   {
     auto column = MSMenuColumn::create([this](MSMenuItem* item) { this->runItem(item); });
+    if (!column)
+      return;
     auto english = Mod::get()->getSettingValue<std::string>("menu-language") == "EN";
     std::vector<CCNode*> menus;
     for (auto const& entry : ENTRIES)
@@ -159,7 +163,7 @@ class $modify(MSMenuLayer, MenuLayer)
       if (!button)
         continue;
       column->addEntry(english ? entry.en : entry.ru, button);
-      // The column has it now
+      // The column has it now. An invisible button can't be clicked or laid out, but activate() still runs it
       hide(button);
       if (auto menu = button->getParent(); std::find(menus.begin(), menus.end(), menu) == menus.end())
         menus.push_back(menu);
@@ -171,8 +175,13 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addChild(column, COLUMN_Z);
     column->finish();
     m_fields->m_column = column;
+  }
 
+  void addTransition()
+  {
     auto transition = MSTransition::create();
+    if (!transition)
+      return;
     transition->setID("transition"_spr);
     this->addChild(transition, TRANSITION_Z);
     m_fields->m_transition = transition;
@@ -202,6 +211,8 @@ class $modify(MSMenuLayer, MenuLayer)
   void addTray()
   {
     auto tray = MSModTray::create({std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)});
+    if (!tray)
+      return;
     tray->setID("mod-tray"_spr);
     this->addChild(tray, TRAY_Z);
   }
