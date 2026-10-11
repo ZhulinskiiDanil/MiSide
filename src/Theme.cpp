@@ -285,6 +285,31 @@ namespace
     theme.pauseExtraMenus = "left-button-menu,right-button-menu,bottom-button-menu";
     theme.pauseDuration = 0.2f;
 
+    // ! --- The loading screen --- !
+    // Measured on MiSide's loading screen: the middle #670A6B, the edges #260237; LOADING... capitals 3.6 pt at
+    // 25.9 pt from the left and 27.5 from the bottom; the bar 2.4 pt high from 25.9 to 136 pt, 19 pt up
+    theme.loadingEnabled = true;
+    theme.loadingEdgeColor = ccc3(0x24, 0x02, 0x36);
+    theme.loadingGlowColor = ccc3(0x8a, 0x10, 0x90);
+    theme.loadingGlowSize = 1.5f;
+    theme.loadingPatternColor = ccc3(0x14, 0x00, 0x1a);
+    theme.loadingPatternOpacity = 70;
+    theme.loadingLeft = 25.9f;
+    theme.loadingCaptionCapTop = 27.5f;
+    theme.loadingCaptionCap = 3.64f;
+    theme.loadingCaptionColor = ccc3(0xf5, 0x80, 0xa0);
+    theme.loadingBarY = 16.5f;
+    theme.loadingBarWidth = 110;
+    theme.loadingBarHeight = 2.4f;
+    theme.loadingTrackColor = ccc3(0x26, 0x00, 0x26);
+    theme.loadingTrackEdgeColor = ccc3(0x72, 0x3b, 0x61);
+    theme.loadingFillStartColor = ccc3(0x66, 0x20, 0x71);
+    theme.loadingFillEndColor = ccc3(0xc5, 0x61, 0x95);
+    theme.loadingHeadColor = ccc3(0xff, 0xc8, 0xc0);
+    theme.loadingTipY = 9;
+    theme.loadingTipCap = 3;
+    theme.loadingTipColor = ccc3(0xff, 0xd0, 0xe6);
+
     // ! --- The official levels --- !
     // Measured on MiSide's load screen: title capitals 8.7 pt, rows 136×14.9 pt every 16.2 from 275.8, 13 in view,
     // the scroll bar at 202, BACK at 56, the floppy from 252 to 461 and 30 to 272
@@ -647,6 +672,28 @@ namespace
     field("pause-extra-enabled", theme.pauseExtraEnabled);
     field("pause-extra-menus", theme.pauseExtraMenus);
     field("pause-duration", theme.pauseDuration);
+
+    field("loading-enabled", theme.loadingEnabled);
+    field("loading-edge-color", theme.loadingEdgeColor);
+    field("loading-glow-color", theme.loadingGlowColor);
+    field("loading-glow-size", theme.loadingGlowSize);
+    field("loading-pattern-color", theme.loadingPatternColor);
+    field("loading-pattern-opacity", theme.loadingPatternOpacity);
+    field("loading-left", theme.loadingLeft);
+    field("loading-caption-cap-top", theme.loadingCaptionCapTop);
+    field("loading-caption-cap", theme.loadingCaptionCap);
+    field("loading-caption-color", theme.loadingCaptionColor);
+    field("loading-bar-y", theme.loadingBarY);
+    field("loading-bar-width", theme.loadingBarWidth);
+    field("loading-bar-height", theme.loadingBarHeight);
+    field("loading-track-color", theme.loadingTrackColor);
+    field("loading-track-edge-color", theme.loadingTrackEdgeColor);
+    field("loading-fill-start-color", theme.loadingFillStartColor);
+    field("loading-fill-end-color", theme.loadingFillEndColor);
+    field("loading-head-color", theme.loadingHeadColor);
+    field("loading-tip-y", theme.loadingTipY);
+    field("loading-tip-cap", theme.loadingTipCap);
+    field("loading-tip-color", theme.loadingTipColor);
 
     field("levels-enabled", theme.levelsEnabled);
     field("levels-backdrop-top", theme.levelsBackdropTop);

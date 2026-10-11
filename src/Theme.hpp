@@ -333,6 +333,32 @@ struct Theme
   // The list's states (the confirmation, More) fading into each other
   float pauseDuration = 0;
 
+  // ! --- The loading screen --- !
+  // MiSide's: deep violet lit magenta in the middle, a dark pattern on the right, LOADING... and a thin bar in the
+  // bottom left, a line of text in the bottom middle. Points of the 569×320 screen, measured on MiSide's (1408×791)
+  bool loadingEnabled = false;
+  cocos2d::ccColor3B loadingEdgeColor;
+  cocos2d::ccColor3B loadingGlowColor;
+  // The light's size, as a share of the screen
+  float loadingGlowSize = 0;
+  cocos2d::ccColor3B loadingPatternColor;
+  GLubyte loadingPatternOpacity = 0;
+  float loadingLeft = 0;
+  float loadingCaptionCapTop = 0;
+  float loadingCaptionCap = 0;
+  cocos2d::ccColor3B loadingCaptionColor;
+  float loadingBarY = 0;
+  float loadingBarWidth = 0;
+  float loadingBarHeight = 0;
+  cocos2d::ccColor3B loadingTrackColor;
+  cocos2d::ccColor3B loadingTrackEdgeColor;
+  cocos2d::ccColor3B loadingFillStartColor;
+  cocos2d::ccColor3B loadingFillEndColor;
+  cocos2d::ccColor3B loadingHeadColor;
+  float loadingTipY = 0;
+  float loadingTipCap = 0;
+  cocos2d::ccColor3B loadingTipColor;
+
   // ! --- The official levels --- !
   // MiSide's save loading screen: "CHOOSE A LEVEL" over a scrolling list of rows on the left, BACK under it, a big
   // white-pink floppy disk on the right with the level's picture and numbers. Points of the 569×320 screen, measured

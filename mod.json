@@ -4,6 +4,7 @@
 		"win": "2.2081"
 	},
 	"id": "zhulis.miside-menu",
+	"early-load": true,
 	"name": "MiSide Menu",
 	"version": "v0.1.0",
 	"developer": "Zhulis",
