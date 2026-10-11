@@ -220,7 +220,8 @@ struct Theme
   bool mitaOutlineEnabled = false;
   cocos2d::ccColor3B mitaOutlineColor;
   GLubyte mitaOutlineOpacity = 0;
-  // In her texture's pixels (the atlas leaves 2 between frames)
+  // In her texture's pixels. Her frames have wide transparent sides; their top and bottom edges (where the
+  // atlas has only 2 pixels to the next frame) are off the screen
   float mitaOutlineWidth = 0;
 
   // ! --- The tray and the profile --- !

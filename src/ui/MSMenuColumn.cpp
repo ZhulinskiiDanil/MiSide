@@ -4,6 +4,8 @@
 #include "MSStyle.hpp"
 
 #include <cmath>
+#include <set>
+#include <typeinfo>
 
 using namespace geode::prelude;
 
@@ -163,22 +165,41 @@ void MSMenuColumn::setBusy(bool busy) { m_busy = busy; }
 
 bool MSMenuColumn::isOnTop()
 {
-  auto layer = this->getParent();
-  auto scene = layer ? layer->getParent() : nullptr;
-  if (!scene || CCDirector::get()->getRunningScene() != scene || CCDirector::get()->getNextScene())
+  // Why hover is paused, once a session each: if it never works, the log names what's in the way
+  static std::set<std::string> s_logged;
+  auto pausedBy = [](std::string const& why) {
+    if (s_logged.insert(why).second)
+      log::info("Hover and the arrow keys are paused: {}", why);
     return false;
-  // Popups are layers added to the scene after the menu (Geode's overlays aren't in the scene)
+  };
+
+  // The scene the menu is in, and the scene's child that holds the menu (a mod may wrap the menu in a node)
+  CCNode* branch = this->getParent();
+  if (!branch)
+    return false;
+  while (branch->getParent() && !typeinfo_cast<CCScene*>(branch->getParent()))
+    branch = branch->getParent();
+  auto scene = typeinfo_cast<CCScene*>(branch->getParent());
+  auto director = CCDirector::get();
+  auto running = director->getRunningScene();
+  // A scene transition: nothing to hover (not worth a log, it happens every time)
+  if (director->getNextScene() || typeinfo_cast<CCTransitionScene*>(running))
+    return false;
+  if (!scene || running != scene)
+    return pausedBy("the menu isn't in the running scene");
+
+  // A popup over the menu: GD's and Geode's popups are all FLAlertLayers. Other layers mods keep in the scene
+  // (overlays, effects) don't count
   auto above = false;
   for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
   {
-    if (child == layer)
+    if (child == branch)
     {
       above = true;
       continue;
     }
-    if (!above || !child->isVisible() || !typeinfo_cast<CCLayer*>(child))
-      continue;
-    return false;
+    if (above && child->isVisible() && typeinfo_cast<FLAlertLayer*>(child))
+      return pausedBy(fmt::format("a popup ({}) is open", typeid(*child).name()));
   }
   return true;
 }

@@ -203,15 +203,21 @@ uniform vec4 u_outline;
 void main()
 {
   vec4 color = texture2D(CC_Texture0, v_texCoord);
-  vec2 d = u_texel * 0.7071;
-  float around = texture2D(CC_Texture0, v_texCoord + vec2(u_texel.x, 0.0)).a;
-  around = max(around, texture2D(CC_Texture0, v_texCoord - vec2(u_texel.x, 0.0)).a);
-  around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(0.0, u_texel.y)).a);
-  around = max(around, texture2D(CC_Texture0, v_texCoord - vec2(0.0, u_texel.y)).a);
-  around = max(around, texture2D(CC_Texture0, v_texCoord + d).a);
-  around = max(around, texture2D(CC_Texture0, v_texCoord - d).a);
-  around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(d.x, -d.y)).a);
-  around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(-d.x, d.y)).a);
+  // Inside her: nothing to add, and no need to look around
+  if (color.a > 0.99)
+  {
+    gl_FragColor = color * v_fragmentColor;
+    return;
+  }
+  // Two rings of eight, the inner one turned half a step: sixteen directions, so a wide line stays smooth
+  float around = 0.0;
+  for (int i = 0; i < 8; i++)
+  {
+    float angle = 0.7853982 * float(i);
+    around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(cos(angle), sin(angle)) * u_texel).a);
+    float inner = angle + 0.3926991;
+    around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(cos(inner), sin(inner)) * u_texel * 0.55).a);
+  }
   float edge = clamp(around - color.a, 0.0, 1.0) * u_outline.a;
   float alpha = color.a + edge * (1.0 - color.a);
   vec3 rgb = alpha > 0.0 ? (color.rgb * color.a + u_outline.rgb * edge * (1.0 - color.a)) / alpha : vec3(0.0);

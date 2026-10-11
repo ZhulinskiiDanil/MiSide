@@ -177,8 +177,8 @@ namespace
     theme.mitaFreezeFrame = -1;
     theme.mitaOutlineEnabled = true;
     theme.mitaOutlineColor = ccc3(0xff, 0x4f, 0xa3);
-    theme.mitaOutlineOpacity = 170;
-    theme.mitaOutlineWidth = 1.5f;
+    theme.mitaOutlineOpacity = 210;
+    theme.mitaOutlineWidth = 4;
 
     // ! --- The tray and the profile --- !
     theme.trayMargin = 8;
