@@ -9,7 +9,7 @@
 #include <vector>
 
 // The official levels as MiSide's list of saves: one row each, `levels-visible-rows` of them in view, the chosen one
-// lit, a scroll bar on the right. Choosing a row (a click, Up/Down) calls back; it doesn't play. The mouse wheel, the
+// lit, a scroll bar on the right. Choosing a row (a click, Up/Down) calls back; a click also activates it. The mouse wheel, the
 // keys and the scroll bar's thumb scroll it by whole rows, so a row is never cut (no clipping needed); rows slide and
 // the ones leaving fade
 class MSLevelList : public cocos2d::CCMenu
@@ -18,6 +18,8 @@ public:
   static MSLevelList* create(std::vector<std::string> const& names, std::function<void(int)> chosen);
   // The row under the mouse, as soon as it comes on (-1: off the rows)
   void setOnHover(std::function<void(int)> hover);
+  // A row clicked (after it's chosen)
+  void setOnActivate(std::function<void(int)> activate);
 
   // Chooses it and scrolls it into view
   void choose(int index, bool sound = false);
@@ -44,6 +46,7 @@ protected:
 
   std::function<void(int)> m_onChosen;
   std::function<void(int)> m_onHover;
+  std::function<void(int)> m_onActivate;
   std::vector<MSMenuItem*> m_rows;
   cocos2d::CCNode* m_track = nullptr;
   cocos2d::CCNode* m_thumb = nullptr;

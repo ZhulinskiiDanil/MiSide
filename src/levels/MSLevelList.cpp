@@ -51,8 +51,11 @@ bool MSLevelList::init(std::vector<std::string> const& names, std::function<void
     auto row = MSMenuItem::create(
       names[i], nullptr,
       [this, index](MSMenuItem*) {
-        if (this->canUse())
-          this->choose(index, true);
+        if (!this->canUse())
+          return;
+        this->choose(index, true);
+        if (m_onActivate)
+          m_onActivate(index);
       },
       theme.levelsRowWidth, style);
     if (!row)
@@ -84,6 +87,8 @@ bool MSLevelList::init(std::vector<std::string> const& names, std::function<void
 }
 
 void MSLevelList::setOnHover(std::function<void(int)> hover) { m_onHover = std::move(hover); }
+
+void MSLevelList::setOnActivate(std::function<void(int)> activate) { m_onActivate = std::move(activate); }
 
 int MSLevelList::visible() const
 {

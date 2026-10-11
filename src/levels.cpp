@@ -173,6 +173,8 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
         if (fields.m_card && shown >= 0 && shown < static_cast<int>(fields.m_levels.size()))
           fields.m_card->show(fields.m_levels[shown]);
       });
+      // A click opens the level, as PLAY does
+      f.m_list->setOnActivate([this](int) { this->play(); });
       this->addChild(f.m_list, MENU_Z);
     }
 
