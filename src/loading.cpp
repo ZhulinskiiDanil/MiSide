@@ -3,7 +3,10 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/LoadingLayer.hpp>
 
+#include <Geode/utils/file.hpp>
+
 #include <filesystem>
+#include <optional>
 
 using namespace geode::prelude;
 
@@ -19,19 +22,43 @@ namespace
   constexpr float FONT_RAISE = 1.88f;
 
   // The mod's resources aren't in cocos' search paths this early (Geode adds them later in the loading): a file by
-  // its full path, in the texture quality's variant when there is one
+  // its full path, under its plain name. GD's file utils add the texture quality's -hd / -uhd themselves (a name that
+  // has it already would get it twice and not be found)
   std::string resource(std::string const& name)
   {
     std::error_code error;
-    auto dir = Mod::get()->getResourcesDir();
-    std::filesystem::path file(name);
-    auto factor = CC_CONTENT_SCALE_FACTOR();
-    auto suffix = factor >= 4 ? "-uhd" : factor >= 2 ? "-hd" : "";
-    auto variant = dir / (file.stem().string() + suffix + file.extension().string());
-    if (*suffix && std::filesystem::exists(variant, error))
-      return variant.string();
-    auto plain = dir / file;
+    auto plain = Mod::get()->getResourcesDir() / name;
     return std::filesystem::exists(plain, error) ? plain.string() : std::string();
+  }
+
+  // The mod's font, if its atlas really loads: read the .fnt GD resolves, load the page it names. Else empty (GD's
+  // font instead): a label made from a font whose atlas didn't load crashes cocos
+  std::string fontFile()
+  {
+    static std::optional<std::string> s_font;
+    if (s_font)
+      return *s_font;
+    s_font = std::string();
+    auto fnt = resource("miside-font.fnt");
+    if (fnt.empty())
+      return *s_font;
+    auto files = CCFileUtils::sharedFileUtils();
+    std::string resolved = files->fullPathForFilename(fnt.c_str(), false);
+    auto text = file::readString(std::filesystem::path(resolved));
+    if (!text)
+      return *s_font;
+    auto at = text.unwrap().find("file=\"");
+    if (at == std::string::npos)
+      return *s_font;
+    auto start = at + 6;
+    auto end = text.unwrap().find('"', start);
+    auto page = text.unwrap().substr(start, end - start);
+    std::string atlas = files->fullPathFromRelativeFile(page.c_str(), resolved.c_str());
+    if (CCTextureCache::sharedTextureCache()->addImage(atlas.c_str(), false))
+      s_font = fnt;
+    else
+      log::warn("Loading screen: the font's atlas {} doesn't load, GD's font instead", atlas);
+    return *s_font;
   }
 
   std::string upper(std::string text)
@@ -40,13 +67,13 @@ namespace
     return text;
   }
 
-  // A label in the mod's font by its file, else GD's chat font; its capitals' top at capTop
+  // A label in the mod's font by its file, else the gold font Geode itself uses here (loaded by now)
   CCLabelBMFont* label(std::string const& text, float cap, ccColor3B color)
   {
-    auto font = resource("miside-font.fnt");
+    auto font = fontFile();
     auto node = font.empty() ? nullptr : CCLabelBMFont::create(text.c_str(), font.c_str());
     if (!node)
-      node = CCLabelBMFont::create(text.c_str(), "chatFont.fnt");
+      node = CCLabelBMFont::create(text.c_str(), "goldFont.fnt");
     if (!node)
       return nullptr;
     node->setScale(cap / FONT_CAP);
@@ -211,12 +238,11 @@ class $modify(MSLoadingLayer, LoadingLayer)
       this->addChild(tip, 5);
     }
     auto restyle = [&](std::string_view id, float y, ccColor3B color) {
+      // Geode's own font kept (its label isn't ours to refont): only its colour, size and place
       auto line = typeinfo_cast<CCLabelBMFont*>(this->getChildByID(id));
       if (!line)
         return;
-      if (auto font = resource("miside-font.fnt"); !font.empty())
-        line->setFntFile(font.c_str());
-      line->setScale(theme.loadingTipCap / FONT_CAP);
+      line->setScale(0.3f);
       line->setColor(color);
       line->setPosition({winSize.width / 2, y});
       line->setZOrder(5);
