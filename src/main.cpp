@@ -1,3 +1,5 @@
+#include "Theme.hpp"
+
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 
@@ -12,6 +14,8 @@ class $modify(MSMenuLayer, MenuLayer)
     // The vanilla menu: nothing else happens here
     if (Mod::get()->getSettingValue<bool>("vanilla-menu"))
       return true;
+
+    Theme::reload();
     return true;
   }
 };
