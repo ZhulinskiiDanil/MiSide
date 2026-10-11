@@ -124,7 +124,9 @@ class $modify(MSPauseLayer, PauseLayer)
     GLubyte m_ownOpacity = 0;
     // With the MiSide pause off: what the confirmation hid
     std::vector<Ref<CCNode>> m_hidden;
+    // GD sends Esc both as a key (keyDown) and as back (keyBackClicked): one press acts once
     unsigned m_closedOnFrame = 0;
+    unsigned m_openedOnFrame = 0;
     bool m_quitting = false;
   };
 
@@ -525,6 +527,7 @@ class $modify(MSPauseLayer, PauseLayer)
     else
       this->hideForConfirm();
     confirm->open();
+    f.m_openedOnFrame = CCDirector::get()->getTotalFrames();
     return true;
   }
 
@@ -592,12 +595,22 @@ class $modify(MSPauseLayer, PauseLayer)
   void keyDown(enumKeyCodes key, double timestamp)
   {
     auto& f = *m_fields.self();
-    // The confirmation open: every key is its own, none reaches what's hidden
+    auto frame = CCDirector::get()->getTotalFrames();
+    // GD's own keyDown takes Esc and a controller's B as Quit: here they're back, as keyBackClicked
+    auto back = key == KEY_Escape || key == CONTROLLER_B;
+    // The confirmation open: every key is its own, none reaches what's hidden (the press that opened it excepted)
     if (f.m_confirm && f.m_confirm->isOpen())
     {
+      if (back && f.m_openedOnFrame == frame)
+        return;
       f.m_confirm->onKey(key);
       return;
     }
+    // This press already went back
+    if (back && f.m_closedOnFrame == frame)
+      return;
+    if (f.m_styled && f.m_state == State::More && back)
+      return this->showMore(false);
     if (f.m_styled)
     {
       auto column = f.m_state == State::Main ? f.m_column : f.m_state == State::More ? f.m_more : nullptr;
@@ -607,13 +620,19 @@ class $modify(MSPauseLayer, PauseLayer)
     PauseLayer::keyDown(key, timestamp);
   }
 
-  // Esc: back from the confirmation or More to the pause menu (never on with the level); from it, on as usual
+  // Esc: back from the confirmation or More to the pause menu (never on with the level); from it, GD's own (Quit)
   void keyBackClicked()
   {
     auto& f = *m_fields.self();
+    auto frame = CCDirector::get()->getTotalFrames();
     if (f.m_confirm && f.m_confirm->isOpen())
-      return f.m_confirm->keyBack();
-    if (f.m_closedOnFrame == CCDirector::get()->getTotalFrames())
+    {
+      // Not the press that opened it
+      if (f.m_openedOnFrame != frame)
+        f.m_confirm->keyBack();
+      return;
+    }
+    if (f.m_closedOnFrame == frame)
       return;
     if (f.m_styled && f.m_state == State::More)
       return this->showMore(false);

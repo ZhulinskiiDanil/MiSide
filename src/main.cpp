@@ -110,6 +110,8 @@ class $modify(MSMenuLayer, MenuLayer)
     MSConfirm* m_confirm = nullptr;
     // The confirmation closed on this frame: the same Esc doesn't open it again
     unsigned m_closedOnFrame = 0;
+    // GD may send Esc both as a key and as back: the press that opened it doesn't close it
+    unsigned m_openedOnFrame = 0;
     bool m_quitting = false;
   };
 
@@ -143,6 +145,9 @@ class $modify(MSMenuLayer, MenuLayer)
     // plays, Y opens the icon kit)
     if (auto confirm = m_fields->m_confirm; confirm && confirm->isOpen())
     {
+      if ((key == KEY_Escape || key == CONTROLLER_B) &&
+          m_fields->m_openedOnFrame == CCDirector::get()->getTotalFrames())
+        return;
       confirm->onKey(key);
       if (!confirm->isOpen())
         m_fields->m_closedOnFrame = CCDirector::get()->getTotalFrames();
@@ -163,7 +168,8 @@ class $modify(MSMenuLayer, MenuLayer)
       return MenuLayer::keyBackClicked();
     if (confirm->isOpen())
     {
-      confirm->keyBack();
+      if (m_fields->m_openedOnFrame != CCDirector::get()->getTotalFrames())
+        confirm->keyBack();
       return;
     }
     if (m_fields->m_closedOnFrame == CCDirector::get()->getTotalFrames())
@@ -309,6 +315,7 @@ class $modify(MSMenuLayer, MenuLayer)
       return;
     column->setConfirming(true);
     confirm->open();
+    m_fields->m_openedOnFrame = CCDirector::get()->getTotalFrames();
   }
 
   void closeConfirm()
