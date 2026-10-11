@@ -32,7 +32,7 @@ namespace
     theme.font = "miside-font.fnt"_spr;
     theme.fallbackFont = "Arial";
     theme.fallbackFontSize = 24;
-    theme.itemScale = 0.9f;
+    theme.itemScale = 1.1f;
 
     // ! --- Sprites and sounds --- !
     theme.layers = {

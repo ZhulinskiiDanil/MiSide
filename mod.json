@@ -41,5 +41,27 @@
 				"EN"
 			]
 		}
+	},
+	"resources": {
+		"sprites": [
+			"resources/placeholders/bg-far.png",
+			"resources/placeholders/bg-mid.png",
+			"resources/placeholders/bg-near.png",
+			"resources/placeholders/bg-vignette.png",
+			"resources/placeholders/item-accent.png",
+			"resources/placeholders/tray-panel.png",
+			"resources/placeholders/tray-slot.png"
+		],
+		"files": [
+			"resources/placeholders/hover.ogg",
+			"resources/placeholders/click.ogg"
+		],
+		"fonts": {
+			"miside-font": {
+				"path": "resources/placeholders/fonts/RobotoFlex.ttf",
+				"size": 64,
+				"charset": "32-126,1025,1040-1103,1105,8211,8212,8226"
+			}
+		}
 	}
 }

@@ -1,4 +1,5 @@
 #include "Theme.hpp"
+#include "ui/MSBackground.hpp"
 #include "ui/MSMenuColumn.hpp"
 #include "ui/MSModTray.hpp"
 
@@ -55,6 +56,8 @@ namespace
   // (profile-menu, close-menu, top-right-menu, social-media-menu, more-games-menu) stay where they are
   char const* const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "main-menu", "side-menu"};
 
+  // Behind everything of the menu
+  constexpr int BACKGROUND_Z = -100;
   // Under the vanilla menus (the tray's slots go under their buttons)
   constexpr int TRAY_Z = -1;
   // Above the vanilla menus, below the transition
@@ -92,6 +95,7 @@ class $modify(MSMenuLayer, MenuLayer)
 
     Theme::reload();
     this->hideVanilla();
+    this->addBackground();
     this->addColumn();
     this->addTray();
     return true;
@@ -126,6 +130,15 @@ class $modify(MSMenuLayer, MenuLayer)
     // An invisible button can't be clicked or laid out, but activate() still runs it
     for (auto id : {"play-button", "icon-kit-button", "editor-button"})
       hide(findButton(this, "main-menu", id));
+  }
+
+  // ! --- The background --- !
+
+  void addBackground()
+  {
+    auto background = MSBackground::create(static_cast<float>(Mod::get()->getSettingValue<double>("parallax-strength")));
+    background->setID("background"_spr);
+    this->addChild(background, BACKGROUND_Z);
   }
 
   // ! --- The column --- !
