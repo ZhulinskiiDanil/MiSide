@@ -1,0 +1,45 @@
+{
+	"geode": "5.10.1",
+	"gd": {
+		"win": "2.2081"
+	},
+	"id": "zhulis.miside-menu",
+	"name": "MiSide Menu",
+	"version": "v0.1.0",
+	"developer": "Zhulis",
+	"description": "The main menu in the style of MiSide: a scene in the background, a column of text items on the left, soft transitions",
+	"tags": [
+		"interface",
+		"customization"
+	],
+	"settings": {
+		"vanilla-menu": {
+			"name": "Vanilla menu",
+			"description": "The main menu exactly as it is without the mod. Applies the next time the main menu opens",
+			"type": "bool",
+			"default": false
+		},
+		"parallax-strength": {
+			"name": "Parallax strength",
+			"description": "How far the background layers follow the mouse. 0 keeps them still",
+			"type": "float",
+			"default": 1.0,
+			"min": 0,
+			"max": 2,
+			"control": {
+				"slider": true,
+				"slider-step": 0.1
+			}
+		},
+		"menu-language": {
+			"name": "Menu language",
+			"description": "The language of the menu items: RU (Russian) or EN (English)",
+			"type": "string",
+			"default": "RU",
+			"one-of": [
+				"RU",
+				"EN"
+			]
+		}
+	}
+}
