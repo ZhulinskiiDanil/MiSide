@@ -2,6 +2,7 @@
 #include "ui/MSBackground.hpp"
 #include "ui/MSMenuColumn.hpp"
 #include "ui/MSModTray.hpp"
+#include "ui/MSTransition.hpp"
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
@@ -62,6 +63,8 @@ namespace
   constexpr int TRAY_Z = -1;
   // Above the vanilla menus, below the transition
   constexpr int COLUMN_Z = 10;
+  // Over the whole menu
+  constexpr int TRANSITION_Z = 1000;
 
   // Hidden, never removed: the node stays in the tree for the mods that look for it
   void hide(CCNode* node)
@@ -83,6 +86,7 @@ class $modify(MSMenuLayer, MenuLayer)
   struct Fields
   {
     MSMenuColumn* m_column = nullptr;
+    MSTransition* m_transition = nullptr;
   };
 
   bool init()
@@ -145,10 +149,7 @@ class $modify(MSMenuLayer, MenuLayer)
 
   void addColumn()
   {
-    auto column = MSMenuColumn::create([](MSMenuItem* item) {
-      if (auto target = item->getTarget())
-        target->activate();
-    });
+    auto column = MSMenuColumn::create([this](MSMenuItem* item) { this->runItem(item); });
     auto english = Mod::get()->getSettingValue<std::string>("menu-language") == "EN";
     std::vector<CCNode*> menus;
     for (auto const& entry : ENTRIES)
@@ -170,6 +171,30 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addChild(column, COLUMN_Z);
     column->finish();
     m_fields->m_column = column;
+
+    auto transition = MSTransition::create();
+    transition->setID("transition"_spr);
+    this->addChild(transition, TRANSITION_Z);
+    m_fields->m_transition = transition;
+  }
+
+  // ! --- Running an item --- !
+
+  // The darkening, then the vanilla button's activate(): its callback, and every mod's hook on it, run as usual
+  void runItem(MSMenuItem* item)
+  {
+    Ref<CCMenuItem> target = item->getTarget();
+    auto column = m_fields->m_column;
+    auto transition = m_fields->m_transition;
+    if (!target || !column)
+      return;
+    if (!transition)
+    {
+      target->activate();
+      return;
+    }
+    column->setBusy(true);
+    transition->play([target] { target->activate(); }, [column] { column->setBusy(false); });
   }
 
   // ! --- The tray --- !
