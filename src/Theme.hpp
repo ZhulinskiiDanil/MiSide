@@ -425,6 +425,53 @@ struct Theme
   // The level's picture: a frame of it saved the first time it's played, at this width in pixels
   float levelsPreviewWidth = 0;
 
+  // ! --- The achievements --- !
+  // MiSide's achievements screen: ACHIEVEMENTS and the count earned over a list of rounded see-through purple rows
+  // (the reward's icon in a white frame on the left, the title in the middle), a scroll bar on the right, BACK under
+  // it; Mita on the right. Points of the 569×320 screen, measured on MiSide's (2560×1440)
+  bool achievementsEnabled = false;
+  float achievementsTitleLeft = 0;
+  float achievementsTitleCapTop = 0;
+  float achievementsCounterScale = 0;
+  cocos2d::ccColor3B achievementsCounterColor;
+  float achievementsListLeft = 0;
+  float achievementsListTop = 0;
+  float achievementsListBottom = 0;
+  float achievementsRowWidth = 0;
+  float achievementsRowHeight = 0;
+  float achievementsRowGap = 0;
+  cocos2d::ccColor3B achievementsRowColor;
+  GLubyte achievementsRowOpacity = 0;
+  cocos2d::ccColor3B achievementsRowHoverColor;
+  GLubyte achievementsRowHoverOpacity = 0;
+  // Not earned yet: a darker row, muted text, the icon dark with a lock
+  cocos2d::ccColor3B achievementsRowLockedColor;
+  GLubyte achievementsRowLockedOpacity = 0;
+  cocos2d::ccColor3B achievementsTitleColor;
+  cocos2d::ccColor3B achievementsTitleLockedColor;
+  GLubyte achievementsTitleLockedOpacity = 0;
+  // The rows' titles, in the title font
+  float achievementsTitleScale = 0;
+  // What opens under a title clicked: the condition, its status, the reward and the progress
+  cocos2d::ccColor3B achievementsTextColor;
+  float achievementsTextScale = 0;
+  cocos2d::ccColor3B achievementsStatusColor;
+  float achievementsIconSize = 0;
+  cocos2d::ccColor3B achievementsIconFrameColor;
+  cocos2d::ccColor3B achievementsIconBackColor;
+  cocos2d::ccColor3B achievementsCheckColor;
+  cocos2d::ccColor3B achievementsProgressTrackColor;
+  cocos2d::ccColor3B achievementsProgressFillColor;
+  float achievementsScrollLeft = 0;
+  float achievementsScrollWidth = 0;
+  cocos2d::ccColor3B achievementsScrollTrackColor;
+  cocos2d::ccColor3B achievementsScrollThumbColor;
+  float achievementsBackTop = 0;
+  float achievementsBackWidth = 0;
+  // A row opening or closing takes this long; the list follows the wheel with this smoothing (seconds)
+  float achievementsExpandDuration = 0;
+  float achievementsScrollSmoothing = 0;
+
   // ! --- Decoration over the backdrop --- !
   // A faint repeating pattern of thin outlined hearts, flowers and stars (a white tile, tinted)
   std::string patternSprite;

@@ -363,6 +363,49 @@ namespace
     theme.levelsPreviewFade = 0.25f;
     theme.levelsPreviewWidth = 640;
 
+    // ! --- The achievements --- !
+    // Measured on MiSide's: title capitals 9.1 pt from 59.7 pt, 12.8 from the top; rows 137×23.3 pt every 26.6 from
+    // 25.6 pt down, 10 in view, the icon 19.5 pt in a white frame; the scroll bar at 202, 4.5 wide; BACK 14 pt high,
+    // 26.4 pt up, as wide as the rows and the bar
+    theme.achievementsEnabled = true;
+    theme.achievementsTitleLeft = 59.7f;
+    theme.achievementsTitleCapTop = 307.2f;
+    theme.achievementsCounterScale = 0.32f;
+    theme.achievementsCounterColor = ccc3(0xd8, 0x9c, 0xd8);
+    theme.achievementsListLeft = 61.2f;
+    theme.achievementsListTop = 294.4f;
+    theme.achievementsListBottom = 30;
+    theme.achievementsRowWidth = 137.1f;
+    theme.achievementsRowHeight = 23.3f;
+    theme.achievementsRowGap = 3.3f;
+    theme.achievementsRowColor = ccc3(0x6a, 0x2a, 0x84);
+    theme.achievementsRowOpacity = 205;
+    theme.achievementsRowHoverColor = ccc3(0x92, 0x3a, 0xac);
+    theme.achievementsRowHoverOpacity = 240;
+    theme.achievementsRowLockedColor = ccc3(0x3c, 0x16, 0x4a);
+    theme.achievementsRowLockedOpacity = 175;
+    theme.achievementsTitleColor = ccc3(0xff, 0xff, 0xff);
+    theme.achievementsTitleLockedColor = ccc3(0xc0, 0x96, 0xc8);
+    theme.achievementsTitleLockedOpacity = 200;
+    theme.achievementsTitleScale = 0.36f;
+    theme.achievementsTextColor = ccc3(0xf2, 0xd2, 0xf2);
+    theme.achievementsTextScale = 0.36f;
+    theme.achievementsStatusColor = ccc3(0xff, 0x9e, 0xd8);
+    theme.achievementsIconSize = 19.5f;
+    theme.achievementsIconFrameColor = ccc3(0xff, 0xff, 0xff);
+    theme.achievementsIconBackColor = ccc3(0x2a, 0x0e, 0x30);
+    theme.achievementsCheckColor = ccc3(0xff, 0x8f, 0xd0);
+    theme.achievementsProgressTrackColor = ccc3(0x26, 0x08, 0x2c);
+    theme.achievementsProgressFillColor = ccc3(0xff, 0x6f, 0xb8);
+    theme.achievementsScrollLeft = 202;
+    theme.achievementsScrollWidth = 4.5f;
+    theme.achievementsScrollTrackColor = ccc3(0x68, 0x00, 0x84);
+    theme.achievementsScrollThumbColor = ccc3(0xff, 0xff, 0xff);
+    theme.achievementsBackTop = 26.4f;
+    theme.achievementsBackWidth = 145.3f;
+    theme.achievementsExpandDuration = 0.18f;
+    theme.achievementsScrollSmoothing = 0.08f;
+
     // ! --- Decoration over the backdrop --- !
     // Faint: a pink line on the dark, never a row of bright marks
     theme.patternSprite = "pattern-tile.png"_spr;
@@ -757,6 +800,44 @@ namespace
     field("levels-preview-fade", theme.levelsPreviewFade);
     field("levels-preview-width", theme.levelsPreviewWidth);
 
+    field("achievements-enabled", theme.achievementsEnabled);
+    field("achievements-title-left", theme.achievementsTitleLeft);
+    field("achievements-title-cap-top", theme.achievementsTitleCapTop);
+    field("achievements-counter-scale", theme.achievementsCounterScale);
+    field("achievements-counter-color", theme.achievementsCounterColor);
+    field("achievements-list-left", theme.achievementsListLeft);
+    field("achievements-list-top", theme.achievementsListTop);
+    field("achievements-list-bottom", theme.achievementsListBottom);
+    field("achievements-row-width", theme.achievementsRowWidth);
+    field("achievements-row-height", theme.achievementsRowHeight);
+    field("achievements-row-gap", theme.achievementsRowGap);
+    field("achievements-row-color", theme.achievementsRowColor);
+    field("achievements-row-opacity", theme.achievementsRowOpacity);
+    field("achievements-row-hover-color", theme.achievementsRowHoverColor);
+    field("achievements-row-hover-opacity", theme.achievementsRowHoverOpacity);
+    field("achievements-row-locked-color", theme.achievementsRowLockedColor);
+    field("achievements-row-locked-opacity", theme.achievementsRowLockedOpacity);
+    field("achievements-title-color", theme.achievementsTitleColor);
+    field("achievements-title-locked-color", theme.achievementsTitleLockedColor);
+    field("achievements-title-locked-opacity", theme.achievementsTitleLockedOpacity);
+    field("achievements-title-scale", theme.achievementsTitleScale);
+    field("achievements-text-color", theme.achievementsTextColor);
+    field("achievements-text-scale", theme.achievementsTextScale);
+    field("achievements-status-color", theme.achievementsStatusColor);
+    field("achievements-icon-size", theme.achievementsIconSize);
+    field("achievements-icon-frame-color", theme.achievementsIconFrameColor);
+    field("achievements-icon-back-color", theme.achievementsIconBackColor);
+    field("achievements-check-color", theme.achievementsCheckColor);
+    field("achievements-progress-track-color", theme.achievementsProgressTrackColor);
+    field("achievements-progress-fill-color", theme.achievementsProgressFillColor);
+    field("achievements-scroll-left", theme.achievementsScrollLeft);
+    field("achievements-scroll-width", theme.achievementsScrollWidth);
+    field("achievements-scroll-track-color", theme.achievementsScrollTrackColor);
+    field("achievements-scroll-thumb-color", theme.achievementsScrollThumbColor);
+    field("achievements-back-top", theme.achievementsBackTop);
+    field("achievements-back-width", theme.achievementsBackWidth);
+    field("achievements-expand-duration", theme.achievementsExpandDuration);
+    field("achievements-scroll-smoothing", theme.achievementsScrollSmoothing);
     field("pattern-sprite", theme.patternSprite);
     field("pattern-color", theme.patternColor);
     field("pattern-opacity", theme.patternOpacity);

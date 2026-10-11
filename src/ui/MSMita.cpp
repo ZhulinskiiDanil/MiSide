@@ -691,6 +691,12 @@ void MSMita::update(float dt)
 {
   if (m_failed || !m_loader)
     return;
+  // Under a screen that covers the menu (a parent hidden): she waits where she is, her pages kept
+  for (CCNode* node = this; node; node = node->getParent())
+  {
+    if (!node->isVisible())
+      return;
+  }
   auto const& theme = Theme::get();
   auto count = static_cast<int>(m_frames.size());
   // From the time that passed: the same speed at any frame rate, and a late frame jumps to where it should be. Her
