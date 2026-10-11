@@ -218,7 +218,8 @@ struct Theme
   // Her bottom middle; held to the right edge on other window shapes, never over the menu
   float mitaX = 0;
   float mitaY = 0;
-  // Points per pixel of her 640×720 canvas
+  // Points per pixel of her 960×1080 canvas: 320 / 1080 makes it as high as the reference screen. The close-up is
+  // in the render itself, nothing zooms it further
   float mitaScale = 0;
   // 0: the manifest's
   float mitaFps = 0;
@@ -232,8 +233,8 @@ struct Theme
   bool mitaOutlineEnabled = false;
   cocos2d::ccColor3B mitaOutlineColor;
   GLubyte mitaOutlineOpacity = 0;
-  // In her texture's pixels. Her frames have wide transparent sides; their top and bottom edges (where the
-  // atlas has only 2 pixels to the next frame) are off the screen
+  // In her texture's pixels. Her frames have wide transparent sides (68 px at least, more than the line reaches into
+  // the frame next to it); at their top and bottom edges the atlas repeats the edge, so no line shows there
   float mitaOutlineWidth = 0;
 
   // ! --- The tray and the profile --- !

@@ -22,61 +22,80 @@ using Microsoft::WRL::ComPtr;
 
 // ! --- Decoding on a worker thread --- !
 
-// A page decoded to straight-alpha RGBA, waiting for the main thread to upload it
+// A page decoded to straight-alpha RGBA, waiting for the main thread to upload it. Its pixels fill the top left of
+// a buffer as big as every texture slot (the last page is half as wide: the rest is transparent)
 struct MitaDecodedPage
 {
   int atlas = -1;
   bool ok = false;
+  // The file's own size
   unsigned width = 0;
   unsigned height = 0;
   std::vector<uint8_t> pixels;
   double milliseconds = 0;
 };
 
-// One worker thread decoding one page at a time with Windows' own PNG decoder (WIC): no cocos object, cache or
-// file utility is touched off the main thread. At most one finished page waits, so the CPU holds at most two
-// pages' pixels (one finished, one being decoded). The thread owns this state with a shared_ptr and never sees
-// the node: once stopped, it drops what it decoded and ends by itself
+// One worker thread decoding the pages asked for one after another, nearest first, with Windows' own PNG decoder
+// (WIC): no cocos object, cache or file utility is touched off the main thread. It stops while two finished pages
+// wait to be taken, so the CPU holds at most three pages' pixels (two finished, one being decoded: about 24 MiB).
+// The thread owns this state with a shared_ptr and never sees the node: once stopped, it drops what it decoded and
+// ends by itself
 class MitaPageLoader
 {
 public:
-  static std::shared_ptr<MitaPageLoader> start(std::vector<std::filesystem::path> pngs)
+  static constexpr size_t MAX_READY = 2;
+
+  // Every page is decoded into a slot of this size
+  static std::shared_ptr<MitaPageLoader> start(std::vector<std::filesystem::path> pngs, unsigned slotWidth,
+                                               unsigned slotHeight)
   {
     auto loader = std::make_shared<MitaPageLoader>();
     loader->m_pngs = std::move(pngs);
+    loader->m_slotWidth = slotWidth;
+    loader->m_slotHeight = slotHeight;
     std::thread([loader] { loader->run(); }).detach();
     return loader;
   }
 
-  // The latest request replaces the one not started yet
-  void request(int atlas)
+  // The pages to decode, nearest first: they replace the ones not started yet. Pages being decoded or waiting
+  // aren't decoded again
+  void want(std::vector<int> const& atlases)
   {
     std::lock_guard lock(m_mutex);
-    if (m_stopped || atlas < 0 || atlas >= static_cast<int>(m_pngs.size()))
+    if (m_stopped)
       return;
-    m_requested = atlas;
+    m_wanted.clear();
+    for (auto atlas : atlases)
+    {
+      if (atlas < 0 || atlas >= static_cast<int>(m_pngs.size()) || atlas == m_decoding || this->isReady(atlas) ||
+          std::find(m_wanted.begin(), m_wanted.end(), atlas) != m_wanted.end())
+        continue;
+      m_wanted.push_back(atlas);
+    }
+    if (!m_wanted.empty())
+      m_wake.notify_one();
+  }
+
+  // The pages decoded and waiting, without taking them
+  std::vector<int> readyAtlases()
+  {
+    std::lock_guard lock(m_mutex);
+    std::vector<int> atlases;
+    for (auto const& page : m_ready)
+      atlases.push_back(page.atlas);
+    return atlases;
+  }
+
+  // Taking one makes room for the next decode
+  std::optional<MitaDecodedPage> take(int atlas)
+  {
+    std::lock_guard lock(m_mutex);
+    auto it = std::find_if(m_ready.begin(), m_ready.end(), [&](auto const& page) { return page.atlas == atlas; });
+    if (it == m_ready.end())
+      return std::nullopt;
+    std::optional<MitaDecodedPage> page(std::move(*it));
+    m_ready.erase(it);
     m_wake.notify_one();
-  }
-
-  // Requested, being decoded, or decoded and waiting
-  bool isBusyWith(int atlas)
-  {
-    std::lock_guard lock(m_mutex);
-    return m_requested == atlas || m_decoding == atlas || (m_ready && m_ready->atlas == atlas);
-  }
-
-  // The page decoded and waiting, without taking it: -1 when none
-  int readyAtlas()
-  {
-    std::lock_guard lock(m_mutex);
-    return m_ready ? m_ready->atlas : -1;
-  }
-
-  std::optional<MitaDecodedPage> take()
-  {
-    std::lock_guard lock(m_mutex);
-    std::optional<MitaDecodedPage> page;
-    page.swap(m_ready);
     return page;
   }
 
@@ -84,13 +103,13 @@ public:
   {
     std::lock_guard lock(m_mutex);
     m_stopped = true;
-    m_requested = -1;
-    m_ready.reset();
+    m_wanted.clear();
+    m_ready.clear();
     m_wake.notify_one();
   }
 
 private:
-  static MitaDecodedPage decode(IWICImagingFactory* factory, std::filesystem::path const& path, int atlas)
+  MitaDecodedPage decode(IWICImagingFactory* factory, std::filesystem::path const& path, int atlas) const
   {
     MitaDecodedPage page;
     page.atlas = atlas;
@@ -104,10 +123,12 @@ private:
         FAILED(decoder->GetFrame(0, &frame)) ||
         // Straight alpha, as the file has it
         FAILED(WICConvertBitmapSource(GUID_WICPixelFormat32bppRGBA, frame.Get(), &rgba)) ||
-        FAILED(rgba->GetSize(&page.width, &page.height)) || page.width == 0 || page.height == 0)
+        FAILED(rgba->GetSize(&page.width, &page.height)) || page.width == 0 || page.height == 0 ||
+        page.width > m_slotWidth || page.height > m_slotHeight)
       return page;
-    auto stride = page.width * 4;
-    page.pixels.resize(static_cast<size_t>(stride) * page.height);
+    // Rows as long as the slot's: straight into place, the rest left transparent
+    auto stride = m_slotWidth * 4;
+    page.pixels.assign(static_cast<size_t>(stride) * m_slotHeight, 0);
     if (FAILED(rgba->CopyPixels(nullptr, stride, static_cast<UINT>(page.pixels.size()), page.pixels.data())))
     {
       page.pixels.clear();
@@ -130,11 +151,11 @@ private:
         int atlas = -1;
         {
           std::unique_lock lock(m_mutex);
-          m_wake.wait(lock, [this] { return m_stopped || m_requested >= 0; });
+          m_wake.wait(lock, [this] { return m_stopped || (!m_wanted.empty() && m_ready.size() < MAX_READY); });
           if (m_stopped)
             break;
-          atlas = m_requested;
-          m_requested = -1;
+          atlas = m_wanted.front();
+          m_wanted.erase(m_wanted.begin());
           m_decoding = atlas;
         }
         auto page = decode(factory.Get(), m_pngs[atlas], atlas);
@@ -142,20 +163,26 @@ private:
         m_decoding = -1;
         if (m_stopped)
           break;
-        // Only one waits: a newer page replaces one nobody took
-        m_ready = std::move(page);
+        m_ready.push_back(std::move(page));
       }
     }
     if (SUCCEEDED(com))
       CoUninitialize();
   }
 
+  bool isReady(int atlas) const
+  {
+    return std::any_of(m_ready.begin(), m_ready.end(), [&](auto const& page) { return page.atlas == atlas; });
+  }
+
   std::mutex m_mutex;
   std::condition_variable m_wake;
   std::vector<std::filesystem::path> m_pngs;
-  int m_requested = -1;
+  unsigned m_slotWidth = 0;
+  unsigned m_slotHeight = 0;
+  std::vector<int> m_wanted;
   int m_decoding = -1;
-  std::optional<MitaDecodedPage> m_ready;
+  std::vector<MitaDecodedPage> m_ready;
   bool m_stopped = false;
 };
 
@@ -163,7 +190,8 @@ private:
 
 namespace
 {
-  constexpr char const* MANIFEST = "mita-manifest.json";
+  // The close-up set (resources/mita-closeup): 127 frames of 960×1080, two a page
+  constexpr char const* MANIFEST = "mita-closeup-manifest.json";
   // The measured load time weighs this much against the ones before
   constexpr double LOAD_SMOOTHING = 0.3;
   // A request looks ahead by this much more than a load takes
@@ -300,6 +328,8 @@ bool MSMita::readManifest()
       return false;
     }
     m_atlases.push_back(atlas);
+    m_slotSize.first = std::max(m_slotSize.first, static_cast<unsigned>(atlas.width));
+    m_slotSize.second = std::max(m_slotSize.second, static_cast<unsigned>(atlas.height));
   }
 
   for (auto const& entry : manifest["frames"])
@@ -417,11 +447,11 @@ void MSMita::start()
   std::vector<std::filesystem::path> pngs;
   for (auto const& atlas : m_atlases)
     pngs.push_back(atlas.png);
-  m_loader = MitaPageLoader::start(std::move(pngs));
+  m_loader = MitaPageLoader::start(std::move(pngs), m_slotSize.first, m_slotSize.second);
   this->scheduleUpdate();
   // The page for where her loop is now, right away
   auto index = MitaPlan::frameAt(m_elapsed, m_fps, static_cast<int>(m_frames.size()));
-  m_loader->request(m_frames[index].atlas);
+  m_loader->want({m_frames[index].atlas});
 }
 
 void MSMita::stop()
@@ -442,8 +472,14 @@ void MSMita::stop()
   m_outlineFor = nullptr;
   if (m_plan)
     this->freePages(m_plan->clear());
-  if (!m_pages.empty())
-    log::warn("Mita: {} pages left after freeing them all", m_pages.size());
+  // The textures themselves, only now: nothing of hers stays on the GPU once the menu is gone
+  for (auto const& page : m_pages)
+  {
+    if (page->atlas >= 0)
+      log::warn("Mita: atlas {} left after freeing them all", page->atlas);
+    if (auto texture = page->texture.data(); texture && texture->retainCount() != 1)
+      log::warn("Mita: a texture slot is still held {} more times, it isn't freed", texture->retainCount() - 1);
+  }
   m_pages.clear();
 }
 
@@ -456,6 +492,8 @@ void MSMita::fail(std::string const& why)
 
 MSMita::Page* MSMita::resident(int atlas)
 {
+  if (atlas < 0)
+    return nullptr;
   for (auto const& page : m_pages)
   {
     if (page->atlas == atlas)
@@ -468,17 +506,14 @@ void MSMita::freePages(std::vector<int> const& atlases)
 {
   for (auto atlas : atlases)
   {
-    auto it = std::find_if(m_pages.begin(), m_pages.end(), [&](auto const& page) { return page->atlas == atlas; });
-    if (it == m_pages.end())
+    auto page = this->resident(atlas);
+    if (!page)
       continue;
-    auto& page = **it;
-    // Its frames first: then only the page itself holds the texture, unless something else still uses it
-    page.frames.clear();
-    if (auto texture = page.texture.data(); texture && texture->retainCount() != 1)
-      log::warn("Mita: atlas {}'s texture is still held {} more times, it isn't freed", atlas,
-                texture->retainCount() - 1);
-    m_pages.erase(it);
-    log::debug("Mita: atlas {} freed, {} pages on the GPU", atlas, m_pages.size());
+    // The slot is free for the next page: its texture stays, to be filled again rather than deleted and made anew
+    // (deleting and making an 8 MiB texture every 83 ms stalls the driver)
+    page->frames.clear();
+    page->atlas = -1;
+    log::debug("Mita: atlas {} freed, its slot free", atlas);
   }
 }
 
@@ -491,33 +526,50 @@ bool MSMita::upload(MitaDecodedPage& decoded, int wanted)
                            decoded.height, atlas.width, atlas.height));
     return false;
   }
-  // Never a third page on the GPU, even for a moment: room is made first, never from the shown page
+  // Never a fourth page on the GPU, even for a moment: room is made first, never from the shown page
   this->freePages(m_plan->makeRoom(wanted));
-  if (m_pages.size() >= 2)
+  auto slot = std::find_if(m_pages.begin(), m_pages.end(), [](auto const& page) { return page->atlas < 0; });
+  if (slot == m_pages.end() && m_pages.size() >= MitaPlan::RESIDENT)
   {
     log::warn("Mita: no room for atlas {}, it's skipped", decoded.atlas);
     return true;
   }
 
   auto began = std::chrono::steady_clock::now();
-  auto texture = new CCTexture2D();
-  // RGBA8888, straight alpha (a texture made from raw data isn't premultiplied)
-  if (!texture->initWithData(decoded.pixels.data(), kCCTexture2DPixelFormat_RGBA8888, decoded.width,
-                             decoded.height, CCSize(decoded.width, decoded.height)))
+  auto [slotWidth, slotHeight] = m_slotSize;
+  Page* target = nullptr;
+  if (slot != m_pages.end())
   {
-    texture->release();
-    this->fail(fmt::format("can't upload {}", atlas.png.filename()));
-    return false;
+    // A free slot: its texture filled again in place, the same size and format
+    target = slot->get();
+    ccGLBindTexture2D(target->texture->getName());
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, slotWidth, slotHeight, GL_RGBA, GL_UNSIGNED_BYTE, decoded.pixels.data());
   }
-  ccTexParams params{GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE};
-  texture->setTexParameters(&params);
-
-  auto owned = std::make_unique<Page>();
-  auto& page = *owned;
+  else
+  {
+    // One of the three slots, made once while she's on screen
+    auto texture = new CCTexture2D();
+    // RGBA8888, straight alpha (a texture made from raw data isn't premultiplied)
+    if (!texture->initWithData(decoded.pixels.data(), kCCTexture2DPixelFormat_RGBA8888, slotWidth, slotHeight,
+                               CCSize(slotWidth, slotHeight)))
+    {
+      texture->release();
+      this->fail(fmt::format("can't upload {}", atlas.png.filename()));
+      return false;
+    }
+    ccTexParams params{GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE};
+    texture->setTexParameters(&params);
+    auto owned = std::make_unique<Page>();
+    owned->texture = texture;
+    texture->release();
+    owned->bytes = decoded.pixels.size();
+    target = owned.get();
+    m_pages.push_back(std::move(owned));
+  }
+  auto& page = *target;
   page.atlas = decoded.atlas;
-  page.texture = texture;
-  texture->release();
-  page.bytes = decoded.pixels.size();
+  auto texture = page.texture.data();
   // The manifest's rects and canvas in pixels, as they are: this form of createWithTexture takes pixels and makes
   // the points itself (divided by the content scale factor once, like frames from a plist)
   for (int i = 0; i < atlas.frameCount; i++)
@@ -528,13 +580,12 @@ bool MSMita::upload(MitaDecodedPage& decoded, int wanted)
   auto uploadMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - began).count();
   auto loadSeconds = (decoded.milliseconds + uploadMs) / 1000;
   m_loadSeconds = m_loadSeconds <= 0 ? loadSeconds : m_loadSeconds + (loadSeconds - m_loadSeconds) * LOAD_SMOOTHING;
-  m_pages.push_back(std::move(owned));
   m_plan->uploaded(decoded.atlas);
 
   size_t resident = 0;
   for (auto const& each : m_pages)
     resident += each->bytes;
-  log::debug("Mita: atlas {} decoded in {:.1f} ms, uploaded in {:.1f} ms; {} pages on the GPU, {:.2f} MiB",
+  log::debug("Mita: atlas {} decoded in {:.1f} ms, uploaded in {:.1f} ms; {} texture slots, {:.2f} MiB",
              decoded.atlas, decoded.milliseconds, uploadMs, m_pages.size(), mebibytes(resident));
   // Its CPU copy goes now
   decoded.pixels = {};
@@ -637,8 +688,10 @@ void MSMita::update(float dt)
     return;
   auto const& theme = Theme::get();
   auto count = static_cast<int>(m_frames.size());
-  // From the time that passed: the same speed at any frame rate, and a late frame jumps to where it should be
-  m_elapsed = MitaPlan::advance(m_elapsed, dt, m_fps, count);
+  // From the time that passed: the same speed at any frame rate, and a late frame jumps to where it should be. Her
+  // clock starts with her first frame shown, so she doesn't start by skipping the frames her first page took
+  if (m_sprite)
+    m_elapsed = MitaPlan::advance(m_elapsed, dt, m_fps, count);
   auto index = MitaPlan::frameAt(m_elapsed, m_fps, count);
   // A still frame, to check one by one
   if (theme.mitaFreezeFrame >= 0)
@@ -649,31 +702,32 @@ void MSMita::update(float dt)
   if (this->resident(atlas))
     this->show(index);
 
-  // A finished page: on the GPU if it's for now or next, left waiting decoded if it's for soon, else dropped
-  if (auto ready = m_loader->readyAtlas(); ready >= 0)
+  // The finished pages: on the GPU if they're for now or the next two, left waiting decoded if they're for soon,
+  // else dropped
+  for (auto ready : m_loader->readyAtlases())
   {
     auto use = m_plan->decide(ready, atlas);
-    if (use != MitaPlan::Use::Wait)
+    if (use == MitaPlan::Use::Wait)
+      continue;
+    auto decoded = m_loader->take(ready);
+    if (!decoded)
+      continue;
+    if (!decoded->ok)
     {
-      auto decoded = m_loader->take();
-      if (decoded && !decoded->ok)
-      {
-        this->fail(fmt::format("can't decode {}", m_atlases[decoded->atlas].png.filename()));
-        return;
-      }
-      if (decoded && use == MitaPlan::Use::Upload && !this->upload(*decoded, atlas))
-        return;
+      this->fail(fmt::format("can't decode {}", m_atlases[decoded->atlas].png.filename()));
+      return;
     }
+    if (use == MitaPlan::Use::Upload && !this->upload(*decoded, atlas))
+      return;
   }
 
   // Just uploaded, or not there yet: then the last frame stays until it is, and the loop catches up with the time
   if (this->resident(atlas))
     this->show(index);
-  // Where playback will be once the next load ends
+  // Where playback will be once the next load ends; the pages from there on, nearest first
   auto later = MitaPlan::advance(m_elapsed, m_loadSeconds * LOAD_MARGIN, m_fps, count);
   auto predicted = m_frames[MitaPlan::frameAt(later, m_fps, count)].atlas;
-  if (auto request = m_plan->toRequest(atlas, predicted); request >= 0 && !m_loader->isBusyWith(request))
-    m_loader->request(request);
+  m_loader->want(m_plan->toRequest(atlas, predicted));
 
   if (!m_sprite)
     return;

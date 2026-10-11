@@ -64,10 +64,10 @@
 		"files": [
 			"resources/sounds/hover.ogg",
 			"resources/sounds/click.ogg",
-			"resources/mita/mita_atlas_*.png",
-			"resources/mita/mita-manifest.json",
-			"resources/mita/MITA_ATTRIBUTION.txt",
-			"resources/mita/mita-source-metadata.json"
+			"resources/mita-closeup/mita_closeup_atlas_*.png",
+			"resources/mita-closeup/mita-closeup-manifest.json",
+			"resources/mita-closeup/ATTRIBUTION.txt",
+			"resources/mita-closeup/source_metadata.json"
 		],
 		"fonts": {
 			"miside-font": {

@@ -18,7 +18,7 @@ The background art is in `resources/background/`, the font and the sounds are fr
 - **The profile card** in the bottom left corner, small and quiet: a round avatar with the player's cube in their colors, and their name. It opens the profile like the vanilla button (which it presses with `activate()`)
 - **Nothing covers the menu**: any other node in its way (a mod's too) is moved to the right of it
 - **The background** is dark and pink: the room's layers tinted and dimmed, a darkening, a faint repeating pattern of hearts, stars and flowers, a soft crimson glow on the right, a few slow pink motes, a shade on the left under the menu, a vignette. The layers follow the mouse a little (2 pt)
-- **Mita** on the right, as a close portrait (face and shoulders, the top of her hair past the top edge) with a thin pink line around her outline: an animated idle loop (127 frames at 24 fps, from a CC BY 4.0 model, see LICENSES.md) over the background and under every button. She plays from the time that passed, so at the same speed at any frame rate. Her 22 atlas pages stream: at most two on the GPU (~21 MiB), decoded ahead on a worker thread with Windows' PNG decoder, uploaded on the main thread, freed when the menu closes. Missing or broken files: the menu works without her, the log says why once
+- **Mita** on the right, as a close-up (head to chest, rendered so by the camera: 960×1080 frames shown at their own scale, the canvas as high as the screen) with a thin pink line around her outline: an animated idle loop (127 frames at 24 fps, from a CC BY 4.0 model, see LICENSES.md) over the background and under every button. She plays from the time that passed, so at the same speed at any frame rate; her clock starts with her first frame shown. Her 64 atlas pages (two frames, 83 ms of her, each) stream: at most three on the GPU (the one for now and the next two, ~24 MiB), decoded ahead one after another on a worker thread with Windows' PNG decoder (at most two finished pages wait, ~16 MiB, plus one being decoded), uploaded on the main thread into three texture slots made once (filled again, never deleted and made anew while she plays: that stalled the driver), freed when the menu closes. Missing or broken files: the menu works without her, the log says why once
 - **The transition**: a short darkening, then the game's own transition. No transition is hooked, other screens change exactly as before
 
 ## Settings
@@ -50,7 +50,7 @@ Colors, fonts, sprites, sounds, spacing and timings all come from the theme (`sr
 
 New keys (all with defaults; a missing or wrong one keeps its default): `title-font`; `shine-enabled`, `shine-duration` (0.28 s), `shine-band-width` (0.7 of the label's width), `shine-intensity` (0.95), `shine-tint` (its edges), `shine-core-color` (its middle), `shine-core` (the flat middle's share of the half width, 0.6), `shine-slant` (0), `shine-fade-out`, `shine-glow-radius` (the wide halo, 16 pt), `shine-glow-intensity` (3), `shine-glow-inner-radius` (the tight one, 2.5 pt), `shine-glow-inner-intensity` (1.1), `shine-glow-spread` (2: the glow's wave against the letters'), `shine-glow-color` (white), `shine-freeze` (-1; 0..1 holds the wave at that point of the pass while an item is lit, to look at it, set it back to -1 after); `row-glow-color`, `row-glow-opacity`, `row-glow-spread`; `exit-dodge-enabled`, `exit-dodge-radius` (55), `exit-dodge-max` (11), `exit-dodge-vertical`, `exit-dodge-stretch` (0.04), `exit-dodge-tilt` (3°), `exit-dodge-stiffness`, `exit-dodge-damping`; `pattern-sprite`, `pattern-color`, `pattern-opacity` (16), `pattern-tile`; `vignette-sprite`, `vignette-color`, `vignette-opacity`; `particle-count` (14), `particle-color`, `particle-opacity`, `particle-size-min/max`, `particle-speed`, `particle-life`; `logo-sprite`, `logo-left` (59), `logo-bottom` (236), `logo-width` (220: the drawn part's, on screen); `mita-outline-enabled`, `mita-outline-color`, `mita-outline-opacity`, `mita-outline-width`.
 
-Mita's keys: `mita-enabled` (true), `mita-x` / `mita-y` (414.5, 0: her bottom middle), `mita-scale` (0.4444444444 points per pixel of her 640×720 canvas, so as high as the screen), `mita-fps` (24; 0 takes the manifest's), `mita-parallax-enabled` (false), `mita-parallax-max-x` / `mita-parallax-max-y` (3, 2; down only, so the cut at the bottom never shows a gap), `mita-freeze-frame` (-1 plays; 0…126 holds that frame still, to check frames one at a time). On a narrower window she stays against the right edge and is cut there rather than covering the buttons.
+Mita's keys: `mita-enabled` (true), `mita-x` / `mita-y` (414.5, 0: her bottom middle), `mita-scale` (0.2962962963 = 320/1080 points per pixel of her 960×1080 canvas, so as high as the screen; no zoom on top), `mita-fps` (24; 0 takes the manifest's), `mita-parallax-enabled` (false), `mita-parallax-max-x` / `mita-parallax-max-y` (3, 2; down only, so the cut at the bottom never shows a gap), `mita-freeze-frame` (-1 plays; 0…126 holds that frame still, to check frames one at a time). On a narrower window she stays against the right edge and is cut there rather than covering the buttons.
 
 Positions are in points on the 569×320 screen from its bottom left corner (`column-left`, `first-row-y`, `row-pitch` — from one row's middle to the next one's, `exit-y`, `logo-bottom`/`logo-top`, `subtitle-top`, `card-left`/`card-bottom`...). Missing keys keep their defaults, a value of the wrong type is ignored with a warning in the log. The theme is read again every time the main menu opens.
 
@@ -71,7 +71,7 @@ Positions are in points on the 569×320 screen from its bottom left corner (`col
 cmake -S tests -B build-tests -G Ninja && cmake --build build-tests && ctest --test-dir build-tests
 ```
 
-Mita's playback decisions (`src/ui/MitaPlan.hpp`) simulated without the game: the frame for the time at 30, 60, 144 and 240 fps, stutters, decoders from 60 to 400 ms per page, the 126→0 seam, never more than two pages on the GPU.
+Mita's playback decisions (`src/ui/MitaPlan.hpp`) simulated without the game: the frame for the time at 30, 60, 144 and 240 fps, stutters, decoders from 17 to 150 ms per page against the close-up's 83 ms pages, the 126→0 seam, never more than three pages on the GPU or two finished pages waiting.
 
 ## Building
 
@@ -152,18 +152,18 @@ To go through by hand in the game before a release. Each line: what to do, then 
 
 **Mita**
 
-- [ ] She's a close portrait: face and shoulders, the top of her hair cut by the top edge, her chest by the bottom one; her face never cut during the whole loop; her drawing right of the menu
+- [ ] She's a close-up as in the set's `preview.png`: head to chest, the whole head on screen, her hands and lower chest cut by the bottom edge; her eyes, face and chin never cut during the whole loop; her drawing right of the menu
 - [ ] A thin pink line around her outline, no rectangle around her, no glow over her face; her details as sharp as before
-- [ ] Still frames first: `"mita-freeze-frame": 0`, then 5, 6 (the first frame of the second atlas page) and 126, with parallax off. Each one is the whole portrait, as in `preview.gif`, the same size and place each time. The log (debug) says `texture rect 640x720 px`, `on screen 284.444x320.000 at (414.50, 0.00)` on a 16:9 window, with no "she's drawn" warning
-- [ ] Then `-1` to play: the same portrait moving, no jumps between frames 5 and 6 or 126 and 0
+- [ ] Still frames first: `"mita-freeze-frame": 0`, then 1, 2 (the first frame of the second atlas page), 63 and 126 (the last page's only frame), with parallax off. Each one is the whole portrait, as in `preview.gif`, the same size and place each time. The log (debug) says `texture rect 960x1080 px`, `on screen 284.444x320.000 at (414.50, 0.00)` on a 16:9 window, with no "she's drawn" warning
+- [ ] Then `-1` to play: the same portrait moving, no jumps between frames 1 and 2 or 126 and 0
 - [ ] She stands on the right, her feet cut by the bottom edge, over the room and under the tray, the card, the column and every mod's button; nothing she covers stops being clickable
 - [ ] Her loop is smooth at 30, 60 and 144+ fps (cap the frame rate in GD's settings) and takes the same 5.3 s each time; no jump at the loop's seam
 - [ ] On a dark background her edges have no light or dark fringe
 - [ ] Texture quality Low / Medium / High: the same size on screen every time (as high as the screen)
 - [ ] A narrower window (4:3) and resizing it: she keeps to the right edge, never over the buttons
-- [ ] The log (debug level) shows each page's decode and upload time and "2 pages on the GPU" at most; check the times on your machine
+- [ ] The log (debug level) shows each page's decode and upload time and "3 texture slots" at most; decode well under 83 ms (17 ms measured outside the game), upload a few ms; no "Slow frame" in `MSMita::freePages` or `MSMita::upload` from the mod profiler
 - [ ] Open and leave the menu many times (and leave it right as it opens): no crash, no growth in the game's memory in Task Manager; the log says the pages were freed
-- [ ] Rename `mita-manifest.json` or one atlas in the installed mod's resources: the menu works without her, one error in the log
+- [ ] Rename `mita-closeup-manifest.json` or one atlas in the installed mod's resources: the menu works without her, one error in the log
 - [ ] `"mita-enabled": false` in theme.json: no Mita, nothing loaded
 
 **The Vanilla menu setting**

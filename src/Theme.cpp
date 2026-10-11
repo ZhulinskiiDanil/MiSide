@@ -174,10 +174,10 @@ namespace
 
     // ! --- Mita --- !
     theme.mitaEnabled = true;
-    theme.mitaX = 400;
-    theme.mitaY = -75.6f;
-    // 320 / 720: her canvas as high as the screen
-    theme.mitaScale = 0.582f;
+    // The close-up set's placement: anchor at her canvas' bottom middle, the canvas as high as the screen
+    theme.mitaX = 414.5f;
+    theme.mitaY = 0;
+    theme.mitaScale = 320.f / 1080.f;
     theme.mitaFps = 24;
     theme.mitaParallaxEnabled = false;
     theme.mitaParallaxMaxX = 3;
@@ -186,7 +186,8 @@ namespace
     theme.mitaOutlineEnabled = true;
     theme.mitaOutlineColor = ccc3(0xff, 0x4f, 0xa3);
     theme.mitaOutlineOpacity = 210;
-    theme.mitaOutlineWidth = 4;
+    // About 2.4 points on the screen, as before at the old set's scale
+    theme.mitaOutlineWidth = 8;
 
     // ! --- The tray and the profile --- !
     theme.trayMargin = 8;

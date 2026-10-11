@@ -1,0 +1,2380 @@
+{
+  "schemaVersion": 1,
+  "clip": "Idle",
+  "variant": "closeup-960x1080",
+  "cameraOrthoScale": 0.48,
+  "cameraTargetZ": 1.56,
+  "fps": 24,
+  "frameCount": 127,
+  "durationSeconds": 5.291666666666667,
+  "sourceDurationSeconds": 5.28000020980835,
+  "sourceSampling": "t = index * sourceDuration / frameCount; endpoint excluded",
+  "loop": true,
+  "canvas": {
+    "width": 960,
+    "height": 1080,
+    "trimmed": false,
+    "anchorNormalized": [
+      0.5,
+      0
+    ],
+    "offset": [
+      0,
+      0
+    ],
+    "alphaBoundsUnionTopLeft": [
+      68,
+      0,
+      904,
+      1080
+    ]
+  },
+  "placement": {
+    "referenceScreen": [
+      569,
+      320
+    ],
+    "position": [
+      414.5,
+      0
+    ],
+    "scale": 0.2962962962962963,
+    "displaySize": [
+      284.44444444444446,
+      320
+    ],
+    "canvasRect": [
+      272.27777777777777,
+      0,
+      284.44444444444446,
+      320
+    ],
+    "parallax": {
+      "enabled": false,
+      "maxOffsetPoints": [
+        3,
+        2
+      ]
+    }
+  },
+  "alpha": {
+    "png": "straight",
+    "colorSpace": "sRGB",
+    "bitDepth": 8,
+    "opaqueMaterials": true,
+    "antialiasedSilhouette": true,
+    "runtime": "Use CCTexture2D.hasPremultipliedAlpha: ONE,ONE_MINUS_SRC_ALPHA if true; SRC_ALPHA,ONE_MINUS_SRC_ALPHA otherwise. Do not premultiply twice."
+  },
+  "packing": {
+    "format": 2,
+    "rotation": false,
+    "paddingExtrusionPixels": 2,
+    "mipmaps": false,
+    "filter": "linear",
+    "wrap": "clamp-to-edge"
+  },
+  "streaming": {
+    "residentAtlasLimit": 3,
+    "strategy": "current + next two, asynchronous decode, upload on GL thread, evict previous after sprite switches",
+    "allFramesRGBABytes": 526694400,
+    "allAtlasesRGBABytes": 530847808,
+    "threeLargestAtlasesRGBABytes": 25079424,
+    "twoLargestAtlasesRGBABytes": 16719616
+  },
+  "atlases": [
+    {
+      "index": 0,
+      "png": "atlases/mita_closeup_atlas_00.png",
+      "plist": "atlases/mita_closeup_atlas_00.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 0,
+      "frameCount": 2
+    },
+    {
+      "index": 1,
+      "png": "atlases/mita_closeup_atlas_01.png",
+      "plist": "atlases/mita_closeup_atlas_01.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 2,
+      "frameCount": 2
+    },
+    {
+      "index": 2,
+      "png": "atlases/mita_closeup_atlas_02.png",
+      "plist": "atlases/mita_closeup_atlas_02.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 4,
+      "frameCount": 2
+    },
+    {
+      "index": 3,
+      "png": "atlases/mita_closeup_atlas_03.png",
+      "plist": "atlases/mita_closeup_atlas_03.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 6,
+      "frameCount": 2
+    },
+    {
+      "index": 4,
+      "png": "atlases/mita_closeup_atlas_04.png",
+      "plist": "atlases/mita_closeup_atlas_04.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 8,
+      "frameCount": 2
+    },
+    {
+      "index": 5,
+      "png": "atlases/mita_closeup_atlas_05.png",
+      "plist": "atlases/mita_closeup_atlas_05.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 10,
+      "frameCount": 2
+    },
+    {
+      "index": 6,
+      "png": "atlases/mita_closeup_atlas_06.png",
+      "plist": "atlases/mita_closeup_atlas_06.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 12,
+      "frameCount": 2
+    },
+    {
+      "index": 7,
+      "png": "atlases/mita_closeup_atlas_07.png",
+      "plist": "atlases/mita_closeup_atlas_07.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 14,
+      "frameCount": 2
+    },
+    {
+      "index": 8,
+      "png": "atlases/mita_closeup_atlas_08.png",
+      "plist": "atlases/mita_closeup_atlas_08.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 16,
+      "frameCount": 2
+    },
+    {
+      "index": 9,
+      "png": "atlases/mita_closeup_atlas_09.png",
+      "plist": "atlases/mita_closeup_atlas_09.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 18,
+      "frameCount": 2
+    },
+    {
+      "index": 10,
+      "png": "atlases/mita_closeup_atlas_10.png",
+      "plist": "atlases/mita_closeup_atlas_10.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 20,
+      "frameCount": 2
+    },
+    {
+      "index": 11,
+      "png": "atlases/mita_closeup_atlas_11.png",
+      "plist": "atlases/mita_closeup_atlas_11.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 22,
+      "frameCount": 2
+    },
+    {
+      "index": 12,
+      "png": "atlases/mita_closeup_atlas_12.png",
+      "plist": "atlases/mita_closeup_atlas_12.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 24,
+      "frameCount": 2
+    },
+    {
+      "index": 13,
+      "png": "atlases/mita_closeup_atlas_13.png",
+      "plist": "atlases/mita_closeup_atlas_13.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 26,
+      "frameCount": 2
+    },
+    {
+      "index": 14,
+      "png": "atlases/mita_closeup_atlas_14.png",
+      "plist": "atlases/mita_closeup_atlas_14.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 28,
+      "frameCount": 2
+    },
+    {
+      "index": 15,
+      "png": "atlases/mita_closeup_atlas_15.png",
+      "plist": "atlases/mita_closeup_atlas_15.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 30,
+      "frameCount": 2
+    },
+    {
+      "index": 16,
+      "png": "atlases/mita_closeup_atlas_16.png",
+      "plist": "atlases/mita_closeup_atlas_16.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 32,
+      "frameCount": 2
+    },
+    {
+      "index": 17,
+      "png": "atlases/mita_closeup_atlas_17.png",
+      "plist": "atlases/mita_closeup_atlas_17.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 34,
+      "frameCount": 2
+    },
+    {
+      "index": 18,
+      "png": "atlases/mita_closeup_atlas_18.png",
+      "plist": "atlases/mita_closeup_atlas_18.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 36,
+      "frameCount": 2
+    },
+    {
+      "index": 19,
+      "png": "atlases/mita_closeup_atlas_19.png",
+      "plist": "atlases/mita_closeup_atlas_19.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 38,
+      "frameCount": 2
+    },
+    {
+      "index": 20,
+      "png": "atlases/mita_closeup_atlas_20.png",
+      "plist": "atlases/mita_closeup_atlas_20.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 40,
+      "frameCount": 2
+    },
+    {
+      "index": 21,
+      "png": "atlases/mita_closeup_atlas_21.png",
+      "plist": "atlases/mita_closeup_atlas_21.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 42,
+      "frameCount": 2
+    },
+    {
+      "index": 22,
+      "png": "atlases/mita_closeup_atlas_22.png",
+      "plist": "atlases/mita_closeup_atlas_22.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 44,
+      "frameCount": 2
+    },
+    {
+      "index": 23,
+      "png": "atlases/mita_closeup_atlas_23.png",
+      "plist": "atlases/mita_closeup_atlas_23.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 46,
+      "frameCount": 2
+    },
+    {
+      "index": 24,
+      "png": "atlases/mita_closeup_atlas_24.png",
+      "plist": "atlases/mita_closeup_atlas_24.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 48,
+      "frameCount": 2
+    },
+    {
+      "index": 25,
+      "png": "atlases/mita_closeup_atlas_25.png",
+      "plist": "atlases/mita_closeup_atlas_25.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 50,
+      "frameCount": 2
+    },
+    {
+      "index": 26,
+      "png": "atlases/mita_closeup_atlas_26.png",
+      "plist": "atlases/mita_closeup_atlas_26.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 52,
+      "frameCount": 2
+    },
+    {
+      "index": 27,
+      "png": "atlases/mita_closeup_atlas_27.png",
+      "plist": "atlases/mita_closeup_atlas_27.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 54,
+      "frameCount": 2
+    },
+    {
+      "index": 28,
+      "png": "atlases/mita_closeup_atlas_28.png",
+      "plist": "atlases/mita_closeup_atlas_28.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 56,
+      "frameCount": 2
+    },
+    {
+      "index": 29,
+      "png": "atlases/mita_closeup_atlas_29.png",
+      "plist": "atlases/mita_closeup_atlas_29.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 58,
+      "frameCount": 2
+    },
+    {
+      "index": 30,
+      "png": "atlases/mita_closeup_atlas_30.png",
+      "plist": "atlases/mita_closeup_atlas_30.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 60,
+      "frameCount": 2
+    },
+    {
+      "index": 31,
+      "png": "atlases/mita_closeup_atlas_31.png",
+      "plist": "atlases/mita_closeup_atlas_31.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 62,
+      "frameCount": 2
+    },
+    {
+      "index": 32,
+      "png": "atlases/mita_closeup_atlas_32.png",
+      "plist": "atlases/mita_closeup_atlas_32.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 64,
+      "frameCount": 2
+    },
+    {
+      "index": 33,
+      "png": "atlases/mita_closeup_atlas_33.png",
+      "plist": "atlases/mita_closeup_atlas_33.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 66,
+      "frameCount": 2
+    },
+    {
+      "index": 34,
+      "png": "atlases/mita_closeup_atlas_34.png",
+      "plist": "atlases/mita_closeup_atlas_34.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 68,
+      "frameCount": 2
+    },
+    {
+      "index": 35,
+      "png": "atlases/mita_closeup_atlas_35.png",
+      "plist": "atlases/mita_closeup_atlas_35.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 70,
+      "frameCount": 2
+    },
+    {
+      "index": 36,
+      "png": "atlases/mita_closeup_atlas_36.png",
+      "plist": "atlases/mita_closeup_atlas_36.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 72,
+      "frameCount": 2
+    },
+    {
+      "index": 37,
+      "png": "atlases/mita_closeup_atlas_37.png",
+      "plist": "atlases/mita_closeup_atlas_37.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 74,
+      "frameCount": 2
+    },
+    {
+      "index": 38,
+      "png": "atlases/mita_closeup_atlas_38.png",
+      "plist": "atlases/mita_closeup_atlas_38.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 76,
+      "frameCount": 2
+    },
+    {
+      "index": 39,
+      "png": "atlases/mita_closeup_atlas_39.png",
+      "plist": "atlases/mita_closeup_atlas_39.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 78,
+      "frameCount": 2
+    },
+    {
+      "index": 40,
+      "png": "atlases/mita_closeup_atlas_40.png",
+      "plist": "atlases/mita_closeup_atlas_40.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 80,
+      "frameCount": 2
+    },
+    {
+      "index": 41,
+      "png": "atlases/mita_closeup_atlas_41.png",
+      "plist": "atlases/mita_closeup_atlas_41.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 82,
+      "frameCount": 2
+    },
+    {
+      "index": 42,
+      "png": "atlases/mita_closeup_atlas_42.png",
+      "plist": "atlases/mita_closeup_atlas_42.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 84,
+      "frameCount": 2
+    },
+    {
+      "index": 43,
+      "png": "atlases/mita_closeup_atlas_43.png",
+      "plist": "atlases/mita_closeup_atlas_43.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 86,
+      "frameCount": 2
+    },
+    {
+      "index": 44,
+      "png": "atlases/mita_closeup_atlas_44.png",
+      "plist": "atlases/mita_closeup_atlas_44.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 88,
+      "frameCount": 2
+    },
+    {
+      "index": 45,
+      "png": "atlases/mita_closeup_atlas_45.png",
+      "plist": "atlases/mita_closeup_atlas_45.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 90,
+      "frameCount": 2
+    },
+    {
+      "index": 46,
+      "png": "atlases/mita_closeup_atlas_46.png",
+      "plist": "atlases/mita_closeup_atlas_46.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 92,
+      "frameCount": 2
+    },
+    {
+      "index": 47,
+      "png": "atlases/mita_closeup_atlas_47.png",
+      "plist": "atlases/mita_closeup_atlas_47.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 94,
+      "frameCount": 2
+    },
+    {
+      "index": 48,
+      "png": "atlases/mita_closeup_atlas_48.png",
+      "plist": "atlases/mita_closeup_atlas_48.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 96,
+      "frameCount": 2
+    },
+    {
+      "index": 49,
+      "png": "atlases/mita_closeup_atlas_49.png",
+      "plist": "atlases/mita_closeup_atlas_49.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 98,
+      "frameCount": 2
+    },
+    {
+      "index": 50,
+      "png": "atlases/mita_closeup_atlas_50.png",
+      "plist": "atlases/mita_closeup_atlas_50.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 100,
+      "frameCount": 2
+    },
+    {
+      "index": 51,
+      "png": "atlases/mita_closeup_atlas_51.png",
+      "plist": "atlases/mita_closeup_atlas_51.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 102,
+      "frameCount": 2
+    },
+    {
+      "index": 52,
+      "png": "atlases/mita_closeup_atlas_52.png",
+      "plist": "atlases/mita_closeup_atlas_52.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 104,
+      "frameCount": 2
+    },
+    {
+      "index": 53,
+      "png": "atlases/mita_closeup_atlas_53.png",
+      "plist": "atlases/mita_closeup_atlas_53.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 106,
+      "frameCount": 2
+    },
+    {
+      "index": 54,
+      "png": "atlases/mita_closeup_atlas_54.png",
+      "plist": "atlases/mita_closeup_atlas_54.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 108,
+      "frameCount": 2
+    },
+    {
+      "index": 55,
+      "png": "atlases/mita_closeup_atlas_55.png",
+      "plist": "atlases/mita_closeup_atlas_55.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 110,
+      "frameCount": 2
+    },
+    {
+      "index": 56,
+      "png": "atlases/mita_closeup_atlas_56.png",
+      "plist": "atlases/mita_closeup_atlas_56.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 112,
+      "frameCount": 2
+    },
+    {
+      "index": 57,
+      "png": "atlases/mita_closeup_atlas_57.png",
+      "plist": "atlases/mita_closeup_atlas_57.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 114,
+      "frameCount": 2
+    },
+    {
+      "index": 58,
+      "png": "atlases/mita_closeup_atlas_58.png",
+      "plist": "atlases/mita_closeup_atlas_58.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 116,
+      "frameCount": 2
+    },
+    {
+      "index": 59,
+      "png": "atlases/mita_closeup_atlas_59.png",
+      "plist": "atlases/mita_closeup_atlas_59.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 118,
+      "frameCount": 2
+    },
+    {
+      "index": 60,
+      "png": "atlases/mita_closeup_atlas_60.png",
+      "plist": "atlases/mita_closeup_atlas_60.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 120,
+      "frameCount": 2
+    },
+    {
+      "index": 61,
+      "png": "atlases/mita_closeup_atlas_61.png",
+      "plist": "atlases/mita_closeup_atlas_61.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 122,
+      "frameCount": 2
+    },
+    {
+      "index": 62,
+      "png": "atlases/mita_closeup_atlas_62.png",
+      "plist": "atlases/mita_closeup_atlas_62.plist",
+      "size": [
+        1928,
+        1084
+      ],
+      "rgba8Bytes": 8359808,
+      "firstFrame": 124,
+      "frameCount": 2
+    },
+    {
+      "index": 63,
+      "png": "atlases/mita_closeup_atlas_63.png",
+      "plist": "atlases/mita_closeup_atlas_63.plist",
+      "size": [
+        964,
+        1084
+      ],
+      "rgba8Bytes": 4179904,
+      "firstFrame": 126,
+      "frameCount": 1
+    }
+  ],
+  "frames": [
+    {
+      "index": 0,
+      "name": "mita_menu_closeup/mita_0000.png",
+      "png": "frames/mita_0000.png",
+      "atlas": 0,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 1,
+      "name": "mita_menu_closeup/mita_0001.png",
+      "png": "frames/mita_0001.png",
+      "atlas": 0,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 2,
+      "name": "mita_menu_closeup/mita_0002.png",
+      "png": "frames/mita_0002.png",
+      "atlas": 1,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 3,
+      "name": "mita_menu_closeup/mita_0003.png",
+      "png": "frames/mita_0003.png",
+      "atlas": 1,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 4,
+      "name": "mita_menu_closeup/mita_0004.png",
+      "png": "frames/mita_0004.png",
+      "atlas": 2,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 5,
+      "name": "mita_menu_closeup/mita_0005.png",
+      "png": "frames/mita_0005.png",
+      "atlas": 2,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 6,
+      "name": "mita_menu_closeup/mita_0006.png",
+      "png": "frames/mita_0006.png",
+      "atlas": 3,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 7,
+      "name": "mita_menu_closeup/mita_0007.png",
+      "png": "frames/mita_0007.png",
+      "atlas": 3,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 8,
+      "name": "mita_menu_closeup/mita_0008.png",
+      "png": "frames/mita_0008.png",
+      "atlas": 4,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 9,
+      "name": "mita_menu_closeup/mita_0009.png",
+      "png": "frames/mita_0009.png",
+      "atlas": 4,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 10,
+      "name": "mita_menu_closeup/mita_0010.png",
+      "png": "frames/mita_0010.png",
+      "atlas": 5,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 11,
+      "name": "mita_menu_closeup/mita_0011.png",
+      "png": "frames/mita_0011.png",
+      "atlas": 5,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 12,
+      "name": "mita_menu_closeup/mita_0012.png",
+      "png": "frames/mita_0012.png",
+      "atlas": 6,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 13,
+      "name": "mita_menu_closeup/mita_0013.png",
+      "png": "frames/mita_0013.png",
+      "atlas": 6,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 14,
+      "name": "mita_menu_closeup/mita_0014.png",
+      "png": "frames/mita_0014.png",
+      "atlas": 7,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 15,
+      "name": "mita_menu_closeup/mita_0015.png",
+      "png": "frames/mita_0015.png",
+      "atlas": 7,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 16,
+      "name": "mita_menu_closeup/mita_0016.png",
+      "png": "frames/mita_0016.png",
+      "atlas": 8,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 17,
+      "name": "mita_menu_closeup/mita_0017.png",
+      "png": "frames/mita_0017.png",
+      "atlas": 8,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 18,
+      "name": "mita_menu_closeup/mita_0018.png",
+      "png": "frames/mita_0018.png",
+      "atlas": 9,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 19,
+      "name": "mita_menu_closeup/mita_0019.png",
+      "png": "frames/mita_0019.png",
+      "atlas": 9,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 20,
+      "name": "mita_menu_closeup/mita_0020.png",
+      "png": "frames/mita_0020.png",
+      "atlas": 10,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 21,
+      "name": "mita_menu_closeup/mita_0021.png",
+      "png": "frames/mita_0021.png",
+      "atlas": 10,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 22,
+      "name": "mita_menu_closeup/mita_0022.png",
+      "png": "frames/mita_0022.png",
+      "atlas": 11,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 23,
+      "name": "mita_menu_closeup/mita_0023.png",
+      "png": "frames/mita_0023.png",
+      "atlas": 11,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 24,
+      "name": "mita_menu_closeup/mita_0024.png",
+      "png": "frames/mita_0024.png",
+      "atlas": 12,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 25,
+      "name": "mita_menu_closeup/mita_0025.png",
+      "png": "frames/mita_0025.png",
+      "atlas": 12,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 26,
+      "name": "mita_menu_closeup/mita_0026.png",
+      "png": "frames/mita_0026.png",
+      "atlas": 13,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 27,
+      "name": "mita_menu_closeup/mita_0027.png",
+      "png": "frames/mita_0027.png",
+      "atlas": 13,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 28,
+      "name": "mita_menu_closeup/mita_0028.png",
+      "png": "frames/mita_0028.png",
+      "atlas": 14,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 29,
+      "name": "mita_menu_closeup/mita_0029.png",
+      "png": "frames/mita_0029.png",
+      "atlas": 14,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 30,
+      "name": "mita_menu_closeup/mita_0030.png",
+      "png": "frames/mita_0030.png",
+      "atlas": 15,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 31,
+      "name": "mita_menu_closeup/mita_0031.png",
+      "png": "frames/mita_0031.png",
+      "atlas": 15,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 32,
+      "name": "mita_menu_closeup/mita_0032.png",
+      "png": "frames/mita_0032.png",
+      "atlas": 16,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 33,
+      "name": "mita_menu_closeup/mita_0033.png",
+      "png": "frames/mita_0033.png",
+      "atlas": 16,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 34,
+      "name": "mita_menu_closeup/mita_0034.png",
+      "png": "frames/mita_0034.png",
+      "atlas": 17,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 35,
+      "name": "mita_menu_closeup/mita_0035.png",
+      "png": "frames/mita_0035.png",
+      "atlas": 17,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 36,
+      "name": "mita_menu_closeup/mita_0036.png",
+      "png": "frames/mita_0036.png",
+      "atlas": 18,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 37,
+      "name": "mita_menu_closeup/mita_0037.png",
+      "png": "frames/mita_0037.png",
+      "atlas": 18,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 38,
+      "name": "mita_menu_closeup/mita_0038.png",
+      "png": "frames/mita_0038.png",
+      "atlas": 19,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 39,
+      "name": "mita_menu_closeup/mita_0039.png",
+      "png": "frames/mita_0039.png",
+      "atlas": 19,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 40,
+      "name": "mita_menu_closeup/mita_0040.png",
+      "png": "frames/mita_0040.png",
+      "atlas": 20,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 41,
+      "name": "mita_menu_closeup/mita_0041.png",
+      "png": "frames/mita_0041.png",
+      "atlas": 20,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 42,
+      "name": "mita_menu_closeup/mita_0042.png",
+      "png": "frames/mita_0042.png",
+      "atlas": 21,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 43,
+      "name": "mita_menu_closeup/mita_0043.png",
+      "png": "frames/mita_0043.png",
+      "atlas": 21,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 44,
+      "name": "mita_menu_closeup/mita_0044.png",
+      "png": "frames/mita_0044.png",
+      "atlas": 22,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 45,
+      "name": "mita_menu_closeup/mita_0045.png",
+      "png": "frames/mita_0045.png",
+      "atlas": 22,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 46,
+      "name": "mita_menu_closeup/mita_0046.png",
+      "png": "frames/mita_0046.png",
+      "atlas": 23,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 47,
+      "name": "mita_menu_closeup/mita_0047.png",
+      "png": "frames/mita_0047.png",
+      "atlas": 23,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 48,
+      "name": "mita_menu_closeup/mita_0048.png",
+      "png": "frames/mita_0048.png",
+      "atlas": 24,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 49,
+      "name": "mita_menu_closeup/mita_0049.png",
+      "png": "frames/mita_0049.png",
+      "atlas": 24,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 50,
+      "name": "mita_menu_closeup/mita_0050.png",
+      "png": "frames/mita_0050.png",
+      "atlas": 25,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 51,
+      "name": "mita_menu_closeup/mita_0051.png",
+      "png": "frames/mita_0051.png",
+      "atlas": 25,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 52,
+      "name": "mita_menu_closeup/mita_0052.png",
+      "png": "frames/mita_0052.png",
+      "atlas": 26,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 53,
+      "name": "mita_menu_closeup/mita_0053.png",
+      "png": "frames/mita_0053.png",
+      "atlas": 26,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 54,
+      "name": "mita_menu_closeup/mita_0054.png",
+      "png": "frames/mita_0054.png",
+      "atlas": 27,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 55,
+      "name": "mita_menu_closeup/mita_0055.png",
+      "png": "frames/mita_0055.png",
+      "atlas": 27,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 56,
+      "name": "mita_menu_closeup/mita_0056.png",
+      "png": "frames/mita_0056.png",
+      "atlas": 28,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 57,
+      "name": "mita_menu_closeup/mita_0057.png",
+      "png": "frames/mita_0057.png",
+      "atlas": 28,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 58,
+      "name": "mita_menu_closeup/mita_0058.png",
+      "png": "frames/mita_0058.png",
+      "atlas": 29,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 59,
+      "name": "mita_menu_closeup/mita_0059.png",
+      "png": "frames/mita_0059.png",
+      "atlas": 29,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 60,
+      "name": "mita_menu_closeup/mita_0060.png",
+      "png": "frames/mita_0060.png",
+      "atlas": 30,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 61,
+      "name": "mita_menu_closeup/mita_0061.png",
+      "png": "frames/mita_0061.png",
+      "atlas": 30,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 62,
+      "name": "mita_menu_closeup/mita_0062.png",
+      "png": "frames/mita_0062.png",
+      "atlas": 31,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 63,
+      "name": "mita_menu_closeup/mita_0063.png",
+      "png": "frames/mita_0063.png",
+      "atlas": 31,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 64,
+      "name": "mita_menu_closeup/mita_0064.png",
+      "png": "frames/mita_0064.png",
+      "atlas": 32,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 65,
+      "name": "mita_menu_closeup/mita_0065.png",
+      "png": "frames/mita_0065.png",
+      "atlas": 32,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 66,
+      "name": "mita_menu_closeup/mita_0066.png",
+      "png": "frames/mita_0066.png",
+      "atlas": 33,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 67,
+      "name": "mita_menu_closeup/mita_0067.png",
+      "png": "frames/mita_0067.png",
+      "atlas": 33,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 68,
+      "name": "mita_menu_closeup/mita_0068.png",
+      "png": "frames/mita_0068.png",
+      "atlas": 34,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 69,
+      "name": "mita_menu_closeup/mita_0069.png",
+      "png": "frames/mita_0069.png",
+      "atlas": 34,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 70,
+      "name": "mita_menu_closeup/mita_0070.png",
+      "png": "frames/mita_0070.png",
+      "atlas": 35,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 71,
+      "name": "mita_menu_closeup/mita_0071.png",
+      "png": "frames/mita_0071.png",
+      "atlas": 35,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 72,
+      "name": "mita_menu_closeup/mita_0072.png",
+      "png": "frames/mita_0072.png",
+      "atlas": 36,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 73,
+      "name": "mita_menu_closeup/mita_0073.png",
+      "png": "frames/mita_0073.png",
+      "atlas": 36,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 74,
+      "name": "mita_menu_closeup/mita_0074.png",
+      "png": "frames/mita_0074.png",
+      "atlas": 37,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 75,
+      "name": "mita_menu_closeup/mita_0075.png",
+      "png": "frames/mita_0075.png",
+      "atlas": 37,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 76,
+      "name": "mita_menu_closeup/mita_0076.png",
+      "png": "frames/mita_0076.png",
+      "atlas": 38,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 77,
+      "name": "mita_menu_closeup/mita_0077.png",
+      "png": "frames/mita_0077.png",
+      "atlas": 38,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 78,
+      "name": "mita_menu_closeup/mita_0078.png",
+      "png": "frames/mita_0078.png",
+      "atlas": 39,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 79,
+      "name": "mita_menu_closeup/mita_0079.png",
+      "png": "frames/mita_0079.png",
+      "atlas": 39,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 80,
+      "name": "mita_menu_closeup/mita_0080.png",
+      "png": "frames/mita_0080.png",
+      "atlas": 40,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 81,
+      "name": "mita_menu_closeup/mita_0081.png",
+      "png": "frames/mita_0081.png",
+      "atlas": 40,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 82,
+      "name": "mita_menu_closeup/mita_0082.png",
+      "png": "frames/mita_0082.png",
+      "atlas": 41,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 83,
+      "name": "mita_menu_closeup/mita_0083.png",
+      "png": "frames/mita_0083.png",
+      "atlas": 41,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 84,
+      "name": "mita_menu_closeup/mita_0084.png",
+      "png": "frames/mita_0084.png",
+      "atlas": 42,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 85,
+      "name": "mita_menu_closeup/mita_0085.png",
+      "png": "frames/mita_0085.png",
+      "atlas": 42,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 86,
+      "name": "mita_menu_closeup/mita_0086.png",
+      "png": "frames/mita_0086.png",
+      "atlas": 43,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 87,
+      "name": "mita_menu_closeup/mita_0087.png",
+      "png": "frames/mita_0087.png",
+      "atlas": 43,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 88,
+      "name": "mita_menu_closeup/mita_0088.png",
+      "png": "frames/mita_0088.png",
+      "atlas": 44,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 89,
+      "name": "mita_menu_closeup/mita_0089.png",
+      "png": "frames/mita_0089.png",
+      "atlas": 44,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 90,
+      "name": "mita_menu_closeup/mita_0090.png",
+      "png": "frames/mita_0090.png",
+      "atlas": 45,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 91,
+      "name": "mita_menu_closeup/mita_0091.png",
+      "png": "frames/mita_0091.png",
+      "atlas": 45,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 92,
+      "name": "mita_menu_closeup/mita_0092.png",
+      "png": "frames/mita_0092.png",
+      "atlas": 46,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 93,
+      "name": "mita_menu_closeup/mita_0093.png",
+      "png": "frames/mita_0093.png",
+      "atlas": 46,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 94,
+      "name": "mita_menu_closeup/mita_0094.png",
+      "png": "frames/mita_0094.png",
+      "atlas": 47,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 95,
+      "name": "mita_menu_closeup/mita_0095.png",
+      "png": "frames/mita_0095.png",
+      "atlas": 47,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 96,
+      "name": "mita_menu_closeup/mita_0096.png",
+      "png": "frames/mita_0096.png",
+      "atlas": 48,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 97,
+      "name": "mita_menu_closeup/mita_0097.png",
+      "png": "frames/mita_0097.png",
+      "atlas": 48,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 98,
+      "name": "mita_menu_closeup/mita_0098.png",
+      "png": "frames/mita_0098.png",
+      "atlas": 49,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 99,
+      "name": "mita_menu_closeup/mita_0099.png",
+      "png": "frames/mita_0099.png",
+      "atlas": 49,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 100,
+      "name": "mita_menu_closeup/mita_0100.png",
+      "png": "frames/mita_0100.png",
+      "atlas": 50,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 101,
+      "name": "mita_menu_closeup/mita_0101.png",
+      "png": "frames/mita_0101.png",
+      "atlas": 50,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 102,
+      "name": "mita_menu_closeup/mita_0102.png",
+      "png": "frames/mita_0102.png",
+      "atlas": 51,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 103,
+      "name": "mita_menu_closeup/mita_0103.png",
+      "png": "frames/mita_0103.png",
+      "atlas": 51,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 104,
+      "name": "mita_menu_closeup/mita_0104.png",
+      "png": "frames/mita_0104.png",
+      "atlas": 52,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 105,
+      "name": "mita_menu_closeup/mita_0105.png",
+      "png": "frames/mita_0105.png",
+      "atlas": 52,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 106,
+      "name": "mita_menu_closeup/mita_0106.png",
+      "png": "frames/mita_0106.png",
+      "atlas": 53,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 107,
+      "name": "mita_menu_closeup/mita_0107.png",
+      "png": "frames/mita_0107.png",
+      "atlas": 53,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 108,
+      "name": "mita_menu_closeup/mita_0108.png",
+      "png": "frames/mita_0108.png",
+      "atlas": 54,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 109,
+      "name": "mita_menu_closeup/mita_0109.png",
+      "png": "frames/mita_0109.png",
+      "atlas": 54,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 110,
+      "name": "mita_menu_closeup/mita_0110.png",
+      "png": "frames/mita_0110.png",
+      "atlas": 55,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 111,
+      "name": "mita_menu_closeup/mita_0111.png",
+      "png": "frames/mita_0111.png",
+      "atlas": 55,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 112,
+      "name": "mita_menu_closeup/mita_0112.png",
+      "png": "frames/mita_0112.png",
+      "atlas": 56,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 113,
+      "name": "mita_menu_closeup/mita_0113.png",
+      "png": "frames/mita_0113.png",
+      "atlas": 56,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 114,
+      "name": "mita_menu_closeup/mita_0114.png",
+      "png": "frames/mita_0114.png",
+      "atlas": 57,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 115,
+      "name": "mita_menu_closeup/mita_0115.png",
+      "png": "frames/mita_0115.png",
+      "atlas": 57,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 116,
+      "name": "mita_menu_closeup/mita_0116.png",
+      "png": "frames/mita_0116.png",
+      "atlas": 58,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 117,
+      "name": "mita_menu_closeup/mita_0117.png",
+      "png": "frames/mita_0117.png",
+      "atlas": 58,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 118,
+      "name": "mita_menu_closeup/mita_0118.png",
+      "png": "frames/mita_0118.png",
+      "atlas": 59,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 119,
+      "name": "mita_menu_closeup/mita_0119.png",
+      "png": "frames/mita_0119.png",
+      "atlas": 59,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 120,
+      "name": "mita_menu_closeup/mita_0120.png",
+      "png": "frames/mita_0120.png",
+      "atlas": 60,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 121,
+      "name": "mita_menu_closeup/mita_0121.png",
+      "png": "frames/mita_0121.png",
+      "atlas": 60,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 122,
+      "name": "mita_menu_closeup/mita_0122.png",
+      "png": "frames/mita_0122.png",
+      "atlas": 61,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 123,
+      "name": "mita_menu_closeup/mita_0123.png",
+      "png": "frames/mita_0123.png",
+      "atlas": 61,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 124,
+      "name": "mita_menu_closeup/mita_0124.png",
+      "png": "frames/mita_0124.png",
+      "atlas": 62,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 125,
+      "name": "mita_menu_closeup/mita_0125.png",
+      "png": "frames/mita_0125.png",
+      "atlas": 62,
+      "rect": [
+        966,
+        2,
+        960,
+        1080
+      ]
+    },
+    {
+      "index": 126,
+      "name": "mita_menu_closeup/mita_0126.png",
+      "png": "frames/mita_0126.png",
+      "atlas": 63,
+      "rect": [
+        2,
+        2,
+        960,
+        1080
+      ]
+    }
+  ]
+}

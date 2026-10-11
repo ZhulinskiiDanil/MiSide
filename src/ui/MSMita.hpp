@@ -12,8 +12,8 @@ class MitaPageLoader;
 struct MitaDecodedPage;
 
 // The animated character on the right of the menu, from the atlases in her manifest. The pages stream: at most
-// two are on the GPU (the one shown and the next), decoded ahead on a worker thread and uploaded here on the main
-// thread. Her textures and frames belong to this node alone, never to cocos' shared caches. The frame comes from
+// three are on the GPU (the one for now and the next two: a page holds 83 ms of her), decoded ahead on a worker
+// thread and uploaded here on the main thread. Her textures and frames belong to this node alone, never to cocos' shared caches. The frame comes from
 // the time that passed, so she plays at the same speed at any frame rate
 class MSMita : public cocos2d::CCNode
 {
@@ -43,10 +43,12 @@ protected:
     cocos2d::CCRect rect;
   };
 
-  // Held by unique_ptr and never moved or copied: geode::Ref's move assignment doesn't release what it held, so
-  // a vector of pages shifting on erase leaked the page that was overwritten (a texture every 0.25 s)
+  // A texture slot, as big as the largest page: made once while she's on screen and filled again with each new
+  // page. Held by unique_ptr and never moved or copied: geode::Ref's move assignment doesn't release what it held,
+  // so a vector of pages shifting on erase leaked the page that was overwritten
   struct Page
   {
+    // The page in it; -1: free
     int atlas = -1;
     geode::Ref<cocos2d::CCTexture2D> texture;
     std::vector<geode::Ref<cocos2d::CCSpriteFrame>> frames;
@@ -68,7 +70,7 @@ protected:
 
   Page* resident(int atlas);
   bool upload(MitaDecodedPage& decoded, int wanted);
-  // Their textures and frames go
+  // Their slots are free again (the textures are kept for the next pages)
   void freePages(std::vector<int> const& atlases);
   void show(int frame);
   void layout();
@@ -80,6 +82,8 @@ protected:
   void updateOutline(cocos2d::CCTexture2D* texture);
 
   std::vector<Atlas> m_atlases;
+  // Every slot's size in pixels: the largest page's
+  std::pair<unsigned, unsigned> m_slotSize{0, 0};
   std::vector<Frame> m_frames;
   cocos2d::CCSize m_canvas;
   // Her drawn part's left edge in the canvas, in pixels: what's kept off the menu
