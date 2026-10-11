@@ -30,8 +30,18 @@ public:
   cocos2d::CCRect getArea();
   // While an item's transition runs, nothing else is chosen
   void setBusy(bool busy);
+  bool isBusy() const { return m_busy; }
   // From MenuLayer::keyDown. True when the key was used
   bool onKey(cocos2d::enumKeyCodes key);
+  // Quit
+  MSMenuItem* getExit() const;
+  // The quit confirmation takes the list's place: the rows, Quit and the subtitle fade out and take nothing from
+  // the first frame (Quit stops leaning away), the logo stays. Back: they fade in, and if the keys chose Quit,
+  // Quit is chosen again
+  void setConfirming(bool confirming);
+  bool isConfirming() const;
+  // Nothing (a popup, a scene transition) is over the menu
+  bool isOnTop();
 
   void update(float dt) override;
 
@@ -45,8 +55,6 @@ protected:
   // The rows' and Quit's rest places (Quit with room to lean away), in the column's space
   void measureArea();
   void choose(MSMenuItem* item);
-  // Nothing (a popup, a scene transition) is over the menu
-  bool isOnTop();
 
   Choose m_choose;
   // The rows, then Quit: the arrow keys' order
@@ -65,4 +73,7 @@ protected:
   bool m_mouseActive = false;
   cocos2d::CCRect m_area;
   bool m_busy = false;
+  bool m_confirming = false;
+  // The keys had chosen Quit when the confirmation opened
+  bool m_keysOnExit = false;
 };

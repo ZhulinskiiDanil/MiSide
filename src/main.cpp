@@ -1,5 +1,6 @@
 #include "Theme.hpp"
 #include "ui/MSBackground.hpp"
+#include "ui/MSConfirm.hpp"
 #include "ui/MSLayoutGuard.hpp"
 #include "ui/MSLogo.hpp"
 #include "ui/MSMita.hpp"
@@ -77,6 +78,10 @@ namespace
   constexpr int TRAY_Z = -1;
   // Above the vanilla menus, below the transition
   constexpr int COLUMN_Z = 10;
+  // The quit confirmation, over the column
+  constexpr int CONFIRM_Z = 11;
+  // GD's own delay between saving and ending (MenuLayer::FLAlert_Clicked, the quit popup's Yes)
+  constexpr float QUIT_DELAY = 0.5f;
   // Over the whole menu
   constexpr int TRANSITION_Z = 1000;
 
@@ -102,6 +107,10 @@ class $modify(MSMenuLayer, MenuLayer)
     MSMenuColumn* m_column = nullptr;
     MSTransition* m_transition = nullptr;
     MSProfileCard* m_card = nullptr;
+    MSConfirm* m_confirm = nullptr;
+    // The confirmation closed on this frame: the same Esc doesn't open it again
+    unsigned m_closedOnFrame = 0;
+    bool m_quitting = false;
   };
 
   bool init()
@@ -116,6 +125,7 @@ class $modify(MSMenuLayer, MenuLayer)
     this->hideVanilla();
     this->addBackground();
     this->addColumn();
+    this->addConfirm();
     this->addTransition();
     this->addProfileCard();
     this->addTray();
@@ -127,10 +137,36 @@ class $modify(MSMenuLayer, MenuLayer)
 
   void keyDown(enumKeyCodes key, double timestamp)
   {
+    // The confirmation open: every key is its own, none reaches the hidden list or GD's own (a controller's A
+    // plays, Y opens the icon kit)
+    if (auto confirm = m_fields->m_confirm; confirm && confirm->isOpen())
+    {
+      confirm->onKey(key);
+      if (!confirm->isOpen())
+        m_fields->m_closedOnFrame = CCDirector::get()->getTotalFrames();
+      return;
+    }
     if (auto column = m_fields->m_column)
       column->onKey(key);
     // Always passed on: the mods hooking keyDown after this one get every key
     MenuLayer::keyDown(key, timestamp);
+  }
+
+  // Esc (and a controller's B): GD's quit popup, or the confirmation in its place; open, it goes back
+  void keyBackClicked()
+  {
+    auto confirm = m_fields->m_confirm;
+    auto column = m_fields->m_column;
+    if (!confirm || !column)
+      return MenuLayer::keyBackClicked();
+    if (confirm->isOpen())
+    {
+      confirm->keyBack();
+      return;
+    }
+    if (m_fields->m_closedOnFrame == CCDirector::get()->getTotalFrames())
+      return;
+    this->openConfirm();
   }
 
   // ! --- Vanilla, hidden --- !
@@ -230,6 +266,12 @@ class $modify(MSMenuLayer, MenuLayer)
     auto transition = m_fields->m_transition;
     if (!target || !column)
       return;
+    // Quit: the confirmation, in the column, instead of GD's popup
+    if (item == column->getExit() && m_fields->m_confirm)
+    {
+      this->openConfirm();
+      return;
+    }
     if (!transition)
     {
       target->activate();
@@ -237,6 +279,60 @@ class $modify(MSMenuLayer, MenuLayer)
     }
     column->setBusy(true);
     transition->play([target] { target->activate(); }, [column] { column->setBusy(false); });
+  }
+
+  // ! --- Quitting --- !
+
+  // The column's own confirmation instead of GD's popup; with none (its text couldn't be made), GD's popup
+  void addConfirm()
+  {
+    if (!m_fields->m_column)
+      return;
+    auto english = this->isEnglish();
+    MSConfirm::Texts texts{english ? "QUIT THE GAME?" : "ВЫЙТИ ИЗ ИГРЫ?", english ? "YES" : "ДА",
+                           english ? "NO" : "НЕТ"};
+    auto confirm = MSConfirm::create(texts, [this] { this->quitGame(); }, [this] { this->closeConfirm(); });
+    if (!confirm)
+      return;
+    confirm->setID("quit-confirm"_spr);
+    this->addChild(confirm, CONFIRM_Z);
+    m_fields->m_confirm = confirm;
+  }
+
+  void openConfirm()
+  {
+    auto confirm = m_fields->m_confirm;
+    auto column = m_fields->m_column;
+    if (!confirm || !column || confirm->isOpen() || m_fields->m_quitting || column->isBusy() || !column->isOnTop())
+      return;
+    column->setConfirming(true);
+    confirm->open();
+  }
+
+  void closeConfirm()
+  {
+    auto confirm = m_fields->m_confirm;
+    if (!confirm || !confirm->isOpen() || m_fields->m_quitting)
+      return;
+    confirm->close();
+    m_fields->m_column->setConfirming(false);
+    m_fields->m_closedOnFrame = CCDirector::get()->getTotalFrames();
+  }
+
+  // What GD's quit popup does on Yes (MenuLayer::FLAlert_Clicked, tag 0): the shutdown flag, the save, and the end
+  // half a second later. Once only; no process is killed and no popup is shown again
+  void quitGame()
+  {
+    if (m_fields->m_quitting)
+      return;
+    m_fields->m_quitting = true;
+    log::info("Quitting from the confirmation: saving, then ending as GD's popup does");
+    auto application = CCApplication::sharedApplication();
+    application->setShutdownCalled(true);
+    application->trySaveGame(true);
+    auto end = CCSequence::createWithTwoActions(CCDelayTime::create(QUIT_DELAY),
+                                                CCCallFunc::create(this, callfunc_selector(MenuLayer::endGame)));
+    CCDirector::get()->getActionManager()->addAction(end, this, false);
   }
 
   bool isEnglish() { return Mod::get()->getSettingValue<std::string>("menu-language") == "EN"; }

@@ -32,10 +32,25 @@ namespace
   }
 } // namespace
 
-MSMenuItem* MSMenuItem::create(std::string const& text, CCMenuItem* target, Callback callback, float width)
+MSMenuItem::Style MSMenuItem::Style::row()
+{
+  auto const& theme = Theme::get();
+  return {theme.rowHeight, theme.font,           theme.rowColor,    theme.rowOpacity, theme.itemColor,
+          theme.itemScale, theme.itemTextOffset, theme.textPadding, true};
+}
+
+MSMenuItem::Style MSMenuItem::Style::confirm()
+{
+  auto const& theme = Theme::get();
+  return {theme.confirmRowHeight, theme.confirmTextFont,   theme.confirmRowColor,    theme.confirmRowOpacity,
+          theme.confirmTextColor, theme.confirmTextScale, theme.confirmTextOffset, theme.confirmTextPadding, false};
+}
+
+MSMenuItem* MSMenuItem::create(std::string const& text, CCMenuItem* target, Callback callback, float width,
+                               Style const& style)
 {
   auto item = new MSMenuItem();
-  if (item->init(text, target, std::move(callback), width))
+  if (item->init(text, target, std::move(callback), width, style))
   {
     item->autorelease();
     return item;
@@ -44,14 +59,15 @@ MSMenuItem* MSMenuItem::create(std::string const& text, CCMenuItem* target, Call
   return nullptr;
 }
 
-bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback callback, float width)
+bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback callback, float width, Style const& style)
 {
   if (!CCMenuItem::initWithTarget(nullptr, nullptr))
     return false;
   auto const& theme = Theme::get();
   m_target = target;
   m_callback = std::move(callback);
-  CCSize size{width, theme.rowHeight};
+  m_style = style;
+  CCSize size{width, style.height};
 
   // Its opacity fades the plate, the text and the accent bar together
   auto content = CCNodeRGBA::create();
@@ -61,7 +77,7 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   content->setPosition(size / 2);
   m_content = content;
 
-  m_plate = ms::createPanel(theme.rowSprite, theme.rowColor, theme.rowOpacity);
+  m_plate = ms::createPanel(theme.rowSprite, style.plate, style.plateOpacity);
   if (!m_plate)
     return false;
   m_plate->setAnchorPoint({0, 0});
@@ -82,7 +98,7 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   }
   m_content->addChild(m_plate);
 
-  m_textX = theme.textPadding;
+  m_textX = style.textPadding;
   if (theme.accentEnabled && theme.accentWidth > 0)
   {
     m_accent = ms::createStretched(theme.accentSprite, {theme.accentWidth, size.height}, theme.accentColor,
@@ -98,12 +114,13 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
     }
   }
 
-  auto label = ms::createText(text, theme.itemScale, theme.itemColor);
+  auto shadow = style.textShadow ? ms::Shadow::theme() : ms::Shadow{};
+  auto label = ms::createText(text, style.textScale, style.text, style.font, shadow);
   if (!label.node)
     return false;
   m_text = label.node;
   m_label = label.label;
-  m_text->setPosition({m_textX, size.height / 2 + theme.itemTextOffset});
+  m_text->setPosition({m_textX, size.height / 2 + style.textOffset});
   m_content->addChild(m_text);
   this->addShine(text);
 
@@ -123,7 +140,8 @@ CCMenuItem* MSMenuItem::getTarget() const { return m_target; }
 
 bool MSMenuItem::isHighlighted() const { return m_highlighted; }
 
-bool MSMenuItem::isUnavailable() const { return !m_target || !m_target->isEnabled(); }
+// With no vanilla button it's always there: it only calls back
+bool MSMenuItem::isUnavailable() const { return m_target && !m_target->isEnabled(); }
 
 void MSMenuItem::setHighlighted(bool highlighted, bool shine)
 {
@@ -147,7 +165,7 @@ void MSMenuItem::addShine(std::string const& text)
     return;
   // Made once from a white render of the label: the core over the label, the glow under it and its shadow. The
   // hit area stays the row
-  auto shine = MSShine::create(text, theme.itemScale, theme.font);
+  auto shine = MSShine::create(text, m_style.textScale, m_style.font);
   if (!shine.core || !shine.glow)
     return;
   m_shine = shine.core;
@@ -241,9 +259,9 @@ void MSMenuItem::update(float dt)
 void MSMenuItem::refresh(bool animate)
 {
   auto const& theme = Theme::get();
-  ccColor3B row = theme.rowColor;
-  GLubyte rowOpacity = theme.rowOpacity;
-  ccColor3B text = theme.itemColor;
+  ccColor3B row = m_style.plate;
+  GLubyte rowOpacity = m_style.plateOpacity;
+  ccColor3B text = m_style.text;
   GLubyte textOpacity = theme.itemOpacity;
   auto lit = false;
   if (m_unavailable)
@@ -309,6 +327,17 @@ void MSMenuItem::playIntro(float delay)
   ms::setOpacity(m_content, 0);
   run(m_content, CCSequence::createWithTwoActions(CCDelayTime::create(delay), CCFadeTo::create(theme.introDuration, 255)),
       INTRO_ACTION);
+}
+
+void MSMenuItem::fadeTo(float time, GLubyte opacity)
+{
+  if (time <= 0)
+  {
+    m_content->stopActionByTag(INTRO_ACTION);
+    ms::setOpacity(m_content, opacity);
+    return;
+  }
+  run(m_content, CCFadeTo::create(time, opacity), INTRO_ACTION);
 }
 
 void MSMenuItem::selected()

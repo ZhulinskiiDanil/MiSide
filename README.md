@@ -11,6 +11,7 @@ The background art is in `resources/background/`, the font and the sounds are fr
 - **The menu on the left**: a small logo, "MAIN MENU" under it, then a compact column of low purple-pink plates (148×14 pt, one every 16 pt): PLAY, WARDROBE, CREATE, SETTINGS, ACHIEVEMENTS, STATISTICS (in Russian or English, upper case, a condensed bold font). EXIT stands apart, shorter, near the bottom. The whole plate is clickable; hover and the arrow keys light up the same way (the plate's color, no movement), Enter chooses. When the mouse leaves, the keyboard's choice is lit again
 - **Rounded type**: M PLUS Rounded 1c Bold for the items, ExtraBold for "MAIN MENU" and the logo, pink-lilac text with a soft shadow on muted translucent lilac plates; the lit row is lighter and pinker with a soft glow
 - **One shine** runs through the letters of an item when the mouse comes onto it (or the arrow keys choose it): a wide soft wave of white-pink light, 0.7 of the label wide, from hidden on the left to gone on the right in 0.28 s. It has no line or core: a flat bright middle (0.6 of its half width), then a long smooth fall, so 3–4 neighbouring letters turn near white at once and fade back to their color at its edges. A white copy of the label (without its shadow, with room around it) is rendered once into a texture and drawn with the menu's own shader, so the wave is measured in the whole label's width at any DPI; each item has its own pass, by the time that passed. Under the label and its shadow a second layer glows, like MiSide's bloom: the letters' alpha blurred once into a tight bright halo (about 2.5 pt) and a wide soft one (about 16 pt), laid together, times a wave twice as wide, white, added to the plate. It's white right by the lit letters and fades far out, their halos run together into one cloud; the sharp letters and their shadow are drawn over it
+- **Quitting asks in the column**, as in MiSide, not in a popup in the middle: EXIT (and Esc) fade the list, EXIT and "MAIN MENU" out in 0.2 s and "QUIT THE GAME?" in with two wide buttons, YES and NO, under it; the logo, the background and Mita stay (her loop goes on). NO is chosen first; nothing is chosen until it has faded in, and the hidden list takes no click or key. NO, Esc and a controller's B bring the menu back as it was. YES does what GD's quit popup does on Yes: it saves, then ends the game half a second later (no popup, no killed process), once only. In the pause menu the same confirmation asks "QUIT THE LEVEL?" in place of GD's "Exit Level" popup: the pause menu's buttons hide, its darkened (and maybe blurred) level stays; YES leaves the level as the popup's Exit does, NO and Esc go back to the pause menu with the level still paused. The setting "Confirm leaving a level" (on) makes it ask even with GD's own exit confirmation off
 - **EXIT leans away** from the mouse as if held to its place by a spring: the closer the mouse, the further (up to 11 pt), stretched and tilted a little, back with a damped spring when the mouse leaves. It always stays under a mouse that aims at it and holds still while pressed, so it's always clickable. Keyboard only: it doesn't move
 - **The logo**: an image (`resources/logo/miside-like-gd-logo.png`) shown as it is over "MAIN MENU", its drawn part's left edge with the items, 220 pt wide; its transparent margins are measured from the file, so they don't push it off
 - **Each item presses its vanilla button** through `activate()`, so every mod hooking `onPlay`, `onGarage`, `onCreator`, `onOptions` and the others keeps working. No vanilla button, no item
@@ -29,6 +30,7 @@ The background art is in `resources/background/`, the font and the sounds are fr
 | Parallax strength | 1.0 | 0 to 2. How far the background follows the mouse, 0 keeps it still |
 | Menu language | RU | RU or EN, the items' language |
 | Logo | on | The logo and "MAIN MENU" above the items |
+| Confirm leaving a level | on | The pause menu asks "Quit the level?" before leaving, even with GD's exit confirmation off. Off: GD decides (with its option on, the question still comes in this style) |
 
 ## The theme
 
@@ -49,6 +51,8 @@ Colors, fonts, sprites, sounds, spacing and timings all come from the theme (`sr
 ```
 
 New keys (all with defaults; a missing or wrong one keeps its default): `title-font`; `shine-enabled`, `shine-duration` (0.28 s), `shine-band-width` (0.7 of the label's width), `shine-intensity` (0.95), `shine-tint` (its edges), `shine-core-color` (its middle), `shine-core` (the flat middle's share of the half width, 0.6), `shine-slant` (0), `shine-fade-out`, `shine-glow-radius` (the wide halo, 16 pt), `shine-glow-intensity` (3), `shine-glow-inner-radius` (the tight one, 2.5 pt), `shine-glow-inner-intensity` (1.1), `shine-glow-spread` (2: the glow's wave against the letters'), `shine-glow-color` (white), `shine-freeze` (-1; 0..1 holds the wave at that point of the pass while an item is lit, to look at it, set it back to -1 after); `row-glow-color`, `row-glow-opacity`, `row-glow-spread`; `exit-dodge-enabled`, `exit-dodge-radius` (55), `exit-dodge-max` (11), `exit-dodge-vertical`, `exit-dodge-stretch` (0.04), `exit-dodge-tilt` (3°), `exit-dodge-stiffness`, `exit-dodge-damping`; `pattern-sprite`, `pattern-color`, `pattern-opacity` (16), `pattern-tile`; `vignette-sprite`, `vignette-color`, `vignette-opacity`; `particle-count` (14), `particle-color`, `particle-opacity`, `particle-size-min/max`, `particle-speed`, `particle-life`; `logo-sprite`, `logo-left` (59), `logo-bottom` (236), `logo-width` (220: the drawn part's, on screen); `mita-outline-enabled`, `mita-outline-color`, `mita-outline-opacity`, `mita-outline-width`.
+
+The quit confirmation's keys (MiSide's screen measured, moved down 5.6 pt to sit under our logo): `confirm-title-left` (60.2), `confirm-title-cap-top` (227.5), `confirm-title-scale` (0.5: capitals 8.7 pt), `confirm-title-color`, `confirm-title-shadow-color` / `-opacity` / `-offset` (#05050C, 255, 0.65), `confirm-row-left` (59), `confirm-first-row-top` (213.7), `confirm-row-pitch` (16.4), `confirm-row-width` (148.4), `confirm-row-height` (14.9), `confirm-row-color` / `-opacity` (#9F60A1, 100), `confirm-text-color` (#F6A0FD), `confirm-text-font` (the title's), `confirm-text-scale` (0.38: capitals 6.7 pt), `confirm-text-offset`, `confirm-text-padding` (3.6), `confirm-duration` (0.2 s).
 
 Mita's keys: `mita-enabled` (true), `mita-x` / `mita-y` (414.5, 0: her bottom middle), `mita-scale` (0.2962962963 = 320/1080 points per pixel of her 960×1080 canvas, so as high as the screen; no zoom on top), `mita-fps` (24; 0 takes the manifest's), `mita-parallax-enabled` (false), `mita-parallax-max-x` / `mita-parallax-max-y` (3, 2; down only, so the cut at the bottom never shows a gap), `mita-freeze-frame` (-1 plays; 0…126 holds that frame still, to check frames one at a time). On a narrower window she stays against the right edge and is cut there rather than covering the buttons.
 
@@ -90,14 +94,14 @@ To go through by hand in the game before a release. Each line: what to do, then 
 **The basics**
 
 - [ ] Open the game: a dark scene with a crimson glow on the right, the logo and "MAIN MENU" over a compact column of purple plates on the left, EXIT apart near the bottom, the profile card in the bottom left, the tray's row in the bottom right; the vanilla title, icons background, big buttons, profile button, name and social links aren't visible
-- [ ] Every item opens what its vanilla button opens: Play → the level select, Wardrobe → the icon kit, Create → the creator menu, Settings, Achievements, Statistics, Quit → the "quit?" popup
+- [ ] Every item opens what its vanilla button opens: Play → the level select, Wardrobe → the icon kit, Create → the creator menu, Settings, Achievements, Statistics, Quit → the quit confirmation in the column
 - [ ] Hover each item: its whole plate lights up (no movement), the hover sound plays; clicking anywhere on the plate chooses it
 - [ ] Arrows move the same highlight over the six rows and EXIT; with the mouse over a row, the arrows start from it; when the mouse leaves the rows, the keyboard's row is lit again; never two lit rows
 - [ ] Enter (and a click) press the vanilla button once: no double screen, no double popup, even when pressed quickly twice
 - [ ] RU and EN: "ДОСТИЖЕНИЯ" / "ACHIEVEMENTS" fit their plate with room to spare; all items are the same size in both languages
 - [ ] Choose Settings and close it: the darkening fades back and the column works again
-- [ ] With a popup over the menu (the quit popup), moving the mouse over the column and pressing the arrows / Enter does nothing behind it
-- [ ] Esc on the menu still shows the quit popup
+- [ ] With a popup over the menu (the Geode button's, the "…" one), moving the mouse over the column and pressing the arrows / Enter does nothing behind it
+- [ ] Esc on the menu opens the quit confirmation (no popup)
 - [ ] Back to the menu from every screen: the menu is the new one each time, with no leftover darkening
 - [ ] The log has no warnings from MiSide Menu (`Node ... not found`) on a clean install
 
@@ -145,10 +149,23 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] The arrow keys: the same highlight and one shine per move
 - [ ] `shine-freeze` 0.25 / 0.5 / 0.75 on «ГАРДЕРОБ» and «ИГРАТЬ»: no line or stroke, several near-white letters in one soft cloud of light, the letters sharp over it; back to -1 and it moves again
 - [ ] Bring the mouse near EXIT from each side: it leans away, more the closer the mouse is, stretched and tilted a little, then springs back with a little bounce when the mouse leaves; no jitter with the mouse resting on it, no jumps
-- [ ] Click EXIT from every side, slowly and quickly: every click lands and the quit popup opens; pressing and dragging off it cancels as usual
+- [ ] Click EXIT from every side, slowly and quickly: every click lands and the confirmation opens; pressing and dragging off it cancels as usual
 - [ ] At 30, 60 and 144 fps EXIT moves the same way
-- [ ] Use only the keyboard to reach EXIT: it doesn't move; Enter quits
+- [ ] Use only the keyboard to reach EXIT: it doesn't move; Enter opens the confirmation
 - [ ] A popup over the menu: EXIT springs back home and doesn't follow the mouse under the popup
+
+**Quitting**
+
+- [ ] EXIT: in about 0.2 s the list, EXIT and "MAIN MENU" fade out and "ВЫЙТИ ИЗ ИГРЫ?" with ДА and НЕТ fades in where they were, as in MiSide's screenshot (white title with a dark shadow, two wide see-through plates, light pink text); the logo, the background and Mita stay, her loop doesn't restart
+- [ ] НЕТ is lit (with its shine) when it opens; the click that opened it chooses nothing; Enter held from opening it doesn't quit
+- [ ] The mouse over ДА and НЕТ lights them with the shine; the hidden rows and EXIT take no click (click where they were); EXIT doesn't lean away
+- [ ] Up/Down (and a controller's d-pad or stick) move between ДА and НЕТ; Enter, Space or A chooses; a controller's A, X, Y do nothing else (no level select, no icon kit)
+- [ ] НЕТ, Esc, a controller's B: the menu comes back as it was, the rows work, EXIT leans away again; reached by the keys, EXIT is chosen again. Open and cancel it many times, quickly too
+- [ ] ДА: the game saves and closes as with GD's own popup (no second popup, no crash); clicking ДА twice or pressing Enter right after does nothing more. Reopen the game: what changed before quitting is kept
+- [ ] In a level, pause, EXIT: the pause buttons hide, "ВЫЙТИ ИЗ УРОВНЯ?" with ДА and НЕТ shows over the darkened level (no Mita, no logo); the level doesn't move on
+- [ ] НЕТ and Esc: the pause menu comes back, the level still paused; Esc again resumes as usual
+- [ ] ДА: back to the level's page as with GD's Exit, once; with "Confirm leaving a level" off and GD's exit confirmation off it leaves at once, as without the mod
+- [ ] With a mod that blurs the pause background, the blur stays while the confirmation is open
 
 **Mita**
 

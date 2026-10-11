@@ -143,6 +143,35 @@ namespace
     theme.hoverShift = 0;
     theme.pressedScale = 1.f;
 
+    // ! --- The quit confirmation --- !
+    // Measured on MiSide's screen (2560×1440): title capitals 8.7 pt, the buttons 14.9 pt high every 16.4 pt,
+    // 5.1 pt under the title's line, their text 6.7 pt, both as heavy as the ExtraBold. Moved down 5.6 pt together,
+    // so the title takes the subtitle's place under our logo
+    theme.confirmTitleLeft = 60.2f;
+    theme.confirmTitleCapTop = 227.5f;
+    // The title font's capitals are 17.5 pt at scale 1
+    theme.confirmTitleScale = 0.5f;
+    theme.confirmTitleColor = ccc3(0xff, 0xff, 0xff);
+    theme.confirmTitleShadowColor = ccc3(0x05, 0x05, 0x0c);
+    theme.confirmTitleShadowOpacity = 255;
+    theme.confirmTitleShadowOffset = 0.65f;
+    theme.confirmRowLeft = 59;
+    theme.confirmFirstRowTop = 213.7f;
+    theme.confirmRowPitch = 16.4f;
+    theme.confirmRowWidth = 148.4f;
+    theme.confirmRowHeight = 14.9f;
+    // #9F60A1 at 39 %: what the plate does to the background behind it there
+    theme.confirmRowColor = ccc3(0x9f, 0x60, 0xa1);
+    theme.confirmRowOpacity = 100;
+    theme.confirmTextColor = ccc3(0xf6, 0xa0, 0xfd);
+    theme.confirmTextFont = "miside-title.fnt"_spr;
+    // The title font's capitals are 17.5 pt at scale 1
+    theme.confirmTextScale = 0.38f;
+    // The capitals centred in the plate: their middle is 2.82 pt over the label's at scale 1
+    theme.confirmTextOffset = -1.07f;
+    theme.confirmTextPadding = 3.6f;
+    theme.confirmDuration = 0.2f;
+
     // ! --- Decoration over the room --- !
     theme.patternSprite = "pattern-tile.png"_spr;
     theme.patternColor = ccc3(0xff, 0xb8, 0xdc);
@@ -336,6 +365,27 @@ namespace
     field("accent-gap", theme.accentGap);
     field("hover-shift", theme.hoverShift);
     field("pressed-scale", theme.pressedScale);
+
+    field("confirm-title-left", theme.confirmTitleLeft);
+    field("confirm-title-cap-top", theme.confirmTitleCapTop);
+    field("confirm-title-scale", theme.confirmTitleScale);
+    field("confirm-title-color", theme.confirmTitleColor);
+    field("confirm-title-shadow-color", theme.confirmTitleShadowColor);
+    field("confirm-title-shadow-opacity", theme.confirmTitleShadowOpacity);
+    field("confirm-title-shadow-offset", theme.confirmTitleShadowOffset);
+    field("confirm-row-left", theme.confirmRowLeft);
+    field("confirm-first-row-top", theme.confirmFirstRowTop);
+    field("confirm-row-pitch", theme.confirmRowPitch);
+    field("confirm-row-width", theme.confirmRowWidth);
+    field("confirm-row-height", theme.confirmRowHeight);
+    field("confirm-row-color", theme.confirmRowColor);
+    field("confirm-row-opacity", theme.confirmRowOpacity);
+    field("confirm-text-color", theme.confirmTextColor);
+    field("confirm-text-font", theme.confirmTextFont);
+    field("confirm-text-scale", theme.confirmTextScale);
+    field("confirm-text-offset", theme.confirmTextOffset);
+    field("confirm-text-padding", theme.confirmTextPadding);
+    field("confirm-duration", theme.confirmDuration);
 
     field("pattern-sprite", theme.patternSprite);
     field("pattern-color", theme.patternColor);

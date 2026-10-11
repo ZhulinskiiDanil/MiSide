@@ -41,6 +41,12 @@
 				"EN"
 			]
 		},
+		"confirm-level-exit": {
+			"name": "Confirm leaving a level",
+			"description": "The pause menu asks \"Quit the level?\" in the menu's style before leaving, even with GD's own exit confirmation off. Off: GD decides, as without the mod (its popup is then shown in this style)",
+			"type": "bool",
+			"default": true
+		},
 		"show-title": {
 			"name": "Logo",
 			"description": "The logo and \"Main menu\" above the menu items",

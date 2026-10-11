@@ -2,6 +2,8 @@
 
 #include "../Theme.hpp"
 
+#include <typeinfo>
+
 using namespace geode::prelude;
 
 namespace ms
@@ -50,9 +52,20 @@ namespace ms
       rgba->setColor(color);
   }
 
-  Text createText(std::string const& text, float scale, ccColor3B color, std::string const& font)
+  Shadow Shadow::theme()
   {
     auto const& theme = Theme::get();
+    return {theme.shadowColor, theme.shadowOpacity, static_cast<int>(theme.shadowSteps), theme.shadowOffset};
+  }
+
+  Text createText(std::string const& text, float scale, ccColor3B color, std::string const& font)
+  {
+    return createText(text, scale, color, font, Shadow::theme());
+  }
+
+  Text createText(std::string const& text, float scale, ccColor3B color, std::string const& font,
+                  Shadow const& look)
+  {
     auto label = createLabel(text, font);
     if (!label)
       return {};
@@ -67,7 +80,7 @@ namespace ms
     node->setContentSize(size);
     node->setAnchorPoint({0, 0.5f});
     // Farthest first, so the nearer copies are drawn over it
-    auto steps = std::max(static_cast<int>(theme.shadowSteps), 0);
+    auto steps = std::max(look.steps, 0);
     for (auto step = steps; step >= 1; step--)
     {
       auto shadow = createLabel(text, font);
@@ -75,14 +88,46 @@ namespace ms
         continue;
       shadow->setScale(scale);
       shadow->setAnchorPoint({0, 0});
-      shadow->setPosition({theme.shadowOffset * step, -theme.shadowOffset * step});
+      shadow->setPosition({look.offset * step, -look.offset * step});
       cascadeOpacity(shadow);
-      setColor(shadow, theme.shadowColor);
-      setOpacity(shadow, static_cast<GLubyte>(theme.shadowOpacity / step));
+      setColor(shadow, look.color);
+      setOpacity(shadow, static_cast<GLubyte>(look.opacity / step));
       node->addChild(shadow);
     }
     node->addChild(label);
     return {node, label};
+  }
+
+  std::optional<std::string> coveredBy(CCNode* node)
+  {
+    // The scene the node is in, and the scene's child that holds it (a mod may wrap it in a node)
+    CCNode* branch = node ? node->getParent() : nullptr;
+    if (!branch)
+      return "it isn't in a scene";
+    while (branch->getParent() && !typeinfo_cast<CCScene*>(branch->getParent()))
+      branch = branch->getParent();
+    auto scene = typeinfo_cast<CCScene*>(branch->getParent());
+    auto director = CCDirector::get();
+    auto running = director->getRunningScene();
+    // A scene transition: nothing to use
+    if (director->getNextScene() || typeinfo_cast<CCTransitionScene*>(running))
+      return "";
+    if (!scene || running != scene)
+      return "it isn't in the running scene";
+    // A popup over it: GD's and Geode's popups are all FLAlertLayers. Other layers mods keep in the scene
+    // (overlays, effects) don't count
+    auto above = false;
+    for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
+    {
+      if (child == branch)
+      {
+        above = true;
+        continue;
+      }
+      if (above && child->isVisible() && typeinfo_cast<FLAlertLayer*>(child))
+        return fmt::format("a popup ({}) is open", typeid(*child).name());
+    }
+    return std::nullopt;
   }
 
   CCNode* createPanel(std::string const& sprite, ccColor3B color, GLubyte opacity)

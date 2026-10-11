@@ -163,6 +163,60 @@ CCRect MSMenuColumn::getArea()
 
 void MSMenuColumn::setBusy(bool busy) { m_busy = busy; }
 
+MSMenuItem* MSMenuColumn::getExit() const { return m_exit; }
+
+bool MSMenuColumn::isConfirming() const { return m_confirming; }
+
+void MSMenuColumn::setConfirming(bool confirming)
+{
+  if (confirming == m_confirming)
+    return;
+  m_confirming = confirming;
+  auto const& theme = Theme::get();
+  auto time = std::max(theme.confirmDuration, 0.f);
+  if (confirming)
+  {
+    m_keysOnExit = m_hover < 0 && m_shown >= 0 && m_items[m_shown] == m_exit;
+    if (m_shown >= 0)
+      m_items[m_shown]->setHighlighted(false);
+    m_shown = -1;
+    m_hover = -1;
+  }
+  for (auto item : m_items)
+  {
+    // Nothing is chosen from the first frame of fading out; back, only once it's shown again
+    item->setEnabled(!confirming);
+    item->stopActionByTag(0x4d56);
+    if (confirming)
+    {
+      item->fadeTo(time, 0);
+      auto hide = CCSequence::createWithTwoActions(CCDelayTime::create(time), CCHide::create());
+      hide->setTag(0x4d56);
+      item->runAction(hide);
+    }
+    else
+    {
+      item->setVisible(true);
+      item->fadeTo(time, 255);
+    }
+  }
+  if (m_subtitleText)
+  {
+    m_subtitleText->stopAllActions();
+    m_subtitleText->runAction(CCFadeTo::create(time, confirming ? 0 : 255));
+  }
+  if (confirming)
+    return;
+  // Back to the menu as it was: the keys' Quit chosen again, or the mouse's row once it moves
+  m_keyboard = -1;
+  if (m_keysOnExit && m_exit)
+  {
+    m_keyboard = static_cast<int>(std::find(m_items.begin(), m_items.end(), m_exit) - m_items.begin());
+    this->showHighlight(false);
+  }
+  m_lastMouse = CCPoint{-1, -1};
+}
+
 bool MSMenuColumn::isOnTop()
 {
   // Why hover is paused, once a session each: if it never works, the log names what's in the way
@@ -173,35 +227,11 @@ bool MSMenuColumn::isOnTop()
     return false;
   };
 
-  // The scene the menu is in, and the scene's child that holds the menu (a mod may wrap the menu in a node)
-  CCNode* branch = this->getParent();
-  if (!branch)
-    return false;
-  while (branch->getParent() && !typeinfo_cast<CCScene*>(branch->getParent()))
-    branch = branch->getParent();
-  auto scene = typeinfo_cast<CCScene*>(branch->getParent());
-  auto director = CCDirector::get();
-  auto running = director->getRunningScene();
-  // A scene transition: nothing to hover (not worth a log, it happens every time)
-  if (director->getNextScene() || typeinfo_cast<CCTransitionScene*>(running))
-    return false;
-  if (!scene || running != scene)
-    return pausedBy("the menu isn't in the running scene");
-
-  // A popup over the menu: GD's and Geode's popups are all FLAlertLayers. Other layers mods keep in the scene
-  // (overlays, effects) don't count
-  auto above = false;
-  for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
-  {
-    if (child == branch)
-    {
-      above = true;
-      continue;
-    }
-    if (above && child->isVisible() && typeinfo_cast<FLAlertLayer*>(child))
-      return pausedBy(fmt::format("a popup ({}) is open", typeid(*child).name()));
-  }
-  return true;
+  auto why = ms::coveredBy(this);
+  if (!why)
+    return true;
+  // A scene transition: not worth a log, it happens every time
+  return why->empty() ? false : pausedBy(*why);
 }
 
 void MSMenuColumn::update(float dt)
@@ -211,7 +241,7 @@ void MSMenuColumn::update(float dt)
   m_lastMouse = mouse;
   if (moved)
     m_mouseActive = true;
-  auto usable = !m_busy && this->isOnTop();
+  auto usable = !m_busy && !m_confirming && this->isOnTop();
   auto local = this->convertToNodeSpace(mouse);
 
   // Quit leans away from the mouse, every frame (it springs back with no mouse to lean from)
@@ -255,7 +285,7 @@ void MSMenuColumn::showHighlight(bool shine)
 
 bool MSMenuColumn::onKey(enumKeyCodes key)
 {
-  if (m_items.empty() || m_busy || !this->isOnTop())
+  if (m_items.empty() || m_busy || m_confirming || !this->isOnTop())
     return false;
   auto count = static_cast<int>(m_items.size());
   switch (key)
@@ -285,7 +315,7 @@ bool MSMenuColumn::onKey(enumKeyCodes key)
 void MSMenuColumn::choose(MSMenuItem* item)
 {
   // Busy from the first press until the transition ends: a second click or Enter can't press it again
-  if (m_busy || !item || !item->getTarget())
+  if (m_busy || m_confirming || !item || !item->getTarget())
     return;
   ms::playSound(Theme::get().clickSound);
   if (m_choose)

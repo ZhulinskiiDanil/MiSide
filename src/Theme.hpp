@@ -175,6 +175,35 @@ struct Theme
   float hoverShift = 0;
   float pressedScale = 0;
 
+  // ! --- The quit confirmation --- !
+  // The column's own state, in MenuLayer and PauseLayer alike: a title in place of the subtitle and the list, and
+  // two wide buttons under it. As in MiSide's: points of the 569×320 screen
+  // The title: its left edge and the top of its capitals; white with a solid dark shadow
+  float confirmTitleLeft = 0;
+  float confirmTitleCapTop = 0;
+  float confirmTitleScale = 0;
+  cocos2d::ccColor3B confirmTitleColor;
+  cocos2d::ccColor3B confirmTitleShadowColor;
+  GLubyte confirmTitleShadowOpacity = 0;
+  float confirmTitleShadowOffset = 0;
+  // The buttons: the first one's top edge, then one every `confirm-row-pitch` points down
+  float confirmRowLeft = 0;
+  float confirmFirstRowTop = 0;
+  float confirmRowPitch = 0;
+  float confirmRowWidth = 0;
+  float confirmRowHeight = 0;
+  // Their plates at rest (lit and pressed, they're the items' own), and their text: lighter pink, no shadow
+  cocos2d::ccColor3B confirmRowColor;
+  GLubyte confirmRowOpacity = 0;
+  cocos2d::ccColor3B confirmTextColor;
+  // MiSide's buttons here are as heavy as the title: the title's font
+  std::string confirmTextFont;
+  float confirmTextScale = 0;
+  float confirmTextOffset = 0;
+  float confirmTextPadding = 0;
+  // The list fading out and the confirmation in, and back; nothing is chosen before it has faded in
+  float confirmDuration = 0;
+
   // ! --- Decoration over the room --- !
   // A faint repeating pattern of hearts, stars and flowers (a white tile, tinted)
   std::string patternSprite;
