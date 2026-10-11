@@ -137,6 +137,7 @@ namespace
     theme.mitaParallaxEnabled = false;
     theme.mitaParallaxMaxX = 3;
     theme.mitaParallaxMaxY = 2;
+    theme.mitaFreezeFrame = -1;
 
     // ! --- The tray and the profile --- !
     theme.trayMargin = 8;
@@ -283,6 +284,7 @@ namespace
     field("mita-parallax-enabled", theme.mitaParallaxEnabled);
     field("mita-parallax-max-x", theme.mitaParallaxMaxX);
     field("mita-parallax-max-y", theme.mitaParallaxMaxY);
+    field("mita-freeze-frame", theme.mitaFreezeFrame);
 
     field("tray-margin", theme.trayMargin);
     field("tray-padding", theme.trayPadding);

@@ -64,6 +64,8 @@ protected:
   void freePages(std::vector<int> const& atlases);
   void show(int frame);
   void layout();
+  // Logs what the sprite really shows and how big, and warns when it isn't what was meant
+  void checkSprite();
 
   std::vector<Atlas> m_atlases;
   std::vector<Frame> m_frames;

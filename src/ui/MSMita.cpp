@@ -408,14 +408,12 @@ bool MSMita::upload(MitaDecodedPage& decoded, int wanted)
   page.texture = texture;
   texture->release();
   page.bytes = decoded.pixels.size();
-  // The manifest's pixel rects, in points: the frame turns them back into the same pixels
-  auto scale = CC_CONTENT_SCALE_FACTOR();
-  CCSize original{m_canvas.width / scale, m_canvas.height / scale};
+  // The manifest's rects and canvas in pixels, as they are: this form of createWithTexture takes pixels and makes
+  // the points itself (divided by the content scale factor once, like frames from a plist)
   for (int i = 0; i < atlas.frameCount; i++)
   {
     auto const& rect = m_frames[atlas.firstFrame + i].rect;
-    CCRect points{rect.origin.x / scale, rect.origin.y / scale, rect.size.width / scale, rect.size.height / scale};
-    page.frames.emplace_back(CCSpriteFrame::createWithTexture(texture, points, false, CCPointZero, original));
+    page.frames.emplace_back(CCSpriteFrame::createWithTexture(texture, rect, false, CCPointZero, m_canvas));
   }
   auto uploadMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - began).count();
   auto loadSeconds = (decoded.milliseconds + uploadMs) / 1000;
@@ -441,11 +439,16 @@ void MSMita::layout()
   // The reference screen scaled to the window's height, the same way both ways
   m_unit = winSize.height / m_reference.height;
   auto height = m_canvas.height * theme.mitaScale * m_unit;
-  // From the frame's own size in points, whatever the texture quality: never scaled twice
+  // From the frame's own size in points, whatever the texture quality: never scaled twice. The parents' scale
+  // counts too, so the size on screen is the one asked for
   auto size = m_sprite->getContentSize();
+  auto parents = this->nodeToWorldTransform();
+  auto parentScale = std::sqrt(parents.a * parents.a + parents.b * parents.b);
+  if (parentScale <= 0)
+    parentScale = 1;
   if (size.height > 0)
-    m_sprite->setScale(height / size.height);
-  auto width = size.width * m_sprite->getScale();
+    m_sprite->setScale(height / (size.height * parentScale));
+  auto width = size.width * m_sprite->getScale() * parentScale;
 
   // Held to the right edge, as on the reference screen; never over the menu's buttons
   auto x = winSize.width - (m_reference.width - theme.mitaX) * m_unit;
@@ -474,6 +477,7 @@ void MSMita::show(int index)
     this->addChild(m_sprite);
     this->layout();
     m_sprite->setPosition(m_home);
+    this->checkSprite();
     auto const& theme = Theme::get();
     if (theme.introDuration > 0)
     {
@@ -491,6 +495,29 @@ void MSMita::show(int index)
   this->freePages(m_plan->showed(frame.atlas));
 }
 
+void MSMita::checkSprite()
+{
+  // What cocos actually made of it, once each time the menu opens: the frame's rect in the texture's pixels, the
+  // size in points, and the size and place on the screen
+  auto const& theme = Theme::get();
+  auto scale = CC_CONTENT_SCALE_FACTOR();
+  auto rect = m_sprite->getTextureRect();
+  CCRect pixels{rect.origin.x * scale, rect.origin.y * scale, rect.size.width * scale, rect.size.height * scale};
+  auto content = m_sprite->getContentSize();
+  auto box = CCRectApplyAffineTransform(CCRect{CCPointZero, content}, m_sprite->nodeToWorldTransform());
+  auto expectedHeight = m_canvas.height * theme.mitaScale * m_unit;
+  auto expectedWidth = m_canvas.width * theme.mitaScale * m_unit;
+  log::debug("Mita: content scale {}, texture rect {}x{} px at ({}, {}), content {}x{} pt, scale {:.4f}, on screen "
+             "{:.3f}x{:.3f} at ({:.2f}, {:.2f})",
+             scale, pixels.size.width, pixels.size.height, pixels.origin.x, pixels.origin.y, content.width,
+             content.height, m_sprite->getScale(), box.size.width, box.size.height, box.getMidX(), box.getMinY());
+  if (std::abs(pixels.size.width - m_canvas.width) > 0.5f || std::abs(pixels.size.height - m_canvas.height) > 0.5f ||
+      std::abs(box.size.height - expectedHeight) > 0.5f || std::abs(box.size.width - expectedWidth) > 0.5f)
+    log::warn("Mita: she's drawn {:.3f}x{:.3f} from a {}x{} px rect, {:.3f}x{:.3f} from {}x{} was meant", box.size.width,
+              box.size.height, pixels.size.width, pixels.size.height, expectedWidth, expectedHeight, m_canvas.width,
+              m_canvas.height);
+}
+
 void MSMita::update(float dt)
 {
   if (m_failed || !m_loader)
@@ -500,6 +527,9 @@ void MSMita::update(float dt)
   // From the time that passed: the same speed at any frame rate, and a late frame jumps to where it should be
   m_elapsed = MitaPlan::advance(m_elapsed, dt, m_fps, count);
   auto index = MitaPlan::frameAt(m_elapsed, m_fps, count);
+  // A still frame, to check one by one
+  if (theme.mitaFreezeFrame >= 0)
+    index = std::clamp(static_cast<int>(theme.mitaFreezeFrame), 0, count - 1);
   auto atlas = m_frames[index].atlas;
 
   // The page for now first, if it's there: switching frees the page before, making room for the next

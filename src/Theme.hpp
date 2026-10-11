@@ -168,6 +168,8 @@ struct Theme
   float mitaParallaxMaxX = 0;
   // Down only, so the cut at the bottom of her frame never shows a gap
   float mitaParallaxMaxY = 0;
+  // A frame to hold still on, to check one at a time; -1 plays
+  float mitaFreezeFrame = 0;
 
   // ! --- The tray and the profile --- !
   float trayMargin = 0;
