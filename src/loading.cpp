@@ -56,15 +56,20 @@ namespace
   constexpr float DONE = 0.97f;
   constexpr int PHRASE_ACTION = 0x4c50;
 
-  // The mod's font, if its atlas really loads: read the .fnt GD resolves, load the page it names. Else empty (GD's
-  // font instead): a label made from a font whose atlas didn't load crashes cocos
+  // The mod's font, if its atlas really loads: read the .fnt, load the page it names. Else empty (GD's font instead):
+  // a label made from a font whose atlas didn't load crashes cocos. By a full path GD doesn't pick the texture
+  // quality's .fnt (it does for the atlas): the plain one's sizes are a quarter of the -uhd one's, and the text came
+  // out a quarter as big. So the quality's own .fnt, by the content scale factor
   std::string fontFile()
   {
     static std::optional<std::string> s_font;
     if (s_font)
       return *s_font;
     s_font = std::string();
-    auto fnt = resource("miside-font.fnt");
+    auto scale = CCDirector::get()->getContentScaleFactor();
+    auto fnt = resource(scale >= 4 ? "miside-font-uhd.fnt" : scale >= 2 ? "miside-font-hd.fnt" : "miside-font.fnt");
+    if (fnt.empty())
+      fnt = resource("miside-font.fnt");
     if (fnt.empty())
       return *s_font;
     auto files = CCFileUtils::sharedFileUtils();
@@ -487,10 +492,13 @@ class $modify(MSLoadingLayer, LoadingLayer)
       auto line = typeinfo_cast<CCLabelBMFont*>(this->getChildByID(id));
       if (!line)
         return;
-      line->setScale(1);
-      auto height = line->getContentSize().height;
-      if (height > 0)
-        line->setScale(theme.loadingLineHeight / height);
+      // Its font's line height, from a sample: the line itself may still be empty now
+      line->setScale(0.3f);
+      if (auto sample = CCLabelBMFont::create("Ag", line->getFntFile()))
+      {
+        if (auto height = sample->getContentSize().height; height > 0)
+          line->setScale(theme.loadingLineHeight / height);
+      }
       line->setColor(color);
       line->setPosition({winSize.width / 2, y});
       line->setZOrder(5);
