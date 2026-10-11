@@ -48,6 +48,12 @@
 			"type": "bool",
 			"default": true
 		},
+		"show-intro": {
+			"name": "Studio intro",
+			"description": "The AIHASTO intro before the loading screen, at the game's start. A click or a key skips it",
+			"type": "bool",
+			"default": true
+		},
 		"show-title": {
 			"name": "Logo",
 			"description": "The logo and \"Main menu\" above the menu items",
@@ -73,6 +79,8 @@
 			"resources/sounds/click.ogg",
 			"resources/sounds/miside-*.flac",
 			"resources/music/*.ogg",
+			"resources/intro/*.jpg",
+			"resources/intro/intro.ogg",
 			"resources/mita-closeup/mita_closeup_atlas_*.png",
 			"resources/mita-closeup/mita-closeup-manifest.json",
 			"resources/mita-closeup/ATTRIBUTION.txt",

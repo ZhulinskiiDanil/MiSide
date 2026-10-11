@@ -3,6 +3,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/LoadingLayer.hpp>
 
+#include <Geode/fmod/fmod.hpp>
 #include <Geode/utils/file.hpp>
 
 #include <filesystem>
@@ -80,6 +81,201 @@ namespace
     node->setColor(color);
     return node;
   }
+
+  // ! --- The intro --- !
+
+  // Played once a session, at the game's start; meanwhile the loading waits (its steps block the game for a while
+  // each, the video would stutter)
+  bool s_introPlaying = false;
+  bool s_introShown = false;
+
+  // The intro: frames from resources/intro, one after another into the same texture, by the time its sound has
+  // played (or the time that passed, without sound), over everything, fitted to the screen. A click or a key skips
+  // it; at its end it fades into the loading screen
+  class MSIntro : public CCLayer
+  {
+  public:
+    static MSIntro* create()
+    {
+      auto intro = new MSIntro();
+      if (intro->init())
+      {
+        intro->autorelease();
+        return intro;
+      }
+      delete intro;
+      return nullptr;
+    }
+
+    ~MSIntro() override { this->stopSound(); }
+
+    bool init() override
+    {
+      if (!CCLayer::init())
+        return false;
+      auto const& theme = Theme::get();
+      auto winSize = CCDirector::get()->getWinSize();
+      // The frames there are: intro-0001.jpg on
+      std::error_code error;
+      auto dir = Mod::get()->getResourcesDir();
+      while (std::filesystem::exists(dir / fmt::format("intro-{:04}.jpg", m_count + 1), error))
+        m_count++;
+      if (m_count == 0)
+        return false;
+      m_background = CCLayerColor::create(Theme::withAlpha(theme.introBackground, 255));
+      m_background->setContentSize(winSize);
+      this->addChild(m_background);
+      this->startSound();
+      this->setTouchEnabled(true);
+      this->setKeyboardEnabled(true);
+      this->showFrame(0);
+      this->scheduleUpdate();
+      return true;
+    }
+
+    void registerWithTouchDispatcher() override
+    {
+      // Over everything of the loading screen, every touch its own
+      CCDirector::get()->getTouchDispatcher()->addTargetedDelegate(this, -1000, true);
+    }
+
+    bool ccTouchBegan(CCTouch*, CCEvent*) override
+    {
+      this->finish();
+      return true;
+    }
+
+    void keyDown(enumKeyCodes, double) override { this->finish(); }
+
+    void update(float dt) override
+    {
+      if (m_finished)
+        return;
+      m_time += std::min(dt, 0.1f);
+      // The sound's clock when there is one: the frames keep with it
+      if (m_channel)
+      {
+        unsigned position = 0;
+        bool playing = false;
+        if (m_channel->isPlaying(&playing) == FMOD_OK && playing &&
+            m_channel->getPosition(&position, FMOD_TIMEUNIT_MS) == FMOD_OK)
+          m_time = position / 1000.f;
+      }
+      auto index = static_cast<int>(m_time * std::max(Theme::get().introFps, 1.f));
+      if (index >= m_count)
+        return this->finish();
+      if (index != m_shown)
+        this->showFrame(index);
+    }
+
+  private:
+    void showFrame(int index)
+    {
+      m_shown = index;
+      auto path = (Mod::get()->getResourcesDir() / fmt::format("intro-{:04}.jpg", index + 1)).string();
+      auto image = new CCImage();
+      if (!image->initWithImageFile(path.c_str()))
+      {
+        image->release();
+        return;
+      }
+      auto width = image->getWidth();
+      auto height = image->getHeight();
+      auto alpha = image->hasAlpha();
+      if (!m_texture)
+      {
+        auto texture = new CCTexture2D();
+        if (texture->initWithData(image->getData(), alpha ? kCCTexture2DPixelFormat_RGBA8888 : kCCTexture2DPixelFormat_RGB888,
+                                  width, height, CCSize(width, height)))
+        {
+          texture->setAntiAliasTexParameters();
+          m_texture = texture;
+          m_width = width;
+          m_height = height;
+          // As big as fits the screen, its proportions kept; the rest is the intro's own background
+          auto sprite = CCSprite::createWithTexture(texture);
+          auto winSize = CCDirector::get()->getWinSize();
+          auto size = sprite->getContentSize();
+          sprite->setScale(std::min(winSize.width / size.width, winSize.height / size.height));
+          sprite->setPosition(winSize / 2);
+          this->addChild(sprite);
+          m_sprite = sprite;
+        }
+        texture->release();
+      }
+      else if (width == m_width && height == m_height)
+      {
+        // The same texture filled again: nothing made or deleted every frame
+        ccGLBindTexture2D(m_texture->getName());
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE,
+                        image->getData());
+      }
+      image->release();
+    }
+
+    void startSound()
+    {
+      auto engine = FMODAudioEngine::get();
+      auto system = engine ? engine->m_system : nullptr;
+      std::error_code error;
+      auto path = Mod::get()->getResourcesDir() / "intro.ogg";
+      if (!system || !std::filesystem::exists(path, error))
+        return;
+      if (system->createSound(path.string().c_str(), FMOD_CREATESTREAM, nullptr, &m_sound) != FMOD_OK ||
+          system->playSound(m_sound, nullptr, true, &m_channel) != FMOD_OK)
+      {
+        this->stopSound();
+        return;
+      }
+      auto music = std::clamp(engine->m_musicVolume, 0.f, 1.f);
+      m_channel->setVolume(std::clamp(Theme::get().introVolume, 0.f, 1.f) * music);
+      m_channel->setPaused(false);
+    }
+
+    void stopSound()
+    {
+      if (m_channel)
+        m_channel->stop();
+      if (m_sound)
+        m_sound->release();
+      m_channel = nullptr;
+      m_sound = nullptr;
+    }
+
+    // Done or skipped: the loading goes on, the intro fades into the loading screen
+    void finish()
+    {
+      if (m_finished)
+        return;
+      m_finished = true;
+      s_introPlaying = false;
+      this->setTouchEnabled(false);
+      this->setKeyboardEnabled(false);
+      auto fade = std::max(Theme::get().introFadeOut, 0.f);
+      if (m_channel)
+        m_channel->setVolume(0);
+      this->stopSound();
+      for (auto node : std::initializer_list<CCNode*>{m_background, m_sprite})
+      {
+        if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node))
+          static_cast<CCNode*>(node)->runAction(CCFadeTo::create(fade, 0));
+      }
+      this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(fade), CCRemoveSelf::create()));
+    }
+
+    int m_count = 0;
+    int m_shown = -1;
+    float m_time = 0;
+    bool m_finished = false;
+    CCLayerColor* m_background = nullptr;
+    CCSprite* m_sprite = nullptr;
+    Ref<CCTexture2D> m_texture;
+    unsigned m_width = 0;
+    unsigned m_height = 0;
+    FMOD::Sound* m_sound = nullptr;
+    FMOD::Channel* m_channel = nullptr;
+  };
 } // namespace
 
 // MiSide's loading screen in place of GD's: a deep violet background lit magenta in the middle, a dark pattern of
@@ -103,6 +299,20 @@ class $modify(MSLoadingLayer, LoadingLayer)
     // After Geode's own init, which adds its lines
     if (self.setHookPriorityPost("LoadingLayer::init", Priority::VeryLate).isErr())
       log::warn("Can't set the LoadingLayer::init hook's priority");
+    // Before Geode's own steps, so the intro can hold all of them
+    if (self.setHookPriorityPre("LoadingLayer::loadAssets", Priority::First).isErr())
+      log::warn("Can't set the LoadingLayer::loadAssets hook's priority");
+  }
+
+  // While the intro plays, every step of the loading waits a frame and asks again
+  void loadAssets()
+  {
+    if (s_introPlaying)
+    {
+      Loader::get()->queueInMainThread([layer = Ref(this)] { layer->loadAssets(); });
+      return;
+    }
+    LoadingLayer::loadAssets();
   }
 
   bool init(bool refresh)
@@ -110,9 +320,21 @@ class $modify(MSLoadingLayer, LoadingLayer)
     if (!LoadingLayer::init(refresh))
       return false;
     Theme::reload();
-    if (Mod::get()->getSettingValue<bool>("vanilla-menu") || !Theme::get().loadingEnabled)
-      return true;
-    this->build();
+    auto vanilla = Mod::get()->getSettingValue<bool>("vanilla-menu");
+    if (!vanilla && Theme::get().loadingEnabled)
+      this->build();
+    // The intro: at the game's start only (not when GD reloads its resources), once
+    if (!refresh && !s_introShown && !vanilla && Theme::get().introEnabled &&
+        Mod::get()->getSettingValue<bool>("show-intro"))
+    {
+      s_introShown = true;
+      if (auto intro = MSIntro::create())
+      {
+        s_introPlaying = true;
+        intro->setID("intro"_spr);
+        this->addChild(intro, 10000);
+      }
+    }
     return true;
   }
 

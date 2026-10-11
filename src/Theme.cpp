@@ -285,6 +285,14 @@ namespace
     theme.pauseExtraMenus = "left-button-menu,right-button-menu,bottom-button-menu";
     theme.pauseDuration = 0.2f;
 
+    // ! --- The intro --- !
+    // AIHASTO's intro, from a recording of MiSide's start (21.8-29.3 s), 1280×720 at 30 fps
+    theme.introEnabled = true;
+    theme.introFps = 30;
+    theme.introBackground = ccc3(0x0f, 0x0e, 0x13);
+    theme.introVolume = 0.8f;
+    theme.introFadeOut = 0.4f;
+
     // ! --- The loading screen --- !
     // Measured on MiSide's loading screen: the middle #670A6B, the edges #260237; LOADING... capitals 3.6 pt at
     // 25.9 pt from the left and 27.5 from the bottom; the bar 2.4 pt high from 25.9 to 136 pt, 19 pt up
@@ -673,6 +681,11 @@ namespace
     field("pause-extra-menus", theme.pauseExtraMenus);
     field("pause-duration", theme.pauseDuration);
 
+    field("intro-enabled", theme.introEnabled);
+    field("intro-fps", theme.introFps);
+    field("intro-background", theme.introBackground);
+    field("intro-volume", theme.introVolume);
+    field("intro-fade-out", theme.introFadeOut);
     field("loading-enabled", theme.loadingEnabled);
     field("loading-edge-color", theme.loadingEdgeColor);
     field("loading-glow-color", theme.loadingGlowColor);

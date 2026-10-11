@@ -333,6 +333,15 @@ struct Theme
   // The list's states (the confirmation, More) fading into each other
   float pauseDuration = 0;
 
+  // ! --- The intro --- !
+  // The studio's intro at the game's start: frames resources/intro/intro-0001.jpg on, at this rate, with intro.ogg
+  bool introEnabled = false;
+  float introFps = 0;
+  cocos2d::ccColor3B introBackground;
+  // Times GD's music volume
+  float introVolume = 0;
+  float introFadeOut = 0;
+
   // ! --- The loading screen --- !
   // MiSide's: deep violet lit magenta in the middle, a dark pattern on the right, LOADING... and a thin bar in the
   // bottom left, a line of text in the bottom middle. Points of the 569×320 screen, measured on MiSide's (1408×791)
