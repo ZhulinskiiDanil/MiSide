@@ -8,12 +8,13 @@ The background art is in `resources/background/`, the font and the sounds are fr
 
 ## What it does
 
-- **The column**: "Geometry Dash" above Play, Wardrobe, Create, Settings, Achievements, Statistics, Quit (in Russian or English), in the theme's font with a soft shadow. Hover with the mouse, or move with the arrow keys and choose with Enter
+- **The menu on the left**: a small logo, "MAIN MENU" under it, then a compact column of low purple-pink plates (148×14 pt, one every 16 pt): PLAY, WARDROBE, CREATE, SETTINGS, ACHIEVEMENTS, STATISTICS (in Russian or English, upper case, a condensed bold font). EXIT stands apart, shorter, near the bottom. The whole plate is clickable; hover and the arrow keys light up the same way (the plate's color, no movement), Enter chooses. When the mouse leaves, the keyboard's choice is lit again
+- **The logo** is a text stand-in for now ("Geometry Dash" in pink with a highlight, a shadow, a GD cube and spike): the theme's `logo-sprite` takes the real art when there is some
 - **Each item presses its vanilla button** through `activate()`, so every mod hooking `onPlay`, `onGarage`, `onCreator`, `onOptions` and the others keeps working. No vanilla button, no item
 - **The tray**: one row in the bottom right corner, every button scaled to the same small slot: the buttons other mods add (the Geode button too) and the vanilla ones that do something and have no item (the daily chest, Newgrounds). At its end, **"…"** opens a popup with RobTop, the social links and More Games
-- **The profile card** in the bottom left corner: a round avatar with the player's cube in their colors, and their name. It opens the profile like the vanilla button (which it presses with `activate()`)
-- **Nothing covers the column**: the column fits between the profile card and the top left buttons, and any other node in its way (a mod's too) is moved to the right of it
-- **The background**: layers that follow the mouse by their depth, a light overlay added on top at about two thirds of its strength, a gradient when the art is missing
+- **The profile card** in the bottom left corner, small and quiet: a round avatar with the player's cube in their colors, and their name. It opens the profile like the vanilla button (which it presses with `activate()`)
+- **Nothing covers the menu**: any other node in its way (a mod's too) is moved to the right of it
+- **The background** is dark: the room's layers tinted and dimmed, a darkening over them, a soft crimson glow on the right, a shade on the left under the menu. The layers follow the mouse a little (2 pt). An optional character layer on the right is off until there's art for it
 - **The transition**: a short darkening, then the game's own transition. No transition is hooked, other screens change exactly as before
 
 ## Settings
@@ -23,7 +24,7 @@ The background art is in `resources/background/`, the font and the sounds are fr
 | Vanilla menu | off | On: the main menu is exactly the vanilla one (with the other mods' buttons where they put them). Applies the next time the main menu opens |
 | Parallax strength | 1.0 | 0 to 2. How far the background follows the mouse, 0 keeps it still |
 | Menu language | RU | RU or EN, the items' language |
-| Title | on | "Geometry Dash" above the items |
+| Logo | on | The logo and "MAIN MENU" above the items |
 
 ## The theme
 
@@ -31,17 +32,19 @@ Colors, fonts, sprites, sounds, spacing and timings all come from the theme (`sr
 
 ```json
 {
-	"accent-color": "#ff6f91",
-	"item-scale": 1.2,
+	"row-color": "#762475",
+	"row-hover-color": "#ba168e",
+	"item-scale": 0.75,
+	"background-darken-opacity": 125,
 	"layers": [
-		{ "sprite": "zhulis.miside-menu/bg-far.png", "depth": 0.2 },
-		{ "sprite": "zhulis.miside-menu/bg-near.png", "depth": 1.0 },
-		{ "sprite": "zhulis.miside-menu/bg-light.png", "depth": 0, "blend": "add" }
+		{ "sprite": "zhulis.miside-menu/bg-far.png", "depth": 0.2, "tint": "#8c527e" },
+		{ "sprite": "zhulis.miside-menu/bg-near.png", "depth": 1.0, "opacity": 110 },
+		{ "sprite": "zhulis.miside-menu/bg-light.png", "depth": 0, "blend": "add", "opacity": 35 }
 	]
 }
 ```
 
-The theme is read again every time the main menu opens.
+Positions are in points on the 569×320 screen from its bottom left corner (`column-left`, `first-row-y`, `row-pitch` — from one row's middle to the next one's, `exit-y`, `logo-bottom`/`logo-top`, `subtitle-top`, `card-left`/`card-bottom`...). Missing keys keep their defaults, a value of the wrong type is ignored with a warning in the log. The theme is read again every time the main menu opens.
 
 ## How it stays compatible
 
@@ -61,7 +64,7 @@ geode build --ninja
 
 Or `cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo && cmake --build build --config RelWithDebInfo`. Needs the [Geode SDK](https://docs.geode-sdk.org/getting-started/sdk) (`GEODE_SDK`) and Geode CLI. Geode 5.10.1, GD 2.2081, Windows.
 
-The UI placeholders are drawn by `python tools/make_placeholders.py` (Pillow). The font is [M PLUS Rounded 1c](https://fonts.google.com/specimen/M+PLUS+Rounded+1c) under the SIL Open Font License, the sounds are from [Kenney's UI Audio](https://kenney.nl/assets/ui-audio) (CC0): see [LICENSES.md](LICENSES.md).
+The UI placeholders are drawn by `python tools/make_placeholders.py` (Pillow). The font is [Roboto](https://fonts.google.com/specimen/Roboto) (SIL Open Font License) fixed at Bold and 80% width by `tools/make_font.py` (fontTools), as cocos2d-x 2.2 reads static fonts, the sounds are from [Kenney's UI Audio](https://kenney.nl/assets/ui-audio) (CC0): see [LICENSES.md](LICENSES.md).
 
 ## Compatibility checklist
 
@@ -69,9 +72,12 @@ To go through by hand in the game before a release. Each line: what to do, then 
 
 **The basics**
 
-- [ ] Open the game: the menu has the new background, "Geometry Dash" over the column on the left, the profile card in the bottom left, the tray's row in the bottom right; the vanilla title, icons background, big buttons, profile button, name and social links aren't visible
+- [ ] Open the game: a dark scene with a crimson glow on the right, the logo and "MAIN MENU" over a compact column of purple plates on the left, EXIT apart near the bottom, the profile card in the bottom left, the tray's row in the bottom right; the vanilla title, icons background, big buttons, profile button, name and social links aren't visible
 - [ ] Every item opens what its vanilla button opens: Play → the level select, Wardrobe → the icon kit, Create → the creator menu, Settings, Achievements, Statistics, Quit → the "quit?" popup
-- [ ] Hover each item: it lights up, moves a little and plays the hover sound; arrows move the highlight, Enter chooses
+- [ ] Hover each item: its whole plate lights up (no movement), the hover sound plays; clicking anywhere on the plate chooses it
+- [ ] Arrows move the same highlight over the six rows and EXIT; with the mouse over a row, the arrows start from it; when the mouse leaves the rows, the keyboard's row is lit again; never two lit rows
+- [ ] Enter (and a click) press the vanilla button once: no double screen, no double popup, even when pressed quickly twice
+- [ ] RU and EN: "ДОСТИЖЕНИЯ" / "ACHIEVEMENTS" fit their plate with room to spare; all items are the same size in both languages
 - [ ] Choose Settings and close it: the darkening fades back and the column works again
 - [ ] With a popup over the menu (the quit popup), moving the mouse over the column and pressing the arrows / Enter does nothing behind it
 - [ ] Esc on the menu still shows the quit popup
@@ -89,11 +95,12 @@ To go through by hand in the game before a release. Each line: what to do, then 
 
 **Nothing over the column**
 
-- [ ] The profile card is in the bottom left corner, under the column, not over it: the player's cube in their colors (with the glow if it's on) in a circle, their name next to it
+- [ ] The profile card is in the bottom left corner, under EXIT, not touching it: the player's cube in their colors (with the glow if it's on) in a small circle, their name next to it
 - [ ] Clicking the card opens your profile, like the vanilla button; with an account name changed, the card shows the new one at the next menu
 - [ ] Nothing (a vanilla menu, a mod's button or label) is over the column's items or right next to them; the log says (debug level) which nodes were moved
-- [ ] No stripes or panels show behind the items: only the background art
-- [ ] The items, the title and the name have a soft shadow and stay readable over the light parts of the scene
+- [ ] Behind the plates: only the dark background, no stripes
+- [ ] The window and the curtain on the right aren't washed out; the glow tints them, it doesn't whiten them
+- [ ] The logo fits its area over "MAIN MENU" and doesn't touch the buttons at the top left
 
 **Mods that add buttons or popups to the main menu** (each alone, then all together)
 
@@ -119,6 +126,7 @@ To go through by hand in the game before a release. Each line: what to do, then 
 **Window and quality**
 
 - [ ] Aspect ratios 16:9, 16:10, 4:3, 21:9 and a small window: the background covers the screen with no edges showing at full parallax strength; the column, the profile and the tray stay on screen and don't overlap (a short window makes the column smaller)
-- [ ] The light overlay (`bg-light.png`) brightens the scene, softer than the file itself, and doesn't darken or cover it
+- [ ] The light overlay (`bg-light.png`) barely brightens the scene and doesn't cover it
+- [ ] A narrow window (4:3): the menu, the card and the tray keep their size and don't overlap; the background is cropped around its middle, not stretched
 - [ ] Parallax strength 0: the background is still; 2: it moves more, still no edges
-- [ ] Texture quality Low, Medium and High (restart after each): the background, the tray's panel, the card, the font and the accent bar are sharp and the right size
+- [ ] Texture quality Low, Medium and High (restart after each): the background, the plates, the tray, the card and the font are sharp and the right size

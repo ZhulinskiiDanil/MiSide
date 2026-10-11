@@ -42,8 +42,8 @@
 			]
 		},
 		"show-title": {
-			"name": "Title",
-			"description": "\"Geometry Dash\" above the menu items",
+			"name": "Logo",
+			"description": "The logo and \"Main menu\" above the menu items",
 			"type": "bool",
 			"default": true
 		}
@@ -51,6 +51,8 @@
 	"resources": {
 		"sprites": [
 			"resources/background/*.png",
+			"resources/placeholders/row-plate.png",
+			"resources/placeholders/glow-soft.png",
 			"resources/placeholders/item-accent.png",
 			"resources/placeholders/tray-panel.png",
 			"resources/placeholders/tray-slot.png",
@@ -62,7 +64,7 @@
 		],
 		"fonts": {
 			"miside-font": {
-				"path": "resources/fonts/MPLUSRounded1c-Medium.ttf",
+				"path": "resources/fonts/RobotoMenu-CondensedBold.ttf",
 				"size": 64,
 				"charset": "32-126,1025,1040-1103,1105,8211,8212,8226,8230"
 			}

@@ -57,7 +57,7 @@ bool MSMorePopup::init(std::vector<CCMenuItem*> const& targets, std::string cons
   m_bgSprite->setColor(theme.popupColor);
   m_bgSprite->setOpacity(theme.popupOpacity);
 
-  if (auto text = ms::createText(title, theme.popupTitleScale, theme.titleColor); text.node)
+  if (auto text = ms::createText(title, theme.popupTitleScale, theme.subtitleColor); text.node)
   {
     text.node->setAnchorPoint({0.5f, 0.5f});
     text.node->setPosition({size.width / 2, size.height - padding - text.node->getContentHeight() / 2});

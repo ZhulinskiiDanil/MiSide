@@ -1,6 +1,7 @@
 #include "Theme.hpp"
 #include "ui/MSBackground.hpp"
 #include "ui/MSLayoutGuard.hpp"
+#include "ui/MSLogo.hpp"
 #include "ui/MSMenuColumn.hpp"
 #include "ui/MSModTray.hpp"
 #include "ui/MSMorePopup.hpp"
@@ -43,17 +44,19 @@ namespace
     // Where Geode's IDs put the vanilla button
     char const* menu;
     char const* button;
+    // Quit: apart from the rows, near the bottom
+    bool exit = false;
   };
 
   // Item -> the vanilla button it presses
   constexpr Entry ENTRIES[] = {
-    {"Играть", "Play", "main-menu", "play-button"},
-    {"Гардероб", "Wardrobe", "main-menu", "icon-kit-button"},
-    {"Создать", "Create", "main-menu", "editor-button"},
-    {"Настройки", "Settings", "bottom-menu", "settings-button"},
-    {"Достижения", "Achievements", "bottom-menu", "achievements-button"},
-    {"Статистика", "Statistics", "bottom-menu", "stats-button"},
-    {"Выход", "Quit", "close-menu", "close-button"},
+    {"ИГРАТЬ", "PLAY", "main-menu", "play-button"},
+    {"ГАРДЕРОБ", "WARDROBE", "main-menu", "icon-kit-button"},
+    {"СОЗДАТЬ", "CREATE", "main-menu", "editor-button"},
+    {"НАСТРОЙКИ", "SETTINGS", "bottom-menu", "settings-button"},
+    {"ДОСТИЖЕНИЯ", "ACHIEVEMENTS", "bottom-menu", "achievements-button"},
+    {"СТАТИСТИКА", "STATISTICS", "bottom-menu", "stats-button"},
+    {"ВЫХОД", "EXIT", "close-menu", "close-button", true},
   };
 
   // The menus whose buttons go in the tray's row, in this order: the ones the other mods add theirs to, with the
@@ -172,7 +175,10 @@ class $modify(MSMenuLayer, MenuLayer)
       return;
     auto english = this->isEnglish();
     if (Mod::get()->getSettingValue<bool>("show-title"))
-      column->setTitle("Geometry Dash");
+    {
+      column->setLogo(MSLogo::create());
+      column->setSubtitle(english ? "MAIN MENU" : "ГЛАВНОЕ МЕНЮ");
+    }
     std::vector<CCNode*> menus;
     for (auto const& entry : ENTRIES)
     {
@@ -180,7 +186,11 @@ class $modify(MSMenuLayer, MenuLayer)
       auto button = findButton(this, entry.menu, entry.button);
       if (!button)
         continue;
-      column->addEntry(english ? entry.en : entry.ru, button);
+      auto text = english ? entry.en : entry.ru;
+      if (entry.exit)
+        column->setExit(text, button);
+      else
+        column->addEntry(text, button);
       // The column has it now. An invisible button can't be clicked or laid out, but activate() still runs it
       hide(button);
       if (auto menu = button->getParent(); std::find(menus.begin(), menus.end(), menu) == menus.end())
@@ -302,7 +312,7 @@ class $modify(MSMenuLayer, MenuLayer)
     std::vector<std::string> skipped{std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)};
     skipped.insert(skipped.end(), std::begin(POPUP_SOURCES), std::end(POPUP_SOURCES));
     skipped.emplace_back("main-menu-bg");
-    auto guard = MSLayoutGuard::create(column, m_fields->m_card, std::move(skipped));
+    auto guard = MSLayoutGuard::create(column, std::move(skipped));
     if (!guard)
       return;
     guard->setID("layout-guard"_spr);

@@ -22,84 +22,115 @@ bool MSMenuColumn::init(Choose choose)
   if (!CCMenu::init())
     return false;
   m_choose = std::move(choose);
-  // The items hang down from the column's origin, its top left corner; fit() places and scales it
+  // Everything is placed in the layer's own points
+  this->setPosition({0, 0});
   this->setContentSize({0, 0});
   m_lastMouse = getMousePos();
   this->scheduleUpdate();
   return true;
 }
 
-void MSMenuColumn::addEntry(std::string const& text, CCMenuItem* target)
+MSMenuItem* MSMenuColumn::makeItem(std::string const& text, CCMenuItem* target, float width)
 {
-  auto item = MSMenuItem::create(text, target, [this](MSMenuItem* item) { this->choose(item); });
-  if (!item)
-    return;
-  m_items.push_back(item);
-  this->addChild(item);
+  auto item = MSMenuItem::create(text, target, [this](MSMenuItem* item) { this->choose(item); }, width);
+  if (item)
+    this->addChild(item);
+  return item;
 }
 
-void MSMenuColumn::setTitle(std::string const& text)
+void MSMenuColumn::addEntry(std::string const& text, CCMenuItem* target)
 {
-  auto const& theme = Theme::get();
-  auto title = ms::createText(text, theme.titleScale, theme.titleColor);
-  if (!title.node)
-    return;
+  if (auto item = this->makeItem(text, target, Theme::get().rowWidth))
+    m_rows.push_back(item);
+}
+
+void MSMenuColumn::setExit(std::string const& text, CCMenuItem* target)
+{
+  m_exit = this->makeItem(text, target, Theme::get().exitWidth);
+}
+
+CCMenuItem* MSMenuColumn::wrap(CCNode* node)
+{
   auto item = CCMenuItem::create();
   item->setEnabled(false);
-  item->setAnchorPoint({0, 0.5f});
-  item->setContentSize(title.node->getContentSize());
-  title.node->setPosition({0, item->getContentHeight() / 2});
-  item->addChild(title.node);
+  item->setContentSize(node->getContentSize());
+  node->setAnchorPoint({0, 0});
+  node->ignoreAnchorPointForPosition(false);
+  node->setPosition({0, 0});
+  item->addChild(node);
   this->addChild(item);
-  m_title = item;
-  m_titleText = title.node;
+  return item;
+}
+
+void MSMenuColumn::setLogo(CCNode* logo)
+{
+  if (logo)
+    m_logo = this->wrap(logo);
+}
+
+void MSMenuColumn::setSubtitle(std::string const& text)
+{
+  auto const& theme = Theme::get();
+  auto subtitle = ms::createText(text, theme.subtitleScale, theme.subtitleColor);
+  if (!subtitle.node)
+    return;
+  m_subtitle = this->wrap(subtitle.node);
+  m_subtitleText = subtitle.node;
 }
 
 void MSMenuColumn::finish()
 {
   auto const& theme = Theme::get();
-  auto y = 0.f;
-  m_width = 0;
-  if (m_title)
+  if (m_logo)
   {
-    auto height = m_title->getContentHeight();
-    m_title->setPosition({0, -height / 2});
-    y = height + theme.titleGap;
-    m_width = m_title->getContentWidth();
-    if (theme.introDuration > 0)
-    {
-      ms::setOpacity(m_titleText, 0);
-      m_titleText->runAction(CCFadeTo::create(theme.introDuration, 255));
-    }
+    m_logo->setAnchorPoint({0, 0});
+    m_logo->setPosition({theme.columnLeft, theme.logoBottom});
   }
-  for (size_t i = 0; i < m_items.size(); i++)
+  if (m_subtitle)
   {
-    auto item = m_items[i];
-    auto height = item->getContentHeight();
-    item->setPosition({0, -(y + height / 2)});
-    y += height + theme.itemGap;
-    m_width = std::max(m_width, item->getContentWidth());
-    item->playIntro(theme.introStagger * i);
+    m_subtitle->setAnchorPoint({0, 1});
+    m_subtitle->setPosition({theme.columnLeft, theme.subtitleTop});
   }
-  m_height = m_items.empty() ? std::max(y - theme.titleGap, 0.f) : y - theme.itemGap;
-  auto winSize = CCDirector::get()->getWinSize();
-  this->fit(winSize.height * theme.columnTop, 0);
-}
 
-void MSMenuColumn::fit(float top, float bottom)
-{
-  auto scale = 1.f;
-  if (m_height > 0 && top - bottom < m_height)
-    scale = std::max(top - bottom, 0.f) / m_height;
-  this->setScale(scale);
-  this->setPosition({Theme::get().columnLeft, top});
+  m_items = m_rows;
+  if (m_exit)
+    m_items.push_back(m_exit);
+  for (size_t i = 0; i < m_rows.size(); i++)
+    m_rows[i]->setPosition({theme.columnLeft, theme.firstRowY - theme.rowPitch * i});
+  if (m_exit)
+    m_exit->setPosition({theme.columnLeft, theme.exitY});
+
+  for (size_t i = 0; i < m_items.size(); i++)
+    m_items[i]->playIntro(theme.introStagger * i);
+  if (m_subtitleText && theme.introDuration > 0)
+  {
+    ms::setOpacity(m_subtitleText, 0);
+    m_subtitleText->runAction(CCFadeTo::create(theme.introDuration, 255));
+  }
 }
 
 CCRect MSMenuColumn::getArea()
 {
-  auto scale = this->getScale();
-  auto position = this->getPosition();
-  return {position.x, position.y - m_height * scale, m_width * scale, m_height * scale};
+  CCRect area;
+  auto any = false;
+  for (auto child : CCArrayExt<CCNode*>(this->getChildren()))
+  {
+    if (!child->isVisible())
+      continue;
+    // Where the item rests, not where its intro is
+    auto box = child->boundingBox();
+    if (!any)
+      area = box;
+    else
+    {
+      auto minX = std::min(area.getMinX(), box.getMinX());
+      auto minY = std::min(area.getMinY(), box.getMinY());
+      area = {minX, minY, std::max(area.getMaxX(), box.getMaxX()) - minX,
+              std::max(area.getMaxY(), box.getMaxY()) - minY};
+    }
+    any = true;
+  }
+  return CCRectApplyAffineTransform(area, this->nodeToParentTransform());
 }
 
 void MSMenuColumn::setBusy(bool busy) { m_busy = busy; }
@@ -145,24 +176,27 @@ void MSMenuColumn::update(float)
       break;
     }
   }
-  this->highlight(under, true);
+  if (under == m_hover)
+    return;
+  m_hover = under;
+  this->showHighlight();
 }
 
-void MSMenuColumn::highlight(int index, bool sound)
+void MSMenuColumn::showHighlight()
 {
-  if (index == m_current)
+  auto count = static_cast<int>(m_items.size());
+  auto index = m_hover >= 0 ? m_hover : m_keyboard;
+  if (index >= count)
+    index = -1;
+  if (index == m_shown)
     return;
-  if (m_current >= 0 && m_current < static_cast<int>(m_items.size()))
-    m_items[m_current]->setHighlighted(false);
-  m_current = index;
-  if (m_current < 0 || m_current >= static_cast<int>(m_items.size()))
-  {
-    m_current = -1;
+  if (m_shown >= 0 && m_shown < count)
+    m_items[m_shown]->setHighlighted(false);
+  m_shown = index;
+  if (m_shown < 0)
     return;
-  }
-  m_items[m_current]->setHighlighted(true);
-  if (sound)
-    ms::playSound(Theme::get().hoverSound);
+  m_items[m_shown]->setHighlighted(true);
+  ms::playSound(Theme::get().hoverSound);
 }
 
 bool MSMenuColumn::onKey(enumKeyCodes key)
@@ -173,15 +207,19 @@ bool MSMenuColumn::onKey(enumKeyCodes key)
   switch (key)
   {
   case KEY_Up:
-    this->highlight(m_current < 0 ? count - 1 : (m_current + count - 1) % count, true);
-    return true;
   case KEY_Down:
-    this->highlight(m_current < 0 ? 0 : (m_current + 1) % count, true);
+  {
+    // From what's highlighted now, the mouse's row too; the keys take over until the mouse moves again
+    auto step = key == KEY_Up ? count - 1 : 1;
+    m_keyboard = m_shown < 0 ? (key == KEY_Up ? count - 1 : 0) : (m_shown + step) % count;
+    m_hover = -1;
+    this->showHighlight();
     return true;
+  }
   case KEY_Enter:
-    if (m_current < 0)
+    if (m_shown < 0)
       return false;
-    m_items[m_current]->activate();
+    m_items[m_shown]->activate();
     return true;
   default:
     return false;
@@ -190,6 +228,7 @@ bool MSMenuColumn::onKey(enumKeyCodes key)
 
 void MSMenuColumn::choose(MSMenuItem* item)
 {
+  // Busy from the first press until the transition ends: a second click or Enter can't press it again
   if (m_busy || !item || !item->getTarget())
     return;
   ms::playSound(Theme::get().clickSound);

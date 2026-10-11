@@ -7,8 +7,10 @@
 
 | Файл в репозитории | Что это | Источник | Автор | Лицензия | Изменения |
 | --- | --- | --- | --- | --- | --- |
-| `resources/fonts/MPLUSRounded1c-Medium.ttf` | M PLUS Rounded 1c, Medium (латиница + кириллица) | Google Fonts, репозиторий [google/fonts](https://github.com/google/fonts/tree/main/ofl/mplusrounded1c): `https://github.com/google/fonts/raw/main/ofl/mplusrounded1c/MPLUSRounded1c-Medium.ttf` (скачан 2026-10-11, SHA-256 `adfde1b6bae58719c4e0144612a94232e72fc5ca655c4722165fe88d06521a70`) | Coji Morishita, M+ Fonts Project | [SIL Open Font License 1.1](https://openfontlicense.org) (`license: "OFL"` в `METADATA.pb` Google Fonts) | Нет. Geode CLI при сборке делает из него BMFont `miside-font` (только символы из `charset` в `mod.json`) |
-| `resources/fonts/OFL.txt` | Текст лицензии шрифта | Upstream-репозиторий M+ Fonts: `https://raw.githubusercontent.com/coz-m/MPLUS_FONTS/master/OFL.txt` | The M+ FONTS Project Authors | SIL OFL 1.1 | Нет |
+| `resources/fonts/RobotoMenu-CondensedBold.ttf` | «Roboto Menu Condensed Bold»: статический инстанс Roboto, `wght` 700, `wdth` 80 (латиница + кириллица) | Google Fonts, репозиторий [google/fonts](https://github.com/google/fonts/tree/main/ofl/roboto): `https://github.com/google/fonts/raw/main/ofl/roboto/Roboto%5Bwdth,wght%5D.ttf` (скачан 2026-10-11, коммит `91d5d3e5b81efa04a77925cc609fdcdd7ee663d1` в `METADATA.pb`, SHA-256 исходника `d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134`); upstream [googlefonts/roboto-classic](https://github.com/googlefonts/roboto-classic) | The Roboto Project Authors | [SIL Open Font License 1.1](https://openfontlicense.org) (Reserved Font Name нет) | **Изменён**: оси `wght`/`wdth` зафиксированы (`tools/make_font.py`, fontTools 4.66.1), семейство переименовано в «Roboto Menu Condensed». SHA-256 результата `2e86a5d8225f6be5a1c46bcf5b1ce37c5df73e8c03768ea110dec19dde893a96`. Geode CLI при сборке делает из него BMFont `miside-font` |
+| `resources/fonts/OFL.txt` | Текст лицензии шрифта | `https://github.com/google/fonts/raw/main/ofl/roboto/OFL.txt` | The Roboto Project Authors | SIL OFL 1.1 | Нет |
+
+Раньше здесь был M PLUS Rounded 1c (OFL); он удалён из репозитория.
 
 OFL разрешает встраивать и распространять шрифт вместе с модом; при распространении рядом должен лежать
 текст лицензии (`OFL.txt`), а сам шрифт нельзя продавать отдельно.
@@ -42,6 +44,8 @@ CC0 не требует указывать автора; Kenney просит о�
 | `resources/placeholders/tray-panel.png` | Белая скруглённая панель лотка (9-slice) | то же | то же |
 | `resources/placeholders/tray-slot.png` | Белая скруглённая ячейка лотка (9-slice) | то же | то же |
 | `resources/placeholders/avatar-circle.png` | Белый круг под аватаром в карточке профиля | то же | то же |
+| `resources/placeholders/row-plate.png` | Белая плашка пункта со скруглением 3 pt (9-slice) | то же | то же |
+| `resources/placeholders/glow-soft.png` | Белое мягкое круглое свечение (радиальная альфа) | то же | то же |
 
 Иконка игрока в карточке профиля и кнопки в попапе «…» — спрайты самой игры (текущий кадр ванильных кнопок,
 кубик игрока через `SimplePlayer`), в мод они не копируются.

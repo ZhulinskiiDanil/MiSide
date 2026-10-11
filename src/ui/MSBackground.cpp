@@ -24,17 +24,36 @@ bool MSBackground::init(float strength)
   if (!CCNode::init())
     return false;
   auto const& theme = Theme::get();
-  auto winSize = CCDirector::get()->getWinSize();
   m_strength = std::max(strength, 0.f);
-  this->setContentSize(winSize);
+  this->setContentSize(CCDirector::get()->getWinSize());
+
+  this->addLayers();
+  this->addOverlays();
+
+  if (m_strength > 0 && theme.parallaxRange > 0)
+    this->scheduleUpdate();
+  return true;
+}
+
+void MSBackground::addLayers()
+{
+  auto const& theme = Theme::get();
+  auto winSize = CCDirector::get()->getWinSize();
+
+  // One margin for all the layers, so art of the same size is scaled and cropped the same way
+  auto deepest = 0.f;
+  for (auto const& spec : theme.layers)
+    deepest = std::max(deepest, std::abs(spec.depth));
+  auto margin = theme.parallaxRange * m_strength * deepest;
+  CCSize cover{winSize.width + margin * 2, winSize.height + margin * 2};
+  // The art's focus point sits on the screen's: any crop stays inside the art
+  auto focusX = std::clamp(theme.backgroundFocusX, 0.f, 1.f);
+  auto focusY = std::clamp(theme.backgroundFocusY, 0.f, 1.f);
+  CCPoint home{winSize.width * focusX, winSize.height * focusY};
 
   for (size_t i = 0; i < theme.layers.size(); i++)
   {
     auto const& spec = theme.layers[i];
-    // A margin on every side, so the edges never show when the layer moves
-    auto margin = theme.parallaxRange * m_strength * std::abs(spec.depth);
-    CCSize cover{winSize.width + margin * 2, winSize.height + margin * 2};
-
     CCNode* node = nullptr;
     if (ms::resourceExists(spec.sprite))
     {
@@ -43,6 +62,7 @@ bool MSBackground::init(float strength)
         auto size = sprite->getContentSize();
         if (size.width > 0 && size.height > 0)
           sprite->setScale(std::max(cover.width / size.width, cover.height / size.height));
+        sprite->setColor(spec.tint.value_or(spec.additive ? ccWHITE : theme.backgroundTint));
         sprite->setOpacity(spec.opacity);
         // Black adds nothing: only the light shows. A premultiplied texture has its color scaled by the
         // opacity already; otherwise the opacity scales it while it's added
@@ -52,6 +72,7 @@ bool MSBackground::init(float strength)
           auto premultiplied = texture && texture->hasPremultipliedAlpha();
           sprite->setBlendFunc({static_cast<GLenum>(premultiplied ? GL_ONE : GL_SRC_ALPHA), GL_ONE});
         }
+        sprite->setAnchorPoint({focusX, focusY});
         node = sprite;
       }
     }
@@ -64,12 +85,12 @@ bool MSBackground::init(float strength)
                                               Theme::withAlpha(theme.backdropBottom, 255));
       gradient->setContentSize(cover);
       gradient->ignoreAnchorPointForPosition(false);
+      gradient->setAnchorPoint({focusX, focusY});
       node = gradient;
     }
-    node->setAnchorPoint({0.5f, 0.5f});
-    node->setPosition(winSize / 2);
+    node->setPosition(home);
     this->addChild(node);
-    m_layers.push_back({node, spec.depth});
+    m_layers.push_back({node, home, spec.depth});
   }
 
   // Nothing at all: the gradient alone
@@ -80,10 +101,75 @@ bool MSBackground::init(float strength)
     gradient->setContentSize(winSize);
     this->addChild(gradient);
   }
+}
 
-  if (m_strength > 0 && theme.parallaxRange > 0)
-    this->scheduleUpdate();
-  return true;
+void MSBackground::addOverlays()
+{
+  auto const& theme = Theme::get();
+  auto winSize = CCDirector::get()->getWinSize();
+
+  // Over the whole scene: darker
+  if (theme.darkenOpacity > 0)
+  {
+    auto darken = CCLayerColor::create(Theme::withAlpha(theme.darkenColor, theme.darkenOpacity));
+    darken->setContentSize(winSize);
+    this->addChild(darken);
+  }
+
+  // A soft crimson light on the right: a color, not a brightness
+  if (theme.glowOpacity > 0 && theme.glowWidth > 0 && theme.glowHeight > 0)
+  {
+    if (ms::resourceExists(theme.glowSprite))
+    {
+      if (auto glow = ms::createStretched(theme.glowSprite, {theme.glowWidth, theme.glowHeight}, theme.glowColor,
+                                          theme.glowOpacity))
+      {
+        glow->setAnchorPoint({0.5f, 0.5f});
+        glow->setPosition({winSize.width * theme.glowX, winSize.height * theme.glowY});
+        this->addChild(glow);
+      }
+    }
+    else
+      log::warn("Glow sprite {} not found, no glow", theme.glowSprite);
+  }
+
+  this->addCharacter();
+
+  // The left side, under the menu, darkest at the edge
+  if (theme.leftShadeOpacity > 0 && theme.leftShadeWidth > 0)
+  {
+    auto shade = CCLayerGradient::create(Theme::withAlpha(theme.leftShadeColor, theme.leftShadeOpacity),
+                                         Theme::withAlpha(theme.leftShadeColor, 0), {1, 0});
+    shade->setContentSize({theme.leftShadeWidth, winSize.height});
+    this->addChild(shade);
+  }
+}
+
+void MSBackground::addCharacter()
+{
+  auto const& theme = Theme::get();
+  // Off unless the theme names the art
+  if (theme.characterSprite.empty())
+    return;
+  if (!ms::resourceExists(theme.characterSprite))
+  {
+    log::warn("Character {} not found, none", theme.characterSprite);
+    return;
+  }
+  auto sprite = CCSprite::create(theme.characterSprite.c_str());
+  if (!sprite)
+    return;
+  auto winSize = CCDirector::get()->getWinSize();
+  auto size = sprite->getContentSize();
+  if (size.height > 0)
+    sprite->setScale(winSize.height * theme.characterHeight / size.height);
+  sprite->setOpacity(theme.characterOpacity);
+  // Standing on the bottom edge, its head at the top edge
+  sprite->setAnchorPoint({0.5f, 0});
+  CCPoint home{winSize.width * theme.characterX, 0};
+  sprite->setPosition(home);
+  this->addChild(sprite);
+  m_layers.push_back({sprite, home, theme.characterDepth});
 }
 
 void MSBackground::update(float dt)
@@ -100,5 +186,5 @@ void MSBackground::update(float dt)
   m_offset = m_offset + (target - m_offset) * follow;
 
   for (auto const& layer : m_layers)
-    layer.node->setPosition(CCPoint{center.width, center.height} + m_offset * layer.depth);
+    layer.node->setPosition(layer.home + m_offset * layer.depth);
 }

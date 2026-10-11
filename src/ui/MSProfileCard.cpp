@@ -93,7 +93,7 @@ bool MSProfileCard::init(CCMenuItem* profileButton, std::string const& name)
   });
   button->m_scaleMultiplier = theme.cardPressScale;
   button->setID("profile-card-button"_spr);
-  button->setPosition({theme.trayMargin + width / 2, theme.trayMargin + height / 2});
+  button->setPosition({theme.cardLeft + width / 2, theme.cardBottom + height / 2});
   this->addChild(button);
   m_button = button;
   return true;

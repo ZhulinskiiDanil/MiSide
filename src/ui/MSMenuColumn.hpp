@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 
-// The column of items on the left. The mouse, the arrow keys and Enter move one highlight between them
+// The menu on the left: the logo, the subtitle, the rows from `first-row-y` down, and Quit apart near the bottom.
+// One highlight for all of them: the row under the mouse, or else the one the arrow keys chose. Enter chooses it
 class MSMenuColumn : public cocos2d::CCMenu
 {
 public:
@@ -16,14 +17,15 @@ public:
 
   static MSMenuColumn* create(Choose choose);
 
+  // The next row, `row-pitch` under the previous one
   void addEntry(std::string const& text, cocos2d::CCMenuItem* target);
-  // A line above the items that can't be chosen
-  void setTitle(std::string const& text);
-  // Lays the items out from the top and plays their intro
+  // Quit: shorter, on its own at `exit-y`, the last for the arrow keys
+  void setExit(std::string const& text, cocos2d::CCMenuItem* target);
+  void setLogo(cocos2d::CCNode* logo);
+  void setSubtitle(std::string const& text);
+  // Places everything and plays the intro
   void finish();
-  // Puts the column's top edge at `top` on the theme's left edge, scaled down when it wouldn't end above `bottom`
-  void fit(float top, float bottom);
-  // What the column takes on the screen, in its parent's space
+  // What the menu takes on the screen, in its parent's space
   cocos2d::CCRect getArea();
   // While an item's transition runs, nothing else is chosen
   void setBusy(bool busy);
@@ -34,20 +36,26 @@ public:
 
 protected:
   bool init(Choose choose);
-  void highlight(int index, bool sound);
+  MSMenuItem* makeItem(std::string const& text, cocos2d::CCMenuItem* target, float width);
+  // A node that isn't an item: wrapped in a disabled one, as the menu holds items
+  cocos2d::CCMenuItem* wrap(cocos2d::CCNode* node);
+  // Shows the hovered row, or the keyboard's
+  void showHighlight();
   void choose(MSMenuItem* item);
   // Nothing (a popup, a scene transition) is over the menu
   bool isOnTop();
 
   Choose m_choose;
+  // The rows, then Quit: the arrow keys' order
   std::vector<MSMenuItem*> m_items;
-  // A disabled item, so the menu takes it; its text fades in with the items
-  cocos2d::CCMenuItem* m_title = nullptr;
-  cocos2d::CCNode* m_titleText = nullptr;
-  int m_current = -1;
-  // The items' bounds at scale 1
-  float m_width = 0;
-  float m_height = 0;
+  std::vector<MSMenuItem*> m_rows;
+  MSMenuItem* m_exit = nullptr;
+  cocos2d::CCMenuItem* m_logo = nullptr;
+  cocos2d::CCMenuItem* m_subtitle = nullptr;
+  cocos2d::CCNode* m_subtitleText = nullptr;
+  int m_hover = -1;
+  int m_keyboard = -1;
+  int m_shown = -1;
   cocos2d::CCPoint m_lastMouse;
   bool m_busy = false;
 };
