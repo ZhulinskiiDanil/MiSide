@@ -131,7 +131,21 @@ M PLUS Rounded 1c (Google Fonts, SIL OFL) — скруглённый, с пол�
 | Файл | Назначение | Формат | Где используется | Ключ темы | Сейчас |
 | --- | --- | --- | --- | --- | --- |
 | `hover.ogg` | Наведение / выбор стрелками | OGG Vorbis | `ui/MSMenuColumn.cpp` | `hover-sound` | Kenney UI Audio `rollover2.ogg` (CC0) |
-| `click.ogg` | Выбор пункта | OGG Vorbis | `ui/MSMenuColumn.cpp`, `ui/MSProfileCard.cpp` | `click-sound` | Kenney UI Audio `click1.ogg` (CC0) |
+| `click.ogg` | Выбор пункта (раньше) | OGG Vorbis | — | — | Kenney UI Audio `click1.ogg` (CC0); `hover.ogg` и `click.ogg` больше не используются по умолчанию |
+| `miside-table-enter.flac` | Наведение на кнопку | FLAC | все меню мода | `hover-sound` | MiSide Demo, «Table Enter» |
+| `miside-table-click.flac` | Нажатие | FLAC | все меню мода | `click-sound` | «Table Click» |
+| `miside-table-toggle.flac` | Переключатели настроек GD | FLAC | `Sounds.cpp` | `toggle-sound` | «Table Toggle» |
+| `miside-switch-category.flac` | Страницы More Options, вкладки гардероба | FLAC | `Sounds.cpp` | `tab-sound` | «Switch Kategory» |
+| `miside-switch-open.flac`, `miside-switch-close.flac` | «ДОПОЛНИТЕЛЬНО» в паузе | FLAC | `pause.cpp` | `more-open-sound`, `more-close-sound` | «Switch Open», «Switch Close» |
+| `miside-gift-poof.flac` | Выбор иконки в гардеробе | FLAC | `Sounds.cpp` | `outfit-sound` | «Gift Poof» |
+| `miside-achievement.flac` | Достижение (вместо achievement_01 GD) | FLAC | `Sounds.cpp` | `achievement-sound` | «Achievement» |
+| `miside-win.flac` | Прохождение уровня (вместо endStart_02 GD) | FLAC | `Sounds.cpp` | `win-sound` | «Win» |
+| `miside-startpause.flac` | Открытие паузы | FLAC | `pause.cpp` | `pause-start-sound` | «Startpause» |
+| `miside-ambientpause.flac` | Ambient паузы, петля 11.71 с | FLAC | `pause/MSPauseAmbient.cpp` | `pause-ambient-path` | «Ambientpause» |
+| `miside-stress.flac` | Ambient паузы рядом с рекордом, петля 14.43 с | FLAC | `Sounds.cpp`, `pause.cpp` | `pause-stress-path` | «Stress» |
+
+FLAC скопированы без изменений (исходники — `Downloads/miside-sfx`): петли Ambientpause и Stress сшиты в самом
+файле (скачок на стыке меньше обычного шага сигнала), FLAC сохраняет их точно до сэмпла.
 
 ## Музыка
 

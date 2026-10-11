@@ -63,15 +63,15 @@ bool MSPauseColumn::init()
   return true;
 }
 
-MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action)
+MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action, std::string const& sound)
 {
   auto const& theme = Theme::get();
   auto item = MSMenuItem::create(
     text, nullptr,
-    [this, action = std::move(action)](MSMenuItem*) {
+    [this, action = std::move(action), sound](MSMenuItem*) {
       if (!this->canUse() || !action)
         return;
-      ms::playSound(Theme::get().clickSound);
+      ms::playSound(sound.empty() ? Theme::get().clickSound : sound);
       action();
     },
     theme.pauseRowWidth, MSMenuItem::Style::pause());
@@ -80,9 +80,9 @@ MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void(
   return item;
 }
 
-void MSPauseColumn::addRow(std::string const& text, std::function<void()> action)
+void MSPauseColumn::addRow(std::string const& text, std::function<void()> action, std::string const& sound)
 {
-  if (auto item = this->makeItem(text, std::move(action)))
+  if (auto item = this->makeItem(text, std::move(action), sound))
     m_rows.push_back(item);
 }
 

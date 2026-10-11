@@ -26,7 +26,8 @@ public:
 
   static MSPauseColumn* create();
 
-  void addRow(std::string const& text, std::function<void()> action);
+  // sound: in place of the click (empty: the click)
+  void addRow(std::string const& text, std::function<void()> action, std::string const& sound = "");
   void addSlider(std::string const& text, Slider slider);
   // Apart, under the others
   void setExit(std::string const& text, std::function<void()> action);
@@ -59,7 +60,7 @@ protected:
   };
 
   bool init() override;
-  MSMenuItem* makeItem(std::string const& text, std::function<void()> action);
+  MSMenuItem* makeItem(std::string const& text, std::function<void()> action, std::string const& sound = "");
   void layoutSlider(SliderRow& row, float value);
   // The track's span in the column's space
   cocos2d::CCRect trackRect(SliderRow const& row) const;

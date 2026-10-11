@@ -204,6 +204,20 @@ struct Theme
   // The list fading out and the confirmation in, and back; nothing is chosen before it has faded in
   float confirmDuration = 0;
 
+  // ! --- Sounds --- !
+  // MiSide's, played as GD's effects (the SFX volume counts, times `sound-volume`). Empty: none. Achievement and
+  // win take the place of GD's own achievement_01 and endStart_02, so they never sound twice
+  std::string toggleSound;
+  std::string tabSound;
+  std::string moreOpenSound;
+  std::string moreCloseSound;
+  std::string outfitSound;
+  std::string achievementSound;
+  std::string winSound;
+  // Once when the pause opens, on a channel of its own, stopped when it closes
+  std::string pauseStartSound;
+  float pauseStartVolume = 0;
+
   // ! --- Music --- !
   // Played by GD itself, on its music channel: the main menu's in place of GD's menu loop (so it goes on through the
   // menus, stops for levels and follows the music volume and mute), the icon kit's while it's open. A file name in
@@ -304,6 +318,15 @@ struct Theme
   std::string pauseAmbientPath;
   float pauseAmbientVolume = 0;
   float pauseAmbientFade = 0;
+  // Instead of the ambient, near the personal best: from `pause-stress-window` points under the best at the attempt's
+  // start, a bit louder past it (`pause-stress-boost`). Not in practice or with a start position, not on a completed
+  // level, not with a best under `pause-stress-min-best`
+  bool pauseStressEnabled = false;
+  std::string pauseStressPath;
+  float pauseStressVolume = 0;
+  float pauseStressWindow = 0;
+  float pauseStressMinBest = 0;
+  float pauseStressBoost = 0;
   // The menus the mods put their pause buttons in: hidden in the pause, shown as they are under More
   bool pauseExtraEnabled = false;
   std::string pauseExtraMenus;

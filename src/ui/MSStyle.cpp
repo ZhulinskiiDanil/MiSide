@@ -2,7 +2,9 @@
 
 #include "../Theme.hpp"
 
+#include <chrono>
 #include <typeinfo>
+#include <unordered_map>
 
 using namespace geode::prelude;
 
@@ -192,8 +194,17 @@ namespace ms
 
   void playSound(std::string const& name)
   {
-    if (!resourceExists(name))
+    if (name.empty() || !resourceExists(name))
       return;
+    // The same sound again within this long is the same moment (a hover and a key on one frame, two menus
+    // reacting): it doesn't stack on itself
+    constexpr auto AGAIN = std::chrono::milliseconds(60);
+    static std::unordered_map<std::string, std::chrono::steady_clock::time_point> s_last;
+    auto now = std::chrono::steady_clock::now();
+    if (auto it = s_last.find(name); it != s_last.end() && now - it->second < AGAIN)
+      return;
+    s_last[name] = now;
+    // As GD's own effects: the SFX volume counts
     FMODAudioEngine::get()->playEffect(name, 1.f, 0.f, Theme::get().soundVolume);
   }
 } // namespace ms

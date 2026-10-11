@@ -70,6 +70,7 @@
 		"files": [
 			"resources/sounds/hover.ogg",
 			"resources/sounds/click.ogg",
+			"resources/sounds/miside-*.flac",
 			"resources/music/*.ogg",
 			"resources/mita-closeup/mita_closeup_atlas_*.png",
 			"resources/mita-closeup/mita-closeup-manifest.json",

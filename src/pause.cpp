@@ -1,3 +1,4 @@
+#include "Sounds.hpp"
 #include "Theme.hpp"
 #include "pause/MSPauseAmbient.hpp"
 #include "pause/MSPauseBackdrop.hpp"
@@ -149,7 +150,15 @@ class $modify(MSPauseLayer, PauseLayer)
     if (m_fields->m_styled)
     {
       this->addChild(Lifetime::create());
-      MSPauseAmbient::get()->start();
+      auto const& theme = Theme::get();
+      auto ambient = MSPauseAmbient::get();
+      ambient->playOnce(theme.pauseStartSound, theme.pauseStartVolume);
+      // Stress near the personal best, else the usual ambient
+      auto stress = sounds::stressLevel();
+      if (theme.pauseStressEnabled && stress > 0)
+        ambient->start(theme.pauseStressPath, theme.pauseStressVolume * stress);
+      else if (theme.pauseAmbientEnabled)
+        ambient->start(theme.pauseAmbientPath, theme.pauseAmbientVolume);
     }
   }
 
@@ -200,7 +209,7 @@ class $modify(MSPauseLayer, PauseLayer)
     this->addVolume(column, "sfx-slider", en ? "SFX" : "ЗВУКИ", false, theme.pauseSfxReset);
     if (auto target = available("options-button"))
       column->addRow(en ? "SETTINGS" : "НАСТРОЙКИ", press(target));
-    column->addRow(en ? "MORE" : "ДОПОЛНИТЕЛЬНО", [this] { this->showMore(true); });
+    column->addRow(en ? "MORE" : "ДОПОЛНИТЕЛЬНО", [this] { this->showMore(true); }, theme.moreOpenSound);
     if (auto target = available("exit-button"))
       column->setExit(en ? "QUIT THE LEVEL" : "ВЫЙТИ ИЗ УРОВНЯ", press(target));
     column->setID("pause-column"_spr);
@@ -287,7 +296,7 @@ class $modify(MSPauseLayer, PauseLayer)
     if (auto target = available("full-restart-button"))
       more->addRow(en ? "FULL RESTART" : "ПОЛНЫЙ ПЕРЕЗАПУСК", press(target));
     more->addRow(en ? "VANILLA PAUSE" : "ИСХОДНАЯ ПАУЗА", [this] { this->showVanilla(true); });
-    more->addRow(en ? "BACK" : "НАЗАД", [this] { this->showMore(false); });
+    more->addRow(en ? "BACK" : "НАЗАД", [this] { this->showMore(false); }, theme.moreCloseSound);
     more->setID("pause-more"_spr);
     this->addChild(more, MENU_Z);
     more->finish(this->moreLeft(), theme.pauseFirstRowTop + fromTop);
@@ -610,7 +619,10 @@ class $modify(MSPauseLayer, PauseLayer)
     if (back && f.m_closedOnFrame == frame)
       return;
     if (f.m_styled && f.m_state == State::More && back)
+    {
+      ms::playSound(Theme::get().moreCloseSound);
       return this->showMore(false);
+    }
     if (f.m_styled)
     {
       auto column = f.m_state == State::Main ? f.m_column : f.m_state == State::More ? f.m_more : nullptr;
@@ -635,7 +647,10 @@ class $modify(MSPauseLayer, PauseLayer)
     if (f.m_closedOnFrame == frame)
       return;
     if (f.m_styled && f.m_state == State::More)
+    {
+      ms::playSound(Theme::get().moreCloseSound);
       return this->showMore(false);
+    }
     PauseLayer::keyBackClicked();
   }
 };

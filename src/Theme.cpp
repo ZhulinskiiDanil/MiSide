@@ -86,8 +86,19 @@ namespace
     theme.traySprite = "tray-panel.png"_spr;
     theme.slotSprite = "tray-slot.png"_spr;
     theme.avatarSprite = "avatar-circle.png"_spr;
-    theme.hoverSound = "hover.ogg"_spr;
-    theme.clickSound = "click.ogg"_spr;
+    // MiSide's: Table Enter on hovering a button (with its shine), Table Click on pressing it
+    theme.hoverSound = "miside-table-enter.flac"_spr;
+    theme.clickSound = "miside-table-click.flac"_spr;
+    theme.toggleSound = "miside-table-toggle.flac"_spr;
+    theme.tabSound = "miside-switch-category.flac"_spr;
+    theme.moreOpenSound = "miside-switch-open.flac"_spr;
+    theme.moreCloseSound = "miside-switch-close.flac"_spr;
+    theme.outfitSound = "miside-gift-poof.flac"_spr;
+    theme.achievementSound = "miside-achievement.flac"_spr;
+    theme.winSound = "miside-win.flac"_spr;
+    theme.pauseStartSound = "miside-startpause.flac"_spr;
+    // It's quiet in the file (peaks at -34 dB)
+    theme.pauseStartVolume = 1;
     theme.soundVolume = 0.5f;
 
     // ! --- Hover and the Exit button --- !
@@ -258,10 +269,17 @@ namespace
     theme.pauseBlurDebug = false;
     theme.pauseDimColor = ccc3(0x1a, 0x0a, 0x1e);
     theme.pauseDimOpacity = 170;
-    // Quiet, under the paused level
+    // MiSide's pause ambient, a seamless loop
     theme.pauseAmbientEnabled = true;
-    theme.pauseAmbientPath = "miside-ambient-loop-room.ogg";
-    theme.pauseAmbientVolume = 0.35f;
+    theme.pauseAmbientPath = "miside-ambientpause.flac";
+    theme.pauseAmbientVolume = 0.6f;
+    theme.pauseStressEnabled = true;
+    theme.pauseStressPath = "miside-stress.flac";
+    // It's louder in the file than the ambient (peaks at -2.5 dB against -19 dB)
+    theme.pauseStressVolume = 0.3f;
+    theme.pauseStressWindow = 5;
+    theme.pauseStressMinBest = 20;
+    theme.pauseStressBoost = 1.25f;
     theme.pauseAmbientFade = 1;
     theme.pauseExtraEnabled = true;
     theme.pauseExtraMenus = "left-button-menu,right-button-menu,bottom-button-menu";
@@ -481,6 +499,22 @@ namespace
     field("confirm-text-offset", theme.confirmTextOffset);
     field("confirm-text-padding", theme.confirmTextPadding);
     field("confirm-duration", theme.confirmDuration);
+
+    field("toggle-sound", theme.toggleSound);
+    field("tab-sound", theme.tabSound);
+    field("more-open-sound", theme.moreOpenSound);
+    field("more-close-sound", theme.moreCloseSound);
+    field("outfit-sound", theme.outfitSound);
+    field("achievement-sound", theme.achievementSound);
+    field("win-sound", theme.winSound);
+    field("pause-start-sound", theme.pauseStartSound);
+    field("pause-start-volume", theme.pauseStartVolume);
+    field("pause-stress-enabled", theme.pauseStressEnabled);
+    field("pause-stress-path", theme.pauseStressPath);
+    field("pause-stress-volume", theme.pauseStressVolume);
+    field("pause-stress-window", theme.pauseStressWindow);
+    field("pause-stress-min-best", theme.pauseStressMinBest);
+    field("pause-stress-boost", theme.pauseStressBoost);
 
     field("menu-music-enabled", theme.menuMusicEnabled);
     field("menu-music-path", theme.menuMusicPath);
