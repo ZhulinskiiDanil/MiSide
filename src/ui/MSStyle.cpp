@@ -46,6 +46,30 @@ namespace ms
     return CCLayerColor::create(Theme::withAlpha(color, opacity));
   }
 
+  CCNode* createStretched(std::string const& sprite, CCSize size, ccColor3B color, GLubyte opacity)
+  {
+    if (resourceExists(sprite))
+    {
+      if (auto node = CCSprite::create(sprite.c_str()))
+      {
+        auto own = node->getContentSize();
+        if (own.width > 0 && own.height > 0)
+        {
+          node->setScaleX(size.width / own.width);
+          node->setScaleY(size.height / own.height);
+        }
+        node->setColor(color);
+        node->setOpacity(opacity);
+        return node;
+      }
+    }
+    log::warn("Sprite {} not found, a plain rectangle instead", sprite);
+    auto rectangle = CCLayerColor::create(Theme::withAlpha(color, opacity));
+    rectangle->setContentSize(size);
+    rectangle->ignoreAnchorPointForPosition(false);
+    return rectangle;
+  }
+
   void playSound(std::string const& name)
   {
     if (!resourceExists(name))

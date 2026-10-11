@@ -1,4 +1,5 @@
 #include "Theme.hpp"
+#include "ui/MSMenuColumn.hpp"
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
@@ -29,6 +30,29 @@ namespace
     return button;
   }
 
+  struct Entry
+  {
+    char const* ru;
+    char const* en;
+    // Where Geode's IDs put the vanilla button
+    char const* menu;
+    char const* button;
+  };
+
+  // Item -> the vanilla button it presses
+  constexpr Entry ENTRIES[] = {
+    {"Играть", "Play", "main-menu", "play-button"},
+    {"Гардероб", "Wardrobe", "main-menu", "icon-kit-button"},
+    {"Создать", "Create", "main-menu", "editor-button"},
+    {"Настройки", "Settings", "bottom-menu", "settings-button"},
+    {"Достижения", "Achievements", "bottom-menu", "achievements-button"},
+    {"Статистика", "Statistics", "bottom-menu", "stats-button"},
+    {"Выход", "Quit", "close-menu", "close-button"},
+  };
+
+  // Above the vanilla menus, below the transition
+  constexpr int COLUMN_Z = 10;
+
   // Hidden, never removed: the node stays in the tree for the mods that look for it
   void hide(CCNode* node)
   {
@@ -46,6 +70,11 @@ class $modify(MSMenuLayer, MenuLayer)
       log::warn("Can't set the MenuLayer::init hook's priority, buttons added after it are picked up a frame later");
   }
 
+  struct Fields
+  {
+    MSMenuColumn* m_column = nullptr;
+  };
+
   bool init()
   {
     if (!MenuLayer::init())
@@ -56,7 +85,16 @@ class $modify(MSMenuLayer, MenuLayer)
 
     Theme::reload();
     this->hideVanilla();
+    this->addColumn();
     return true;
+  }
+
+  void keyDown(enumKeyCodes key, double timestamp)
+  {
+    if (auto column = m_fields->m_column)
+      column->onKey(key);
+    // Always passed on: the mods hooking keyDown after this one get every key
+    MenuLayer::keyDown(key, timestamp);
   }
 
   // ! --- Vanilla, hidden --- !
@@ -80,5 +118,36 @@ class $modify(MSMenuLayer, MenuLayer)
     // An invisible button can't be clicked or laid out, but activate() still runs it
     for (auto id : {"play-button", "icon-kit-button", "editor-button"})
       hide(findButton(this, "main-menu", id));
+  }
+
+  // ! --- The column --- !
+
+  void addColumn()
+  {
+    auto column = MSMenuColumn::create([](MSMenuItem* item) {
+      if (auto target = item->getTarget())
+        target->activate();
+    });
+    auto english = Mod::get()->getSettingValue<std::string>("menu-language") == "EN";
+    std::vector<CCNode*> menus;
+    for (auto const& entry : ENTRIES)
+    {
+      // No vanilla button, no item
+      auto button = findButton(this, entry.menu, entry.button);
+      if (!button)
+        continue;
+      column->addEntry(english ? entry.en : entry.ru, button);
+      // The column has it now
+      hide(button);
+      if (auto menu = button->getParent(); std::find(menus.begin(), menus.end(), menu) == menus.end())
+        menus.push_back(menu);
+    }
+    // Their layouts close the gaps the hidden buttons left
+    for (auto menu : menus)
+      menu->updateLayout();
+    column->setID("column"_spr);
+    this->addChild(column, COLUMN_Z);
+    column->finish();
+    m_fields->m_column = column;
   }
 };
