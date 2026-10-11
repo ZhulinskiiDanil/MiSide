@@ -1,5 +1,6 @@
 #include "Theme.hpp"
 #include "ui/MSMenuColumn.hpp"
+#include "ui/MSModTray.hpp"
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
@@ -50,6 +51,12 @@ namespace
     {"Выход", "Quit", "close-menu", "close-button"},
   };
 
+  // The menus whose buttons go in the tray: the other mods add theirs here. The ones in the corners
+  // (profile-menu, close-menu, top-right-menu, social-media-menu, more-games-menu) stay where they are
+  char const* const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "main-menu", "side-menu"};
+
+  // Under the vanilla menus (the tray's slots go under their buttons)
+  constexpr int TRAY_Z = -1;
   // Above the vanilla menus, below the transition
   constexpr int COLUMN_Z = 10;
 
@@ -86,6 +93,7 @@ class $modify(MSMenuLayer, MenuLayer)
     Theme::reload();
     this->hideVanilla();
     this->addColumn();
+    this->addTray();
     return true;
   }
 
@@ -149,5 +157,14 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addChild(column, COLUMN_Z);
     column->finish();
     m_fields->m_column = column;
+  }
+
+  // ! --- The tray --- !
+
+  void addTray()
+  {
+    auto tray = MSModTray::create({std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)});
+    tray->setID("mod-tray"_spr);
+    this->addChild(tray, TRAY_Z);
   }
 };

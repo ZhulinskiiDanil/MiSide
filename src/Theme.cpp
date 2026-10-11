@@ -60,6 +60,8 @@ namespace
     theme.trayPadding = 6;
     theme.trayRowHeight = 30;
     theme.trayGap = 6;
+    theme.trayMaxWidth = 0.55f;
+    theme.trayMaxHeight = 0.6f;
     theme.slotPadding = 3;
     theme.parallaxRange = 14;
 
@@ -117,6 +119,8 @@ namespace
     field("tray-padding", theme.trayPadding);
     field("tray-row-height", theme.trayRowHeight);
     field("tray-gap", theme.trayGap);
+    field("tray-max-width", theme.trayMaxWidth);
+    field("tray-max-height", theme.trayMaxHeight);
     field("slot-padding", theme.slotPadding);
     field("parallax-range", theme.parallaxRange);
 

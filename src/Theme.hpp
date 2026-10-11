@@ -63,6 +63,9 @@ struct Theme
   // Every row of the tray is scaled to this height (a column: to this width)
   float trayRowHeight = 0;
   float trayGap = 0;
+  // Shares of the screen the tray may take; wider rows (taller columns) are scaled down to fit
+  float trayMaxWidth = 0;
+  float trayMaxHeight = 0;
   float slotPadding = 0;
   // How far the nearest layer moves at the full parallax strength
   float parallaxRange = 0;
