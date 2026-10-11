@@ -219,7 +219,14 @@ void MSMenuItem::update(float dt)
     m_shinePass.advance(dt, theme.shineDuration, theme.shineFadeOut);
     auto strength = m_shinePass.active() ? theme.shineIntensity * m_shinePass.fade() : 0.f;
     // From fully hidden to fully gone, the glow's reach past the letters counted too
-    auto center = m_shinePass.center(theme.shineDuration, theme.shineBandWidth + 2 * m_shine->margin());
+    auto travel = theme.shineBandWidth + 2 * m_shine->margin();
+    auto center = m_shinePass.center(theme.shineDuration, travel);
+    // Held at one point of the pass while the item is lit, to compare (shine-freeze, -1: off)
+    if (theme.shineFreeze >= 0)
+    {
+      center = -travel / 2 + std::clamp(theme.shineFreeze, 0.f, 1.f) * (1 + travel);
+      strength = m_highlighted ? theme.shineIntensity : 0.f;
+    }
     m_shine->setPass(center, strength);
     m_shineGlow->setPass(center, strength);
   }

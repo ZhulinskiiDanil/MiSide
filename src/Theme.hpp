@@ -106,19 +106,21 @@ struct Theme
   float soundVolume = 0;
 
   // ! --- Hover and the Exit button --- !
-  // One light band through the letters when an item lights up: white in its middle, the tint at its edges,
-  // only where the letters are. Its width is a share of the label's width; intensity 1 makes the middle white
+  // One wide soft wave of light through the letters when an item lights up: near white in its middle, through the
+  // tint back to the letters' color at its long soft edges. Its width is a share of the label's width
   bool shineEnabled = false;
   cocos2d::ccColor3B shineTint;
   cocos2d::ccColor3B shineCoreColor;
   float shineDuration = 0;
   float shineBandWidth = 0;
   float shineIntensity = 0;
-  // The white middle's share of the band
+  // The wave's flat bright middle, as a share of its half width; the rest is a long smooth fall
   float shineCore = 0;
   // How much the band leans: its top is this many label widths ahead of its bottom
   float shineSlant = 0;
   float shineFadeOut = 0;
+  // 0..1: holds the wave at that point of the pass while an item is lit, to compare; -1: it moves
+  float shineFreeze = 0;
   // A soft pink glow around the letters the band is on, under the label: about this many points out from them
   float shineGlowRadius = 0;
   float shineGlowIntensity = 0;

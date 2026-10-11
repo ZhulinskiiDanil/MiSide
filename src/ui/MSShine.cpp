@@ -48,27 +48,29 @@ uniform float u_center;
 uniform float u_width;
 uniform float u_strength;
 uniform float u_slant;
-float halfWidth() { return max(u_width * 0.5, 0.0001); }
-float distanceToBand()
+uniform float u_plateau;
+// The wave's light: full on its flat middle (u_plateau of its half width), then a long smooth fall to nothing at
+// its edge. No sharp core, no visible border
+float wave()
 {
   vec2 along = (v_texCoord / u_extent) * u_frame.zw - u_frame.xy;
-  return abs(along.x + (along.y - 0.5) * u_slant - u_center);
+  float distance = abs(along.x + (along.y - 0.5) * u_slant - u_center);
+  float halfWidth = max(u_width * 0.5, 0.0001);
+  return 1.0 - smoothstep(halfWidth * clamp(u_plateau, 0.0, 0.95), halfWidth, distance);
 }
 )";
 
-  // The core: the letters' own alpha, white in the band's middle and the tint at its edges
+  // The letters: their own alpha, near white in the wave's middle, through the soft tint back to their own color
+  // at its edges (where it's nearly transparent). Drawn over the glow, sharp
   constexpr char const* CORE_FRAGMENT = R"(
-uniform float u_core;
 uniform vec3 u_tint;
 uniform vec3 u_coreColor;
 void main()
 {
   float letters = texture2D(CC_Texture0, v_texCoord).a;
-  float distance = distanceToBand();
-  float band = 1.0 - smoothstep(0.0, halfWidth(), distance);
-  float core = 1.0 - smoothstep(0.0, max(halfWidth() * u_core, 0.0001), distance);
-  float alpha = clamp(letters * band * u_strength, 0.0, 1.0);
-  gl_FragColor = vec4(mix(u_tint, u_coreColor, core) * alpha, alpha) * v_fragmentColor;
+  float light = wave();
+  float alpha = clamp(letters * light * u_strength, 0.0, 1.0);
+  gl_FragColor = vec4(mix(u_tint, u_coreColor, light) * alpha, alpha) * v_fragmentColor;
 }
 )";
 
@@ -79,8 +81,7 @@ uniform vec3 u_glowColor;
 void main()
 {
   float halo = texture2D(CC_Texture0, v_texCoord).a;
-  float band = 1.0 - smoothstep(0.0, halfWidth(), distanceToBand());
-  float alpha = clamp(halo * band * u_strength, 0.0, 1.0);
+  float alpha = clamp(halo * wave() * u_strength, 0.0, 1.0);
   gl_FragColor = vec4(u_glowColor * alpha, alpha) * v_fragmentColor;
 }
 )";
@@ -94,7 +95,7 @@ void main()
     GLint width = -1;
     GLint strength = -1;
     GLint slant = -1;
-    GLint core = -1;
+    GLint plateau = -1;
     GLint tint = -1;
     GLint coreColor = -1;
     GLint glowColor = -1;
@@ -114,7 +115,7 @@ void main()
     shader.width = program->getUniformLocationForName("u_width");
     shader.strength = program->getUniformLocationForName("u_strength");
     shader.slant = program->getUniformLocationForName("u_slant");
-    shader.core = program->getUniformLocationForName("u_core");
+    shader.plateau = program->getUniformLocationForName("u_plateau");
     shader.tint = program->getUniformLocationForName("u_tint");
     shader.coreColor = program->getUniformLocationForName("u_coreColor");
     shader.glowColor = program->getUniformLocationForName("u_glowColor");
@@ -251,6 +252,7 @@ MSShine::Pair MSShine::create(std::string const& text, float scale, std::string 
 
   // Where the label is in the textures, in label widths and heights
   CCPoint offset{pad / size.width, pad / size.height};
+  auto labelWidth = size.width;
   CCSize span{width / size.width, height / size.height};
   Pair pair;
   for (auto layer : {Layer::Core, Layer::Glow})
@@ -265,6 +267,7 @@ MSShine::Pair MSShine::create(std::string const& text, float scale, std::string 
     sprite->m_layer = layer;
     sprite->m_offset = offset;
     sprite->m_span = span;
+    sprite->m_labelWidth = labelWidth;
     // Premultiplied: the core covers like any text; the glow adds light
     sprite->setBlendFunc(layer == Layer::Core ? ccBlendFunc{GL_ONE, GL_ONE_MINUS_SRC_ALPHA}
                                               : ccBlendFunc{GL_ONE, GL_ONE});
@@ -277,6 +280,11 @@ MSShine::Pair MSShine::create(std::string const& text, float scale, std::string 
     (layer == Layer::Core ? pair.core : pair.glow) = sprite;
   }
   return pair;
+}
+
+float MSShine::margin() const
+{
+  return m_labelWidth > 0 ? std::max(Theme::get().shineGlowRadius, 0.f) / m_labelWidth : 0.f;
 }
 
 void MSShine::setPass(float center, float strength)
@@ -302,11 +310,11 @@ void MSShine::draw()
   program->setUniformLocationWith1f(shine->center, m_center);
   program->setUniformLocationWith1f(shine->width, theme.shineBandWidth);
   program->setUniformLocationWith1f(shine->slant, theme.shineSlant);
+  program->setUniformLocationWith1f(shine->plateau, std::clamp(theme.shineCore, 0.f, 0.95f));
   auto rgb = [](ccColor3B color) { return std::array<float, 3>{color.r / 255.f, color.g / 255.f, color.b / 255.f}; };
   if (m_layer == Layer::Core)
   {
     program->setUniformLocationWith1f(shine->strength, m_strength);
-    program->setUniformLocationWith1f(shine->core, std::clamp(theme.shineCore, 0.f, 1.f));
     auto tint = rgb(theme.shineTint);
     auto core = rgb(theme.shineCoreColor);
     program->setUniformLocationWith3f(shine->tint, tint[0], tint[1], tint[2]);

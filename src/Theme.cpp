@@ -92,20 +92,21 @@ namespace
 
     // ! --- Hover and the Exit button --- !
     theme.shineEnabled = true;
-    theme.shineTint = ccc3(0xff, 0x4f, 0xa8);
+    theme.shineTint = ccc3(0xff, 0xe6, 0xf4);
     theme.shineCoreColor = ccc3(0xff, 0xff, 0xff);
     // 0.5 s before, 2.5 times faster
     theme.shineDuration = 0.2f;
-    theme.shineBandWidth = 0.2f;
+    theme.shineBandWidth = 0.7f;
     // Over 1: the band's opaque part is wider
-    theme.shineIntensity = 1.4f;
-    theme.shineCore = 0.5f;
-    theme.shineSlant = 0.15f;
+    theme.shineIntensity = 0.95f;
+    theme.shineCore = 0.6f;
+    theme.shineSlant = 0;
     theme.shineFadeOut = 0.12f;
-    theme.shineGlowRadius = 3;
+    theme.shineFreeze = -1;
+    theme.shineGlowRadius = 7;
     // The blur spreads the letters thin: this brings the halo by them back near full
-    theme.shineGlowIntensity = 2.2f;
-    theme.shineGlowColor = ccc3(0xff, 0xa6, 0xd8);
+    theme.shineGlowIntensity = 0.9f;
+    theme.shineGlowColor = ccc3(0xff, 0xd9, 0xee);
     theme.rowGlowColor = ccc3(0xff, 0x5f, 0xb4);
     theme.rowGlowOpacity = 110;
     theme.rowGlowSpread = 7;
@@ -294,6 +295,7 @@ namespace
     field("shine-core", theme.shineCore);
     field("shine-slant", theme.shineSlant);
     field("shine-fade-out", theme.shineFadeOut);
+    field("shine-freeze", theme.shineFreeze);
     field("shine-glow-radius", theme.shineGlowRadius);
     field("shine-glow-intensity", theme.shineGlowIntensity);
     field("shine-glow-color", theme.shineGlowColor);
