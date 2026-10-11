@@ -235,14 +235,16 @@ namespace
     theme.pauseStatsOpacity = 200;
     theme.pauseBlurEnabled = true;
     theme.pauseBlurDownsample = 4;
-    // MiSide's background: edges spread over about 30 px of 2560
-    theme.pauseBlurRadius = 7;
-    // Enough for a blue level to turn pink-lilac, its big colour patches still there
-    theme.pauseTintColor = ccc3(0xd0, 0x6c, 0xbc);
-    theme.pauseTintOpacity = 100;
-    theme.pauseGradientColor = ccc3(0xa0, 0x4a, 0x9e);
-    theme.pauseGradientOpacity = 150;
-    theme.pauseGradientWidth = 0.55f;
+    // The level's blocks, spikes and ground still there as soft shapes (7 pt and a strong fuchsia tint left Back On
+    // Track a flat pink)
+    theme.pauseBlurRadius = 3;
+    // A muted lilac over it, not a fuchsia fill
+    theme.pauseTintColor = ccc3(0xb4, 0x8c, 0xc4);
+    theme.pauseTintOpacity = 55;
+    theme.pauseGradientColor = ccc3(0x6e, 0x45, 0x80);
+    theme.pauseGradientOpacity = 100;
+    theme.pauseGradientWidth = 0.5f;
+    theme.pauseBlurDebug = false;
     theme.pauseDimColor = ccc3(0x1a, 0x0a, 0x1e);
     theme.pauseDimOpacity = 170;
     theme.pauseAmbientEnabled = false;
@@ -525,6 +527,7 @@ namespace
     field("pause-blur-enabled", theme.pauseBlurEnabled);
     field("pause-blur-downsample", theme.pauseBlurDownsample);
     field("pause-blur-radius", theme.pauseBlurRadius);
+    field("pause-blur-debug", theme.pauseBlurDebug);
     field("pause-tint-color", theme.pauseTintColor);
     field("pause-tint-opacity", theme.pauseTintOpacity);
     field("pause-gradient-color", theme.pauseGradientColor);

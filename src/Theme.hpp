@@ -272,6 +272,9 @@ struct Theme
   bool pauseBlurEnabled = false;
   float pauseBlurDownsample = 0;
   float pauseBlurRadius = 0;
+  // Saves the captured level and the blurred picture as PNGs in the mod's config folder, each pause (to check the
+  // capture; reads them back from the GPU, so off normally)
+  bool pauseBlurDebug = false;
   // Over it: a pink-lilac tint, and a gradient from the left for the menu to read on
   cocos2d::ccColor3B pauseTintColor;
   GLubyte pauseTintOpacity = 0;

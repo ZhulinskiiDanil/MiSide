@@ -134,6 +134,27 @@ void main()
 
   double mebibytes(double bytes) { return bytes / (1024.0 * 1024.0); }
 
+  // The bound framebuffer to a PNG in the mod's config folder (pause-blur-debug only: a GPU read back)
+  void dump(int width, int height, char const* name)
+  {
+    std::vector<uint8_t> pixels(static_cast<size_t>(width) * height * 4);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+    // The framebuffer's rows go up, an image's down
+    std::vector<uint8_t> flipped(pixels.size());
+    auto row = static_cast<size_t>(width) * 4;
+    for (int y = 0; y < height; y++)
+      std::copy_n(pixels.data() + (height - 1 - y) * row, row, flipped.data() + y * row);
+    auto image = new CCImage();
+    auto path = (Mod::get()->getConfigDir() / name).string();
+    if (image->initWithImageData(flipped.data(), static_cast<int>(flipped.size()), CCImage::kFmtRawData, width, height, 8) &&
+        image->saveToFile(path.c_str(), false))
+      log::info("Pause blur: saved {}", path);
+    else
+      log::warn("Pause blur: can't save {}", path);
+    image->release();
+  }
+
   // Each failure once a session
   void logOnce(std::string const& message)
   {
@@ -363,6 +384,8 @@ bool MSPauseBackdrop::blur()
   glClearColor(0, 0, 0, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   level->visit();
+  if (theme.pauseBlurDebug)
+    dump(width, height, "pause-capture.png");
   kmGLMatrixMode(KM_GL_PROJECTION);
   kmGLPopMatrix();
   kmGLMatrixMode(KM_GL_MODELVIEW);
@@ -426,6 +449,11 @@ bool MSPauseBackdrop::blur()
     gauss->setUniformLocationWith2f(shaders->step, 0, 1.f / current.height);
     this->pass(gauss, across.texture, current);
     this->freeTarget(across);
+  }
+  if (theme.pauseBlurDebug)
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, current.fbo);
+    dump(current.width, current.height, "pause-blurred.png");
   }
   restore();
   auto submitted = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - began).count();
