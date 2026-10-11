@@ -20,8 +20,25 @@ public:
     std::string no;
   };
 
+  // Where it goes, in points of the 569×320 screen
+  struct Layout
+  {
+    float titleLeft = 0;
+    float titleCapTop = 0;
+    float titleScale = 0;
+    float rowLeft = 0;
+    float firstRowTop = 0;
+    float rowPitch = 0;
+    float rowWidth = 0;
+
+    // In the main menu, under the logo
+    static Layout menu();
+  };
+
   // Null when its text can't be made (logged)
-  static MSConfirm* create(Texts const& texts, std::function<void()> yes, std::function<void()> cancel);
+  static MSConfirm* create(Texts const& texts, std::function<void()> yes, std::function<void()> cancel,
+                           Layout const& layout = Layout::menu(),
+                           MSMenuItem::Style const& style = MSMenuItem::Style::confirm());
 
   // Fades in with No chosen (its shine passes, as for a key)
   void open();
@@ -35,7 +52,8 @@ public:
   void update(float dt) override;
 
 protected:
-  bool init(Texts const& texts, std::function<void()> yes, std::function<void()> cancel);
+  bool init(Texts const& texts, std::function<void()> yes, std::function<void()> cancel, Layout const& layout,
+            MSMenuItem::Style const& style);
   // It has faded in, it isn't fading out, nothing is over it, and Yes hasn't been chosen
   bool canChoose();
   void highlight(int index, bool shine);

@@ -35,15 +35,64 @@ namespace
 MSMenuItem::Style MSMenuItem::Style::row()
 {
   auto const& theme = Theme::get();
-  return {theme.rowHeight, theme.font,           theme.rowColor,    theme.rowOpacity, theme.itemColor,
-          theme.itemScale, theme.itemTextOffset, theme.textPadding, true};
+  Style style;
+  style.height = theme.rowHeight;
+  style.font = theme.font;
+  style.plate = theme.rowColor;
+  style.plateOpacity = theme.rowOpacity;
+  style.plateLit = theme.rowHoverColor;
+  style.plateLitOpacity = theme.rowHoverOpacity;
+  style.platePressed = theme.rowPressedColor;
+  style.platePressedOpacity = theme.rowPressedOpacity;
+  style.text = theme.itemColor;
+  style.textLit = theme.itemHoverColor;
+  style.textPressed = theme.itemPressedColor;
+  style.textScale = theme.itemScale;
+  style.textOffset = theme.itemTextOffset;
+  style.textPadding = theme.textPadding;
+  return style;
 }
 
 MSMenuItem::Style MSMenuItem::Style::confirm()
 {
   auto const& theme = Theme::get();
-  return {theme.confirmRowHeight, theme.confirmTextFont,   theme.confirmRowColor,    theme.confirmRowOpacity,
-          theme.confirmTextColor, theme.confirmTextScale, theme.confirmTextOffset, theme.confirmTextPadding, false};
+  // Lit and pressed as the menu's rows
+  auto style = row();
+  style.height = theme.confirmRowHeight;
+  style.font = theme.confirmTextFont;
+  style.plate = theme.confirmRowColor;
+  style.plateOpacity = theme.confirmRowOpacity;
+  style.text = theme.confirmTextColor;
+  style.textScale = theme.confirmTextScale;
+  style.textOffset = theme.confirmTextOffset;
+  style.textPadding = theme.confirmTextPadding;
+  style.textShadow = false;
+  return style;
+}
+
+MSMenuItem::Style MSMenuItem::Style::pause()
+{
+  auto const& theme = Theme::get();
+  Style style;
+  style.height = theme.pauseRowHeight;
+  style.font = theme.titleFont;
+  style.plate = theme.pauseRowColor;
+  style.plateOpacity = theme.pauseRowOpacity;
+  style.plateLit = theme.pauseRowHoverColor;
+  style.plateLitOpacity = theme.pauseRowHoverOpacity;
+  style.platePressed = theme.pauseRowPressedColor;
+  style.platePressedOpacity = theme.pauseRowPressedOpacity;
+  style.text = theme.pauseTextColor;
+  style.textLit = theme.pauseTextHoverColor;
+  style.textPressed = theme.pauseTextHoverColor;
+  style.textScale = theme.pauseTextScale;
+  style.textOffset = theme.pauseTextOffset;
+  style.textPadding = theme.pauseTextPadding;
+  style.textShadow = false;
+  // MiSide's pause rows only get lighter
+  style.glow = false;
+  style.shine = theme.pauseShineEnabled;
+  return style;
 }
 
 MSMenuItem* MSMenuItem::create(std::string const& text, CCMenuItem* target, Callback callback, float width,
@@ -86,7 +135,7 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   ms::cascadeOpacity(m_plate);
 
   // A soft glow around the row when it's lit: under the plate, hidden otherwise
-  if (theme.rowGlowOpacity > 0 && ms::resourceExists(theme.glowSprite))
+  if (style.glow && theme.rowGlowOpacity > 0 && ms::resourceExists(theme.glowSprite))
   {
     m_glow = ms::createStretched(theme.glowSprite, size + CCSize{theme.rowGlowSpread, theme.rowGlowSpread} * 2,
                                  theme.rowGlowColor, theme.rowGlowOpacity);
@@ -161,7 +210,7 @@ void MSMenuItem::setHighlighted(bool highlighted, bool shine)
 void MSMenuItem::addShine(std::string const& text)
 {
   auto const& theme = Theme::get();
-  if (!theme.shineEnabled || theme.shineDuration <= 0 || theme.shineIntensity <= 0)
+  if (!m_style.shine || !theme.shineEnabled || theme.shineDuration <= 0 || theme.shineIntensity <= 0)
     return;
   // Made once from a white render of the label: the core over the label, the glow under it and its shadow. The
   // hit area stays the row
@@ -271,17 +320,17 @@ void MSMenuItem::refresh(bool animate)
   }
   else if (m_pressed)
   {
-    row = theme.rowPressedColor;
-    rowOpacity = theme.rowPressedOpacity;
-    text = theme.itemPressedColor;
+    row = m_style.platePressed;
+    rowOpacity = m_style.platePressedOpacity;
+    text = m_style.textPressed;
     textOpacity = theme.itemHoverOpacity;
     lit = true;
   }
   else if (m_highlighted)
   {
-    row = theme.rowHoverColor;
-    rowOpacity = theme.rowHoverOpacity;
-    text = theme.itemHoverColor;
+    row = m_style.plateLit;
+    rowOpacity = m_style.plateLitOpacity;
+    text = m_style.textLit;
     textOpacity = theme.itemHoverOpacity;
     lit = true;
   }

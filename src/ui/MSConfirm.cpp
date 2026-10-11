@@ -12,10 +12,18 @@ namespace
   constexpr int NO = 1;
 } // namespace
 
-MSConfirm* MSConfirm::create(Texts const& texts, std::function<void()> yes, std::function<void()> cancel)
+MSConfirm::Layout MSConfirm::Layout::menu()
+{
+  auto const& theme = Theme::get();
+  return {theme.confirmTitleLeft, theme.confirmTitleCapTop, theme.confirmTitleScale,   theme.confirmRowLeft,
+          theme.confirmFirstRowTop, theme.confirmRowPitch, theme.confirmRowWidth};
+}
+
+MSConfirm* MSConfirm::create(Texts const& texts, std::function<void()> yes, std::function<void()> cancel,
+                             Layout const& layout, MSMenuItem::Style const& style)
 {
   auto confirm = new MSConfirm();
-  if (confirm->init(texts, std::move(yes), std::move(cancel)))
+  if (confirm->init(texts, std::move(yes), std::move(cancel), layout, style))
   {
     confirm->autorelease();
     return confirm;
@@ -24,7 +32,8 @@ MSConfirm* MSConfirm::create(Texts const& texts, std::function<void()> yes, std:
   return nullptr;
 }
 
-bool MSConfirm::init(Texts const& texts, std::function<void()> yes, std::function<void()> cancel)
+bool MSConfirm::init(Texts const& texts, std::function<void()> yes, std::function<void()> cancel, Layout const& layout,
+                     MSMenuItem::Style const& style)
 {
   if (!CCMenu::init())
     return false;
@@ -38,7 +47,7 @@ bool MSConfirm::init(Texts const& texts, std::function<void()> yes, std::functio
   // The title: white, a solid dark shadow; the top of its capitals where the theme says. From the title font's
   // metrics at scale 1: capitals 17.5 pt high, their middle 2.82 pt over the label's middle
   ms::Shadow shadow{theme.confirmTitleShadowColor, theme.confirmTitleShadowOpacity, 1, theme.confirmTitleShadowOffset};
-  auto title = ms::createText(texts.title, theme.confirmTitleScale, theme.confirmTitleColor, theme.titleFont, shadow);
+  auto title = ms::createText(texts.title, layout.titleScale, theme.confirmTitleColor, theme.titleFont, shadow);
   if (!title.node)
   {
     log::error("The quit confirmation's title can't be made: the vanilla popup instead");
@@ -47,12 +56,12 @@ bool MSConfirm::init(Texts const& texts, std::function<void()> yes, std::functio
   m_titleText = title.node;
   constexpr float TITLE_CAP = 17.5f;
   constexpr float TITLE_CAP_RAISE = 2.82f;
-  auto middle = theme.confirmTitleCapTop - (TITLE_CAP / 2 + TITLE_CAP_RAISE) * theme.confirmTitleScale;
+  auto middle = layout.titleCapTop - (TITLE_CAP / 2 + TITLE_CAP_RAISE) * layout.titleScale;
   auto holder = CCMenuItem::create();
   holder->setEnabled(false);
   holder->setContentSize(m_titleText->getContentSize());
   holder->setAnchorPoint({0, 0.5f});
-  holder->setPosition({theme.confirmTitleLeft, middle});
+  holder->setPosition({layout.titleLeft, middle});
   m_titleText->setAnchorPoint({0, 0});
   m_titleText->ignoreAnchorPointForPosition(false);
   m_titleText->setPosition({0, 0});
@@ -60,17 +69,15 @@ bool MSConfirm::init(Texts const& texts, std::function<void()> yes, std::functio
   this->addChild(holder);
   m_title = holder;
 
-  auto style = MSMenuItem::Style::confirm();
   for (auto const& text : {texts.yes, texts.no})
   {
-    auto item = MSMenuItem::create(text, nullptr, [this](MSMenuItem* item) { this->choose(item); },
-                                   theme.confirmRowWidth, style);
+    auto item = MSMenuItem::create(text, nullptr, [this](MSMenuItem* item) { this->choose(item); }, layout.rowWidth,
+                                   style);
     if (!item)
       return false;
     auto index = static_cast<float>(m_items.size());
     // Anchored at its left middle
-    item->setPosition({theme.confirmRowLeft,
-                       theme.confirmFirstRowTop - theme.confirmRowPitch * index - theme.confirmRowHeight / 2});
+    item->setPosition({layout.rowLeft, layout.firstRowTop - layout.rowPitch * index - style.height / 2});
     this->addChild(item);
     m_items.push_back(item);
   }

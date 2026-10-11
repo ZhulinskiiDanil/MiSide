@@ -17,23 +17,34 @@ class MSMenuItem : public cocos2d::CCMenuItem
 public:
   using Callback = std::function<void(MSMenuItem*)>;
 
-  // How it looks at rest; lit and pressed it's the same for all
+  // How it looks at rest, lit and pressed
   struct Style
   {
     float height = 0;
     std::string font;
     cocos2d::ccColor3B plate;
     GLubyte plateOpacity = 0;
+    cocos2d::ccColor3B plateLit;
+    GLubyte plateLitOpacity = 0;
+    cocos2d::ccColor3B platePressed;
+    GLubyte platePressedOpacity = 0;
     cocos2d::ccColor3B text;
+    cocos2d::ccColor3B textLit;
+    cocos2d::ccColor3B textPressed;
     float textScale = 0;
     float textOffset = 0;
     float textPadding = 0;
     bool textShadow = true;
+    // The soft glow around the lit row, and the shine through its letters
+    bool glow = true;
+    bool shine = true;
 
     // The menu's rows
     static Style row();
     // The quit confirmation's buttons
     static Style confirm();
+    // The pause menu's rows
+    static Style pause();
   };
 
   // width: the row's width

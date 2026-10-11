@@ -172,6 +172,87 @@ namespace
     theme.confirmTextPadding = 3.6f;
     theme.confirmDuration = 0.2f;
 
+    // ! --- The pause menu --- !
+    // Measured on MiSide's pause (2560×1440): title capitals 15.3 pt, subtitle 6.4 pt, rows 148×14.9 pt every 16.2,
+    // their text 8.2 pt, Quit 7.3 pt further down; the bar from 195.3 to 524.4 pt at the first row's height
+    theme.pauseEnabled = true;
+    theme.pauseLeft = 44.4f;
+    theme.pauseTitleLeft = 60.9f;
+    theme.pauseTitleCapTop = 256.2f;
+    // The title font's capitals are 17.5 pt at scale 1
+    theme.pauseTitleScale = 0.875f;
+    theme.pauseTitleColor = ccc3(0xff, 0xff, 0xff);
+    theme.pauseSubtitleCapTop = 234.9f;
+    theme.pauseSubtitleScale = 0.37f;
+    theme.pauseSubtitleColor = ccc3(0xff, 0xff, 0xff);
+    theme.pauseFirstRowTop = 225.3f;
+    theme.pauseRowPitch = 16.2f;
+    theme.pauseRowWidth = 148;
+    theme.pauseRowHeight = 14.9f;
+    theme.pauseExitGap = 7.3f;
+    // A light pink over the tinted level: about 40 lighter than what's around, as MiSide's
+    theme.pauseRowColor = ccc3(0xff, 0xc8, 0xf0);
+    theme.pauseRowOpacity = 85;
+    theme.pauseRowHoverColor = ccc3(0xff, 0xd8, 0xf6);
+    theme.pauseRowHoverOpacity = 150;
+    theme.pauseRowPressedColor = ccc3(0xff, 0xe8, 0xfa);
+    theme.pauseRowPressedOpacity = 190;
+    theme.pauseTextColor = ccc3(0xf6, 0xa0, 0xff);
+    theme.pauseTextHoverColor = ccc3(0xff, 0xc4, 0xff);
+    theme.pauseTextScale = 0.47f;
+    // The capitals' middle is 2.82 pt over the label's at scale 1
+    theme.pauseTextOffset = -1.33f;
+    theme.pauseTextPadding = 3.6f;
+    theme.pauseShineEnabled = true;
+    theme.pauseSliderLeft = 73.8f;
+    theme.pauseSliderWidth = 59.6f;
+    theme.pauseSliderHeight = 7.3f;
+    theme.pauseSliderTrackColor = ccc3(0x25, 0x00, 0x26);
+    theme.pauseSliderFillColor = ccc3(0xff, 0x5a, 0xf3);
+    theme.pauseSliderKnobColor = ccc3(0xff, 0xff, 0xff);
+    // MiSide's is 11.8 for its narrow digits; ours need room for 100
+    theme.pauseSliderKnobWidth = 13.5f;
+    theme.pauseSliderValueColor = ccc3(0xf1, 0x00, 0xc1);
+    theme.pauseSliderValueScale = 0.3f;
+    theme.pauseSliderStep = 0.05f;
+    theme.pauseMusicReset = -1;
+    theme.pauseSfxReset = -1;
+    theme.pauseResetSize = 11.3f;
+    theme.pauseResetColor = ccc3(0xff, 0x8c, 0xf0);
+    theme.pauseBarLeft = 195.3f;
+    theme.pauseBarRightMargin = 44.6f;
+    theme.pauseBarColor = ccc3(0x55, 0x28, 0x56);
+    theme.pauseBarOpacity = 235;
+    theme.pauseBarBorderColor = ccc3(0xff, 0xff, 0xff);
+    theme.pauseBarBorderOpacity = 45;
+    theme.pauseBarTextScale = 0.47f;
+    theme.pauseBarTextColor = ccc3(0xff, 0xff, 0xff);
+    theme.pauseStatsScale = 0.3f;
+    theme.pauseStatsHeight = 10;
+    theme.pauseStatsGap = 2.5f;
+    theme.pauseStatsLabelColor = ccc3(0xf6, 0xa0, 0xff);
+    theme.pauseStatsValueColor = ccc3(0xff, 0xff, 0xff);
+    theme.pauseStatsOpacity = 200;
+    theme.pauseBlurEnabled = true;
+    theme.pauseBlurDownsample = 4;
+    // MiSide's background: edges spread over about 30 px of 2560
+    theme.pauseBlurRadius = 7;
+    // Enough for a blue level to turn pink-lilac, its big colour patches still there
+    theme.pauseTintColor = ccc3(0xd0, 0x6c, 0xbc);
+    theme.pauseTintOpacity = 100;
+    theme.pauseGradientColor = ccc3(0xa0, 0x4a, 0x9e);
+    theme.pauseGradientOpacity = 150;
+    theme.pauseGradientWidth = 0.55f;
+    theme.pauseDimColor = ccc3(0x1a, 0x0a, 0x1e);
+    theme.pauseDimOpacity = 170;
+    theme.pauseAmbientEnabled = false;
+    theme.pauseAmbientPath = "";
+    theme.pauseAmbientVolume = 0.5f;
+    theme.pauseAmbientFade = 1;
+    theme.pauseExtraEnabled = true;
+    theme.pauseExtraMenus = "left-button-menu,right-button-menu,bottom-button-menu";
+    theme.pauseDuration = 0.2f;
+
     // ! --- Decoration over the room --- !
     theme.patternSprite = "pattern-tile.png"_spr;
     theme.patternColor = ccc3(0xff, 0xb8, 0xdc);
@@ -386,6 +467,78 @@ namespace
     field("confirm-text-offset", theme.confirmTextOffset);
     field("confirm-text-padding", theme.confirmTextPadding);
     field("confirm-duration", theme.confirmDuration);
+
+    field("pause-enabled", theme.pauseEnabled);
+    field("pause-left", theme.pauseLeft);
+    field("pause-title-left", theme.pauseTitleLeft);
+    field("pause-title-cap-top", theme.pauseTitleCapTop);
+    field("pause-title-scale", theme.pauseTitleScale);
+    field("pause-title-color", theme.pauseTitleColor);
+    field("pause-subtitle-cap-top", theme.pauseSubtitleCapTop);
+    field("pause-subtitle-scale", theme.pauseSubtitleScale);
+    field("pause-subtitle-color", theme.pauseSubtitleColor);
+    field("pause-first-row-top", theme.pauseFirstRowTop);
+    field("pause-row-pitch", theme.pauseRowPitch);
+    field("pause-row-width", theme.pauseRowWidth);
+    field("pause-row-height", theme.pauseRowHeight);
+    field("pause-exit-gap", theme.pauseExitGap);
+    field("pause-row-color", theme.pauseRowColor);
+    field("pause-row-opacity", theme.pauseRowOpacity);
+    field("pause-row-hover-color", theme.pauseRowHoverColor);
+    field("pause-row-hover-opacity", theme.pauseRowHoverOpacity);
+    field("pause-row-pressed-color", theme.pauseRowPressedColor);
+    field("pause-row-pressed-opacity", theme.pauseRowPressedOpacity);
+    field("pause-text-color", theme.pauseTextColor);
+    field("pause-text-hover-color", theme.pauseTextHoverColor);
+    field("pause-text-scale", theme.pauseTextScale);
+    field("pause-text-offset", theme.pauseTextOffset);
+    field("pause-text-padding", theme.pauseTextPadding);
+    field("pause-shine-enabled", theme.pauseShineEnabled);
+    field("pause-slider-left", theme.pauseSliderLeft);
+    field("pause-slider-width", theme.pauseSliderWidth);
+    field("pause-slider-height", theme.pauseSliderHeight);
+    field("pause-slider-track-color", theme.pauseSliderTrackColor);
+    field("pause-slider-fill-color", theme.pauseSliderFillColor);
+    field("pause-slider-knob-color", theme.pauseSliderKnobColor);
+    field("pause-slider-knob-width", theme.pauseSliderKnobWidth);
+    field("pause-slider-value-color", theme.pauseSliderValueColor);
+    field("pause-slider-value-scale", theme.pauseSliderValueScale);
+    field("pause-slider-step", theme.pauseSliderStep);
+    field("pause-music-reset", theme.pauseMusicReset);
+    field("pause-sfx-reset", theme.pauseSfxReset);
+    field("pause-reset-size", theme.pauseResetSize);
+    field("pause-reset-color", theme.pauseResetColor);
+    field("pause-bar-left", theme.pauseBarLeft);
+    field("pause-bar-right-margin", theme.pauseBarRightMargin);
+    field("pause-bar-color", theme.pauseBarColor);
+    field("pause-bar-opacity", theme.pauseBarOpacity);
+    field("pause-bar-border-color", theme.pauseBarBorderColor);
+    field("pause-bar-border-opacity", theme.pauseBarBorderOpacity);
+    field("pause-bar-text-scale", theme.pauseBarTextScale);
+    field("pause-bar-text-color", theme.pauseBarTextColor);
+    field("pause-stats-scale", theme.pauseStatsScale);
+    field("pause-stats-height", theme.pauseStatsHeight);
+    field("pause-stats-gap", theme.pauseStatsGap);
+    field("pause-stats-label-color", theme.pauseStatsLabelColor);
+    field("pause-stats-value-color", theme.pauseStatsValueColor);
+    field("pause-stats-opacity", theme.pauseStatsOpacity);
+    field("pause-blur-enabled", theme.pauseBlurEnabled);
+    field("pause-blur-downsample", theme.pauseBlurDownsample);
+    field("pause-blur-radius", theme.pauseBlurRadius);
+    field("pause-tint-color", theme.pauseTintColor);
+    field("pause-tint-opacity", theme.pauseTintOpacity);
+    field("pause-gradient-color", theme.pauseGradientColor);
+    field("pause-gradient-opacity", theme.pauseGradientOpacity);
+    field("pause-gradient-width", theme.pauseGradientWidth);
+    field("pause-dim-color", theme.pauseDimColor);
+    field("pause-dim-opacity", theme.pauseDimOpacity);
+    field("pause-ambient-enabled", theme.pauseAmbientEnabled);
+    field("pause-ambient-path", theme.pauseAmbientPath);
+    field("pause-ambient-volume", theme.pauseAmbientVolume);
+    field("pause-ambient-fade", theme.pauseAmbientFade);
+    field("pause-extra-enabled", theme.pauseExtraEnabled);
+    field("pause-extra-menus", theme.pauseExtraMenus);
+    field("pause-duration", theme.pauseDuration);
 
     field("pattern-sprite", theme.patternSprite);
     field("pattern-color", theme.patternColor);

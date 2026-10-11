@@ -204,6 +204,96 @@ struct Theme
   // The list fading out and the confirmation in, and back; nothing is chosen before it has faded in
   float confirmDuration = 0;
 
+  // ! --- The pause menu --- !
+  // MiSide's pause: a big title, a small subtitle, a column of see-through rows on the left with Quit apart under
+  // them, the level's name in a long bar on the right, the level blurred and tinted behind. Points of the 569×320
+  // screen, measured on MiSide's (2560×1440); the bar's right end keeps its distance from the screen's right edge
+  bool pauseEnabled = false;
+  float pauseLeft = 0;
+  float pauseTitleLeft = 0;
+  float pauseTitleCapTop = 0;
+  float pauseTitleScale = 0;
+  cocos2d::ccColor3B pauseTitleColor;
+  float pauseSubtitleCapTop = 0;
+  float pauseSubtitleScale = 0;
+  cocos2d::ccColor3B pauseSubtitleColor;
+  // The rows: the first one's top edge, one every `pause-row-pitch` points down; Quit `pause-exit-gap` further
+  float pauseFirstRowTop = 0;
+  float pauseRowPitch = 0;
+  float pauseRowWidth = 0;
+  float pauseRowHeight = 0;
+  float pauseExitGap = 0;
+  cocos2d::ccColor3B pauseRowColor;
+  GLubyte pauseRowOpacity = 0;
+  cocos2d::ccColor3B pauseRowHoverColor;
+  GLubyte pauseRowHoverOpacity = 0;
+  cocos2d::ccColor3B pauseRowPressedColor;
+  GLubyte pauseRowPressedOpacity = 0;
+  cocos2d::ccColor3B pauseTextColor;
+  cocos2d::ccColor3B pauseTextHoverColor;
+  float pauseTextScale = 0;
+  float pauseTextOffset = 0;
+  float pauseTextPadding = 0;
+  bool pauseShineEnabled = false;
+  // The volume sliders: the track's left edge from the row's, its size; the fill and the knob with the value on it
+  float pauseSliderLeft = 0;
+  float pauseSliderWidth = 0;
+  float pauseSliderHeight = 0;
+  cocos2d::ccColor3B pauseSliderTrackColor;
+  cocos2d::ccColor3B pauseSliderFillColor;
+  cocos2d::ccColor3B pauseSliderKnobColor;
+  float pauseSliderKnobWidth = 0;
+  cocos2d::ccColor3B pauseSliderValueColor;
+  float pauseSliderValueScale = 0;
+  // One arrow key press, as a share of the whole
+  float pauseSliderStep = 0;
+  // 0..100: a reset button next to the slider sets this; -1: no button (GD's own defaults aren't known for sure)
+  float pauseMusicReset = 0;
+  float pauseSfxReset = 0;
+  float pauseResetSize = 0;
+  cocos2d::ccColor3B pauseResetColor;
+  // The level's bar and its numbers under it
+  float pauseBarLeft = 0;
+  float pauseBarRightMargin = 0;
+  cocos2d::ccColor3B pauseBarColor;
+  GLubyte pauseBarOpacity = 0;
+  cocos2d::ccColor3B pauseBarBorderColor;
+  GLubyte pauseBarBorderOpacity = 0;
+  float pauseBarTextScale = 0;
+  cocos2d::ccColor3B pauseBarTextColor;
+  float pauseStatsScale = 0;
+  float pauseStatsHeight = 0;
+  float pauseStatsGap = 0;
+  cocos2d::ccColor3B pauseStatsLabelColor;
+  cocos2d::ccColor3B pauseStatsValueColor;
+  GLubyte pauseStatsOpacity = 0;
+  // The level behind, blurred once when the pause opens: at 1/downsample of the window's pixels (2, 4 or 8), a
+  // Gaussian of this many points (its sigma) on the screen
+  bool pauseBlurEnabled = false;
+  float pauseBlurDownsample = 0;
+  float pauseBlurRadius = 0;
+  // Over it: a pink-lilac tint, and a gradient from the left for the menu to read on
+  cocos2d::ccColor3B pauseTintColor;
+  GLubyte pauseTintOpacity = 0;
+  cocos2d::ccColor3B pauseGradientColor;
+  GLubyte pauseGradientOpacity = 0;
+  // Where the gradient has faded out, as a share of the screen's width
+  float pauseGradientWidth = 0;
+  // With no blur (off, or it can't be made here): only this darkening
+  cocos2d::ccColor3B pauseDimColor;
+  GLubyte pauseDimOpacity = 0;
+  // The pause's own ambient: a looping sound of its own, faded in and out. Off until a file is given: a path, or a
+  // file name in the mod's config folder
+  bool pauseAmbientEnabled = false;
+  std::string pauseAmbientPath;
+  float pauseAmbientVolume = 0;
+  float pauseAmbientFade = 0;
+  // The menus the mods put their pause buttons in: hidden in the pause, shown as they are under More
+  bool pauseExtraEnabled = false;
+  std::string pauseExtraMenus;
+  // The list's states (the confirmation, More) fading into each other
+  float pauseDuration = 0;
+
   // ! --- Decoration over the room --- !
   // A faint repeating pattern of hearts, stars and flowers (a white tile, tinted)
   std::string patternSprite;
