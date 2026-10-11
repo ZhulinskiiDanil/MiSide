@@ -2,6 +2,8 @@
 
 #include "../Theme.hpp"
 
+#include <Geode/fmod/fmod.hpp>
+
 #include <chrono>
 #include <typeinfo>
 #include <unordered_map>
@@ -192,6 +194,39 @@ namespace ms
     return program;
   }
 
+  namespace
+  {
+    // The mod's interface sounds have a channel group of their own under FMOD's master. GD pauses its effects while
+    // a level is paused, and a sound played into them then waits, paused, and comes out in pieces on resuming
+    FMOD::ChannelGroup* uiGroup()
+    {
+      static FMOD::ChannelGroup* s_group = nullptr;
+      if (!s_group)
+      {
+        if (auto system = FMODAudioEngine::get()->m_system)
+          system->createChannelGroup("zhulis.miside-menu ui", &s_group);
+      }
+      return s_group;
+    }
+
+    // Each sound decoded once a session (they're short), by its full path
+    FMOD::Sound* loadSound(std::string const& path)
+    {
+      static std::unordered_map<std::string, FMOD::Sound*> s_sounds;
+      if (auto it = s_sounds.find(path); it != s_sounds.end())
+        return it->second;
+      FMOD::Sound* sound = nullptr;
+      auto system = FMODAudioEngine::get()->m_system;
+      if (!system || system->createSound(path.c_str(), FMOD_DEFAULT | FMOD_CREATESAMPLE, nullptr, &sound) != FMOD_OK)
+      {
+        log::warn("Can't load the sound {}", path);
+        sound = nullptr;
+      }
+      s_sounds[path] = sound;
+      return sound;
+    }
+  } // namespace
+
   void playSound(std::string const& name)
   {
     if (name.empty() || !resourceExists(name))
@@ -204,7 +239,15 @@ namespace ms
     if (auto it = s_last.find(name); it != s_last.end() && now - it->second < AGAIN)
       return;
     s_last[name] = now;
-    // As GD's own effects: the SFX volume counts
-    FMODAudioEngine::get()->playEffect(name, 1.f, 0.f, Theme::get().soundVolume);
+    auto engine = FMODAudioEngine::get();
+    auto path = std::string(CCFileUtils::get()->fullPathForFilename(name.c_str(), false));
+    auto sound = loadSound(path);
+    FMOD::Channel* channel = nullptr;
+    if (!sound || !engine->m_system || engine->m_system->playSound(sound, uiGroup(), true, &channel) != FMOD_OK ||
+        !channel)
+      return;
+    // As loud as GD's own effects: the SFX volume counts
+    channel->setVolume(std::clamp(Theme::get().soundVolume, 0.f, 1.f) * std::clamp(engine->m_sfxVolume, 0.f, 1.f));
+    channel->setPaused(false);
   }
 } // namespace ms
