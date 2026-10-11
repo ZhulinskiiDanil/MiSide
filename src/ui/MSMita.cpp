@@ -354,10 +354,10 @@ void MSMita::fail(std::string const& why)
 
 MSMita::Page* MSMita::resident(int atlas)
 {
-  for (auto& page : m_pages)
+  for (auto const& page : m_pages)
   {
-    if (page.atlas == atlas)
-      return &page;
+    if (page->atlas == atlas)
+      return page.get();
   }
   return nullptr;
 }
@@ -366,10 +366,17 @@ void MSMita::freePages(std::vector<int> const& atlases)
 {
   for (auto atlas : atlases)
   {
-    auto before = m_pages.size();
-    std::erase_if(m_pages, [&](Page const& page) { return page.atlas == atlas; });
-    if (m_pages.size() != before)
-      log::debug("Mita: atlas {} freed, {} pages on the GPU", atlas, m_pages.size());
+    auto it = std::find_if(m_pages.begin(), m_pages.end(), [&](auto const& page) { return page->atlas == atlas; });
+    if (it == m_pages.end())
+      continue;
+    auto& page = **it;
+    // Its frames first: then only the page itself holds the texture, unless something else still uses it
+    page.frames.clear();
+    if (auto texture = page.texture.data(); texture && texture->retainCount() != 1)
+      log::warn("Mita: atlas {}'s texture is still held {} more times, it isn't freed", atlas,
+                texture->retainCount() - 1);
+    m_pages.erase(it);
+    log::debug("Mita: atlas {} freed, {} pages on the GPU", atlas, m_pages.size());
   }
 }
 
@@ -403,7 +410,8 @@ bool MSMita::upload(MitaDecodedPage& decoded, int wanted)
   ccTexParams params{GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE};
   texture->setTexParameters(&params);
 
-  Page page;
+  auto owned = std::make_unique<Page>();
+  auto& page = *owned;
   page.atlas = decoded.atlas;
   page.texture = texture;
   texture->release();
@@ -418,12 +426,12 @@ bool MSMita::upload(MitaDecodedPage& decoded, int wanted)
   auto uploadMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - began).count();
   auto loadSeconds = (decoded.milliseconds + uploadMs) / 1000;
   m_loadSeconds = m_loadSeconds <= 0 ? loadSeconds : m_loadSeconds + (loadSeconds - m_loadSeconds) * LOAD_SMOOTHING;
-  m_pages.push_back(std::move(page));
+  m_pages.push_back(std::move(owned));
   m_plan->uploaded(decoded.atlas);
 
   size_t resident = 0;
   for (auto const& each : m_pages)
-    resident += each.bytes;
+    resident += each->bytes;
   log::debug("Mita: atlas {} decoded in {:.1f} ms, uploaded in {:.1f} ms; {} pages on the GPU, {:.2f} MiB",
              decoded.atlas, decoded.milliseconds, uploadMs, m_pages.size(), mebibytes(resident));
   // Its CPU copy goes now

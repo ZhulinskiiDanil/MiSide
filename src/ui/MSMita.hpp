@@ -43,12 +43,20 @@ protected:
     cocos2d::CCRect rect;
   };
 
+  // Held by unique_ptr and never moved or copied: geode::Ref's move assignment doesn't release what it held, so
+  // a vector of pages shifting on erase leaked the page that was overwritten (a texture every 0.25 s)
   struct Page
   {
     int atlas = -1;
     geode::Ref<cocos2d::CCTexture2D> texture;
     std::vector<geode::Ref<cocos2d::CCSpriteFrame>> frames;
     size_t bytes = 0;
+
+    Page() = default;
+    Page(Page const&) = delete;
+    Page& operator=(Page const&) = delete;
+    Page(Page&&) = delete;
+    Page& operator=(Page&&) = delete;
   };
 
   bool init() override;
@@ -74,7 +82,7 @@ protected:
   float m_fps = 0;
   std::unique_ptr<MitaPlan> m_plan;
   std::shared_ptr<MitaPageLoader> m_loader;
-  std::vector<Page> m_pages;
+  std::vector<std::unique_ptr<Page>> m_pages;
   cocos2d::CCSprite* m_sprite = nullptr;
   int m_shownFrame = -1;
   double m_elapsed = 0;
