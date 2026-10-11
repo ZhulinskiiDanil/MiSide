@@ -404,6 +404,11 @@ struct Theme
   // top left down to the bottom right)
   float particleStretch = 0;
   float particleAngle = 0;
+  // They fly the way they point: at most this fast a turn (radians a second), keeping together with the ones within
+  // the radius (points) this strongly (0: each on its own)
+  float particleTurn = 0;
+  float particleFlock = 0;
+  float particleFlockRadius = 0;
 
   // ! --- The background --- !
   // The point of the art kept on screen when it's cropped to cover it, as shares of its width and height

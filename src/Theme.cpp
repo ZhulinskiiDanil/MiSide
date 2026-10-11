@@ -337,16 +337,20 @@ namespace
     theme.vignetteColor = ccc3(0x12, 0x03, 0x0e);
     theme.vignetteOpacity = 180;
     // Soft glows, so only their middle reads: big and bright enough to be seen (1.2-3 pt at 150 hardly were)
-    theme.particleCount = 22;
+    theme.particleCount = 48;
     // MiSide's motes: magenta streaks, 3-4 times longer than wide, leaning 40 degrees
     theme.particleColor = ccc3(0xff, 0x10, 0xf0);
     theme.particleOpacity = 235;
     theme.particleSizeMin = 3.f;
     theme.particleSizeMax = 7.f;
-    theme.particleSpeed = 5;
+    // Points a second, along the way they point
+    theme.particleSpeed = 38;
     theme.particleLife = 8;
     theme.particleStretch = 3.5f;
     theme.particleAngle = -40;
+    theme.particleTurn = 1.6f;
+    theme.particleFlock = 1;
+    theme.particleFlockRadius = 60;
 
     // ! --- The background --- !
     theme.backgroundFocusX = 0.5f;
@@ -698,6 +702,9 @@ namespace
     field("particle-size-max", theme.particleSizeMax);
     field("particle-stretch", theme.particleStretch);
     field("particle-angle", theme.particleAngle);
+    field("particle-turn", theme.particleTurn);
+    field("particle-flock", theme.particleFlock);
+    field("particle-flock-radius", theme.particleFlockRadius);
     field("particle-speed", theme.particleSpeed);
     field("particle-life", theme.particleLife);
 
