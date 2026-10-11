@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cmath>
+#include <optional>
 #include <vector>
 
 using namespace geode::prelude;
@@ -105,7 +106,7 @@ void main()
   {
     Shader shader;
     auto source = std::string(BAND) + fragment;
-    auto program = ms::createProgram(SHINE_VERTEX, source.c_str(), what);
+    auto program = ms::sharedProgram(SHINE_VERTEX, source.c_str(), what);
     if (!program)
       return shader;
     shader.program = program;
@@ -122,15 +123,16 @@ void main()
     return shader;
   }
 
-  // Made once for the session, on the main thread; null when either doesn't compile
+  // Made once for the session, on the main thread, their uniforms found again when they're made again in a new GL
+  // context; null when either doesn't compile
   Shader const* shader(MSShine::Layer layer)
   {
     static Shader s_core;
     static Shader s_glow;
-    static bool s_tried = false;
-    if (!s_tried)
+    static std::optional<unsigned> s_generation;
+    if (s_generation != ms::programGeneration())
     {
-      s_tried = true;
+      s_generation = ms::programGeneration();
       s_core = make(CORE_FRAGMENT, "The shine's core shader (the items have no shine)");
       s_glow = make(GLOW_FRAGMENT, "The shine's glow shader (the items have no shine)");
     }

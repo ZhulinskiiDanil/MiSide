@@ -91,6 +91,7 @@ protected:
   geode::Ref<cocos2d::CCGLProgram> m_outline;
   GLint m_outlineTexel = -1;
   GLint m_outlineColor = -1;
+  unsigned m_outlineGeneration = 0;
   cocos2d::CCTexture2D* m_outlineFor = nullptr;
   cocos2d::CCSize m_reference;
   float m_fps = 0;

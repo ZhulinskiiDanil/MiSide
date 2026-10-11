@@ -391,16 +391,11 @@ void MSMita::makeOutline()
   auto const& theme = Theme::get();
   if (!theme.mitaOutlineEnabled || theme.mitaOutlineOpacity == 0 || theme.mitaOutlineWidth <= 0)
     return;
-  // Hers alone: not in the shader cache, not on any other sprite. Tried once a session
-  static bool s_failed = false;
-  if (s_failed)
-    return;
-  auto program = ms::createProgram(OUTLINE_VERTEX, OUTLINE_FRAGMENT, "Mita's outline shader (she's drawn without it)");
+  // Hers alone: not in the shader cache, not on any other sprite. Made once a session
+  auto program = ms::sharedProgram(OUTLINE_VERTEX, OUTLINE_FRAGMENT, "Mita's outline shader (she's drawn without it)");
   if (!program)
-  {
-    s_failed = true;
     return;
-  }
+  m_outlineGeneration = ms::programGeneration();
   m_outlineTexel = program->getUniformLocationForName("u_texel");
   m_outlineColor = program->getUniformLocationForName("u_outline");
   m_outline = program;
@@ -408,7 +403,17 @@ void MSMita::makeOutline()
 
 void MSMita::updateOutline(CCTexture2D* texture)
 {
-  if (!m_outline || !m_sprite || !texture || texture == m_outlineFor)
+  if (!m_outline || !m_sprite || !texture)
+    return;
+  // Made again in a new GL context: its uniforms found and set again
+  if (m_outlineGeneration != ms::programGeneration())
+  {
+    m_outlineGeneration = ms::programGeneration();
+    m_outlineTexel = m_outline->getUniformLocationForName("u_texel");
+    m_outlineColor = m_outline->getUniformLocationForName("u_outline");
+    m_outlineFor = nullptr;
+  }
+  if (texture == m_outlineFor)
     return;
   // Only for straight alpha, which her textures are; anything else gets the usual shader
   if (texture->hasPremultipliedAlpha())

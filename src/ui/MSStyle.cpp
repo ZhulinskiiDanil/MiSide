@@ -3,6 +3,7 @@
 #include "../Theme.hpp"
 
 #include <Geode/fmod/fmod.hpp>
+#include <Geode/modify/CCShaderCache.hpp>
 
 #include <chrono>
 #include <typeinfo>
@@ -173,25 +174,77 @@ namespace ms
     return rectangle;
   }
 
-  CCGLProgram* createProgram(char const* vertex, char const* fragment, char const* what)
+  namespace
   {
-    auto program = new CCGLProgram();
-    // It reports a shader that didn't compile only by failing to link, and keeps the messages
-    program->initWithVertexShaderByteArray(vertex, fragment);
-    program->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
-    program->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
-    program->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
-    if (!program->link())
+    struct SharedProgram
     {
-      auto text = [](char const* log) { return std::string(log ? log : ""); };
-      log::error("{} doesn't compile here. Vertex shader: {} Fragment shader: {} Program: {}", what,
-                 text(program->vertexShaderLog()), text(program->fragmentShaderLog()), text(program->programLog()));
-      program->release();
-      return nullptr;
+      std::string vertex;
+      std::string fragment;
+      // Null when it didn't compile
+      Ref<CCGLProgram> program;
+    };
+
+    // By `what`
+    std::unordered_map<std::string, SharedProgram>& sharedPrograms()
+    {
+      static std::unordered_map<std::string, SharedProgram> s_programs;
+      return s_programs;
     }
-    program->updateUniforms();
-    program->autorelease();
-    return program;
+
+    unsigned s_programGeneration = 0;
+
+    // Compiled and linked into `program`, fresh or reset. It reports a shader that didn't compile only by failing
+    // to link, and keeps the messages
+    bool build(CCGLProgram* program, std::string const& vertex, std::string const& fragment, std::string const& what)
+    {
+      program->initWithVertexShaderByteArray(vertex.c_str(), fragment.c_str());
+      program->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
+      program->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
+      program->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
+      if (!program->link())
+      {
+        auto text = [](char const* log) { return std::string(log ? log : ""); };
+        log::error("{} doesn't compile here. Vertex shader: {} Fragment shader: {} Program: {}", what,
+                   text(program->vertexShaderLog()), text(program->fragmentShaderLog()), text(program->programLog()));
+        return false;
+      }
+      program->updateUniforms();
+      return true;
+    }
+  } // namespace
+
+  CCGLProgram* sharedProgram(char const* vertex, char const* fragment, char const* what)
+  {
+    auto& programs = sharedPrograms();
+    if (auto it = programs.find(what); it != programs.end())
+      return it->second.program;
+    SharedProgram shared{vertex, fragment, nullptr};
+    auto program = new CCGLProgram();
+    if (build(program, shared.vertex, shared.fragment, what))
+      shared.program = program;
+    program->release();
+    auto result = shared.program.data();
+    programs.emplace(what, std::move(shared));
+    return result;
+  }
+
+  unsigned programGeneration()
+  {
+    return s_programGeneration;
+  }
+
+  void reloadSharedPrograms()
+  {
+    for (auto& [what, shared] : sharedPrograms())
+    {
+      if (!shared.program)
+        continue;
+      shared.program->reset();
+      if (!build(shared.program, shared.vertex, shared.fragment, what))
+        log::error("{}: not made again in the new GL context", what);
+    }
+    s_programGeneration++;
+    log::info("The menu's {} shader programs made again in a new GL context", sharedPrograms().size());
   }
 
   namespace
@@ -251,3 +304,17 @@ namespace ms
     channel->setPaused(false);
   }
 } // namespace ms
+
+// ! --- A new GL context --- !
+
+// GD calls it once it has made a new GL context (switching to or from full screen). The old context's programs are
+// gone with it, their names now someone else's: each of the mod's is reset (forgetting them, deleting nothing) and
+// made again in place, as cocos does its own, so every sprite holding one draws right again
+class $modify(MSShaderCache, CCShaderCache)
+{
+  void reloadDefaultShaders()
+  {
+    CCShaderCache::reloadDefaultShaders();
+    ms::reloadSharedPrograms();
+  }
+};

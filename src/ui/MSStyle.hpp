@@ -57,8 +57,15 @@ namespace ms
                                    GLubyte opacity);
 
   // A sprite shader program of the menu's own (never put in the shader cache), with the usual attributes bound and
-  // linked; autoreleased. Null when it doesn't compile or link, logged with the driver's messages and `what`
-  cocos2d::CCGLProgram* createProgram(char const* vertex, char const* fragment, char const* what);
+  // linked, one per `what` for the whole session: the mod keeps it and never deletes it, so no node outlives it.
+  // Null when it doesn't compile or link, logged once with the driver's messages and `what`. GD makes a new GL
+  // context when it switches to or from full screen, and remakes cocos' own programs in it; these are remade in
+  // place then too
+  cocos2d::CCGLProgram* sharedProgram(char const* vertex, char const* fragment, char const* what);
+  // Counts the times the programs were remade: uniform locations taken before another count are to be taken again
+  unsigned programGeneration();
+  // Every one of them made again in place, in the GL context that's current now
+  void reloadSharedPrograms();
 
   // Silent when the sound is missing
   void playSound(std::string const& name);

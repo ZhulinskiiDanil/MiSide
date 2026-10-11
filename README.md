@@ -259,4 +259,5 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] The light overlay (`bg-light.png`) barely brightens the scene and doesn't cover it
 - [ ] A narrow window (4:3): the menu, the card and the tray keep their size and don't overlap; the background is cropped around its middle, not stretched
 - [ ] Parallax strength 0: the background is still; 2: it moves more, still no edges
+- [ ] Switching to full screen and back (with and without Borderless fix): hovering the buttons shows the usual shine with no green rectangle; Mita's outline and the pause blur still work
 - [ ] Texture quality Low, Medium and High (restart after each): the background, the plates, the tray, the card and the font are sharp and the right size

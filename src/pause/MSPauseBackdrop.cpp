@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <optional>
 #include <set>
 
 using namespace geode::prelude;
@@ -81,20 +82,20 @@ void main()
     GLint count = -1;
   };
 
-  // Made once a session, kept for the next pauses; never put in cocos' shader cache
+  // Made once a session, kept for the next pauses, their uniforms found again when they're made again in a new GL
+  // context; never put in cocos' shader cache
   Programs const* programs()
   {
     static Programs s_programs;
-    static bool s_tried = false;
-    if (!s_tried)
+    static std::optional<unsigned> s_generation;
+    if (s_generation != ms::programGeneration())
     {
-      s_tried = true;
-      auto copy = ms::createProgram(QUAD_VERTEX, COPY_FRAGMENT, "The pause blur's copy shader (a darkening instead)");
-      auto gauss = ms::createProgram(QUAD_VERTEX, GAUSS_FRAGMENT, "The pause blur's shader (a darkening instead)");
+      s_generation = ms::programGeneration();
+      s_programs = {};
+      auto copy = ms::sharedProgram(QUAD_VERTEX, COPY_FRAGMENT, "The pause blur's copy shader (a darkening instead)");
+      auto gauss = ms::sharedProgram(QUAD_VERTEX, GAUSS_FRAGMENT, "The pause blur's shader (a darkening instead)");
       if (copy && gauss)
       {
-        copy->retain();
-        gauss->retain();
         s_programs.copy = copy;
         s_programs.gauss = gauss;
         s_programs.step = gauss->getUniformLocationForName("u_step");
