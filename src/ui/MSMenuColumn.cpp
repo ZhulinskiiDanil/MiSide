@@ -38,11 +38,40 @@ void MSMenuColumn::addEntry(std::string const& text, CCMenuItem* target)
   this->addChild(item);
 }
 
+void MSMenuColumn::setTitle(std::string const& text)
+{
+  auto const& theme = Theme::get();
+  auto title = ms::createText(text, theme.titleScale, theme.titleColor);
+  if (!title.node)
+    return;
+  auto item = CCMenuItem::create();
+  item->setEnabled(false);
+  item->setAnchorPoint({0, 0.5f});
+  item->setContentSize(title.node->getContentSize());
+  title.node->setPosition({0, item->getContentHeight() / 2});
+  item->addChild(title.node);
+  this->addChild(item);
+  m_title = item;
+  m_titleText = title.node;
+}
+
 void MSMenuColumn::finish()
 {
   auto const& theme = Theme::get();
   auto y = 0.f;
   m_width = 0;
+  if (m_title)
+  {
+    auto height = m_title->getContentHeight();
+    m_title->setPosition({0, -height / 2});
+    y = height + theme.titleGap;
+    m_width = m_title->getContentWidth();
+    if (theme.introDuration > 0)
+    {
+      ms::setOpacity(m_titleText, 0);
+      m_titleText->runAction(CCFadeTo::create(theme.introDuration, 255));
+    }
+  }
   for (size_t i = 0; i < m_items.size(); i++)
   {
     auto item = m_items[i];
@@ -52,7 +81,7 @@ void MSMenuColumn::finish()
     m_width = std::max(m_width, item->getContentWidth());
     item->playIntro(theme.introStagger * i);
   }
-  m_height = m_items.empty() ? 0 : y - theme.itemGap;
+  m_height = m_items.empty() ? std::max(y - theme.titleGap, 0.f) : y - theme.itemGap;
   auto winSize = CCDirector::get()->getWinSize();
   this->fit(winSize.height * theme.columnTop, 0);
 }

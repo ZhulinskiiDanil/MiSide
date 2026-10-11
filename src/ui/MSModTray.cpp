@@ -34,10 +34,10 @@ namespace
   }
 } // namespace
 
-MSModTray* MSModTray::create(std::vector<std::string> sources)
+MSModTray* MSModTray::create(std::vector<std::string> sources, std::function<void()> more)
 {
   auto tray = new MSModTray();
-  if (tray->init(std::move(sources)))
+  if (tray->init(std::move(sources), std::move(more)))
   {
     tray->autorelease();
     return tray;
@@ -46,7 +46,7 @@ MSModTray* MSModTray::create(std::vector<std::string> sources)
   return nullptr;
 }
 
-bool MSModTray::init(std::vector<std::string> sources)
+bool MSModTray::init(std::vector<std::string> sources, std::function<void()> more)
 {
   if (!CCNode::init())
     return false;
@@ -58,7 +58,23 @@ bool MSModTray::init(std::vector<std::string> sources)
   m_panel->setAnchorPoint({0, 0});
   m_panel->ignoreAnchorPointForPosition(false);
   m_panel->setVisible(false);
-  this->addChild(m_panel);
+  this->addChild(m_panel, -1);
+
+  m_menu = CCMenu::create();
+  m_menu->setPosition({0, 0});
+  m_menu->setContentSize({0, 0});
+  this->addChild(m_menu, 1);
+  if (more)
+  {
+    auto text = ms::createText("…", theme.moreScale, theme.itemColor);
+    if (text.node)
+    {
+      auto button = CCMenuItemExt::createSpriteExtra(text.node, [more = std::move(more)](auto) { more(); });
+      button->setID("more-button"_spr);
+      m_menu->addChild(button);
+      m_more = button;
+    }
+  }
   this->scheduleUpdate();
   return true;
 }
@@ -93,6 +109,11 @@ std::vector<CCNode*> MSModTray::collect(std::vector<float>& signature)
       buttons.push_back(child);
     }
     signature.push_back(-1);
+  }
+  if (m_more && m_more->isVisible())
+  {
+    signature.insert(signature.end(), {m_more->getPositionX(), m_more->getPositionY(), restingScale(m_more)});
+    buttons.push_back(m_more);
   }
   return buttons;
 }
@@ -153,29 +174,22 @@ void MSModTray::arrange(std::vector<CCNode*> const& buttons)
   if (count == 0)
     return;
 
+  // One row; too many buttons for the screen make every slot smaller
   auto winSize = CCDirector::get()->getWinSize();
-  auto columns = std::clamp<size_t>(static_cast<size_t>(std::max(theme.trayColumns, 1.f)), 1, count);
-  auto rows = (count + columns - 1) / columns;
-
-  // Too many rows for the screen: every slot gets smaller
   auto outer = theme.slotSize + theme.slotPadding * 2;
-  auto height = rows * outer + (rows - 1) * theme.trayGap;
-  auto fit = std::min(1.f, winSize.height * theme.trayMaxHeight / height);
+  auto width = count * outer + (count - 1) * theme.trayGap;
+  auto fit = std::min(1.f, winSize.width * theme.trayMaxWidth / width);
   outer *= fit;
   auto gap = theme.trayGap * fit;
   auto inner = theme.slotSize * fit;
-  auto pitch = outer + gap;
+  width *= fit;
 
-  // From the bottom row up, each row against the right edge, in order from left to right
+  // In order from left to right, against the right edge
   auto right = winSize.width - theme.trayMargin - theme.trayPadding;
   auto bottom = theme.trayMargin + theme.trayPadding;
   for (size_t i = 0; i < count; i++)
   {
-    auto row = i / columns;
-    auto inRow = row == rows - 1 ? count - row * columns : columns;
-    auto column = i % columns;
-    CCPoint center{right - outer / 2 - (inRow - 1 - column) * pitch, bottom + outer / 2 + row * pitch};
-
+    CCPoint center{right - width + outer / 2 + i * (outer + gap), bottom + outer / 2};
     auto node = this->slot(i);
     node->setVisible(true);
     node->setContentSize({outer, outer});
@@ -183,8 +197,7 @@ void MSModTray::arrange(std::vector<CCNode*> const& buttons)
     this->place(buttons[i], inner, center);
   }
 
-  auto width = columns * outer + (columns - 1) * gap;
-  height = rows * outer + (rows - 1) * gap;
+  auto height = outer;
   m_panel->setPosition({right - width - theme.trayPadding, bottom - theme.trayPadding});
   m_panel->setContentSize({width + theme.trayPadding * 2, height + theme.trayPadding * 2});
 }

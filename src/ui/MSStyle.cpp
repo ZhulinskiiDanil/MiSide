@@ -31,6 +31,59 @@ namespace ms
     return CCLabelTTF::create(text.c_str(), theme.fallbackFont.c_str(), theme.fallbackFontSize);
   }
 
+  void cascadeOpacity(CCNode* node)
+  {
+    if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node))
+      rgba->setCascadeOpacityEnabled(true);
+  }
+
+  void setOpacity(CCNode* node, GLubyte opacity)
+  {
+    if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node))
+      rgba->setOpacity(opacity);
+  }
+
+  void setColor(CCNode* node, ccColor3B color)
+  {
+    if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node))
+      rgba->setColor(color);
+  }
+
+  Text createText(std::string const& text, float scale, ccColor3B color)
+  {
+    auto const& theme = Theme::get();
+    auto label = createLabel(text);
+    if (!label)
+      return {};
+    label->setScale(scale);
+    label->setAnchorPoint({0, 0});
+    cascadeOpacity(label);
+    setColor(label, color);
+    auto size = label->getScaledContentSize();
+
+    auto node = CCNodeRGBA::create();
+    node->setCascadeOpacityEnabled(true);
+    node->setContentSize(size);
+    node->setAnchorPoint({0, 0.5f});
+    // Farthest first, so the nearer copies are drawn over it
+    auto steps = std::max(static_cast<int>(theme.shadowSteps), 0);
+    for (auto step = steps; step >= 1; step--)
+    {
+      auto shadow = createLabel(text);
+      if (!shadow)
+        continue;
+      shadow->setScale(scale);
+      shadow->setAnchorPoint({0, 0});
+      shadow->setPosition({theme.shadowOffset * step, -theme.shadowOffset * step});
+      cascadeOpacity(shadow);
+      setColor(shadow, theme.shadowColor);
+      setOpacity(shadow, static_cast<GLubyte>(theme.shadowOpacity / step));
+      node->addChild(shadow);
+    }
+    node->addChild(label);
+    return {node, label};
+  }
+
   CCNode* createPanel(std::string const& sprite, ccColor3B color, GLubyte opacity)
   {
     if (resourceExists(sprite))

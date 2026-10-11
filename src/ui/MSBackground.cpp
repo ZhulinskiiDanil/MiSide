@@ -43,9 +43,15 @@ bool MSBackground::init(float strength)
         auto size = sprite->getContentSize();
         if (size.width > 0 && size.height > 0)
           sprite->setScale(std::max(cover.width / size.width, cover.height / size.height));
-        // Black adds nothing: only the light shows
+        sprite->setOpacity(spec.opacity);
+        // Black adds nothing: only the light shows. A premultiplied texture has its color scaled by the
+        // opacity already; otherwise the opacity scales it while it's added
         if (spec.additive)
-          sprite->setBlendFunc({GL_ONE, GL_ONE});
+        {
+          auto texture = sprite->getTexture();
+          auto premultiplied = texture && texture->hasPremultipliedAlpha();
+          sprite->setBlendFunc({static_cast<GLenum>(premultiplied ? GL_ONE : GL_SRC_ALPHA), GL_ONE});
+        }
         node = sprite;
       }
     }

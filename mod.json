@@ -40,6 +40,12 @@
 				"RU",
 				"EN"
 			]
+		},
+		"show-title": {
+			"name": "Title",
+			"description": "\"Geometry Dash\" above the menu items",
+			"type": "bool",
+			"default": true
 		}
 	},
 	"resources": {
@@ -47,7 +53,8 @@
 			"resources/background/*.png",
 			"resources/placeholders/item-accent.png",
 			"resources/placeholders/tray-panel.png",
-			"resources/placeholders/tray-slot.png"
+			"resources/placeholders/tray-slot.png",
+			"resources/placeholders/avatar-circle.png"
 		],
 		"files": [
 			"resources/sounds/hover.ogg",
@@ -57,7 +64,7 @@
 			"miside-font": {
 				"path": "resources/fonts/MPLUSRounded1c-Medium.ttf",
 				"size": 64,
-				"charset": "32-126,1025,1040-1103,1105,8211,8212,8226"
+				"charset": "32-126,1025,1040-1103,1105,8211,8212,8226,8230"
 			}
 		}
 	}

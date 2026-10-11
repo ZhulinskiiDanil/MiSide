@@ -3,6 +3,8 @@
 #include "ui/MSLayoutGuard.hpp"
 #include "ui/MSMenuColumn.hpp"
 #include "ui/MSModTray.hpp"
+#include "ui/MSMorePopup.hpp"
+#include "ui/MSProfileCard.hpp"
 #include "ui/MSTransition.hpp"
 
 #include <Geode/Geode.hpp>
@@ -54,11 +56,14 @@ namespace
     {"Выход", "Quit", "close-menu", "close-button"},
   };
 
-  // The menus whose buttons go in the tray, in this order: the ones the other mods add theirs to, then the
-  // vanilla corners that would be in the column's or the tray's way. profile-menu stays in the bottom left
-  // corner, close-menu and top-right-menu at the top
-  char const* const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "main-menu", "side-menu",
-                                      "social-media-menu", "more-games-menu"};
+  // The menus whose buttons go in the tray's row, in this order: the ones the other mods add theirs to, with the
+  // vanilla buttons that do something and have no item (the daily chest, Newgrounds). profile-menu's own button
+  // is the profile card; close-menu and top-right-menu stay at the top
+  char const* const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "profile-menu", "main-menu", "side-menu"};
+
+  // The menus whose buttons are in the "…" popup instead: RobTop, the social links, More Games. Hidden as a whole,
+  // their buttons stay in them
+  char const* const POPUP_SOURCES[] = {"social-media-menu", "more-games-menu"};
 
   // Behind everything of the menu
   constexpr int BACKGROUND_Z = -100;
@@ -90,6 +95,7 @@ class $modify(MSMenuLayer, MenuLayer)
   {
     MSMenuColumn* m_column = nullptr;
     MSTransition* m_transition = nullptr;
+    MSProfileCard* m_card = nullptr;
   };
 
   bool init()
@@ -105,6 +111,7 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addBackground();
     this->addColumn();
     this->addTransition();
+    this->addProfileCard();
     this->addTray();
     this->addGuard();
     return true;
@@ -136,7 +143,12 @@ class $modify(MSMenuLayer, MenuLayer)
                     "editor-gamepad-icon"})
       hide(find(this, id, false));
 
-    // The buttons with an item in the column (Play, Icon Kit, Editor and the others) are hidden in addColumn()
+    // Their buttons are in the "…" popup now
+    for (auto id : POPUP_SOURCES)
+      hide(find(this, id));
+
+    // The buttons with an item in the column (Play, Icon Kit, Editor and the others) are hidden in addColumn(),
+    // the profile button and the player's name in addProfileCard()
   }
 
   // ! --- The background --- !
@@ -158,7 +170,9 @@ class $modify(MSMenuLayer, MenuLayer)
     auto column = MSMenuColumn::create([this](MSMenuItem* item) { this->runItem(item); });
     if (!column)
       return;
-    auto english = Mod::get()->getSettingValue<std::string>("menu-language") == "EN";
+    auto english = this->isEnglish();
+    if (Mod::get()->getSettingValue<bool>("show-title"))
+      column->setTitle("Geometry Dash");
     std::vector<CCNode*> menus;
     for (auto const& entry : ENTRIES)
     {
@@ -210,11 +224,68 @@ class $modify(MSMenuLayer, MenuLayer)
     transition->play([target] { target->activate(); }, [column] { column->setBusy(false); });
   }
 
+  bool isEnglish() { return Mod::get()->getSettingValue<std::string>("menu-language") == "EN"; }
+
+  // ! --- The profile card --- !
+
+  void addProfileCard()
+  {
+    auto button = findButton(this, "profile-menu", "profile-button");
+    if (!button)
+      return;
+    auto label = find(this, "player-username", false);
+    std::string name = GameManager::get()->m_playerName;
+    if (auto text = typeinfo_cast<CCLabelBMFont*>(label))
+      name = text->getString();
+
+    auto card = MSProfileCard::create(button, name);
+    if (!card)
+      return;
+    // The card shows them now; the button still opens the profile through activate()
+    hide(button);
+    hide(label);
+    if (auto menu = button->getParent())
+      menu->updateLayout();
+    card->setID("profile-card"_spr);
+    this->addChild(card, COLUMN_Z);
+    m_fields->m_card = card;
+  }
+
   // ! --- The tray --- !
+
+  // The buttons the popup shows: what's visible of its menus' buttons
+  std::vector<CCMenuItem*> popupButtons()
+  {
+    std::vector<CCMenuItem*> buttons;
+    for (auto id : POPUP_SOURCES)
+    {
+      auto menu = find(this, id, false);
+      if (!menu)
+        continue;
+      for (auto child : CCArrayExt<CCNode*>(menu->getChildren()))
+      {
+        if (auto button = typeinfo_cast<CCMenuItem*>(child); button && button->isVisible())
+          buttons.push_back(button);
+      }
+    }
+    return buttons;
+  }
+
+  void openPopup()
+  {
+    auto buttons = this->popupButtons();
+    if (buttons.empty())
+      return;
+    if (auto popup = MSMorePopup::create(buttons, this->isEnglish() ? "More" : "Ещё"))
+      popup->show();
+  }
 
   void addTray()
   {
-    auto tray = MSModTray::create({std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)});
+    std::function<void()> more;
+    if (!this->popupButtons().empty())
+      more = [this] { this->openPopup(); };
+    auto tray = MSModTray::create({std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)}, std::move(more));
     if (!tray)
       return;
     tray->setID("mod-tray"_spr);
@@ -229,8 +300,9 @@ class $modify(MSMenuLayer, MenuLayer)
     if (!column)
       return;
     std::vector<std::string> skipped{std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)};
+    skipped.insert(skipped.end(), std::begin(POPUP_SOURCES), std::end(POPUP_SOURCES));
     skipped.emplace_back("main-menu-bg");
-    auto guard = MSLayoutGuard::create(column, std::move(skipped));
+    auto guard = MSLayoutGuard::create(column, m_fields->m_card, std::move(skipped));
     if (!guard)
       return;
     guard->setID("layout-guard"_spr);

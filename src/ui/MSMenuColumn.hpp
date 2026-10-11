@@ -17,6 +17,8 @@ public:
   static MSMenuColumn* create(Choose choose);
 
   void addEntry(std::string const& text, cocos2d::CCMenuItem* target);
+  // A line above the items that can't be chosen
+  void setTitle(std::string const& text);
   // Lays the items out from the top and plays their intro
   void finish();
   // Puts the column's top edge at `top` on the theme's left edge, scaled down when it wouldn't end above `bottom`
@@ -39,6 +41,9 @@ protected:
 
   Choose m_choose;
   std::vector<MSMenuItem*> m_items;
+  // A disabled item, so the menu takes it; its text fades in with the items
+  cocos2d::CCMenuItem* m_title = nullptr;
+  cocos2d::CCNode* m_titleText = nullptr;
   int m_current = -1;
   // The items' bounds at scale 1
   float m_width = 0;

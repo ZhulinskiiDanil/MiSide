@@ -41,3 +41,7 @@ CC0 не требует указывать автора; Kenney просит о�
 | `resources/placeholders/item-accent.png` | Белая скруглённая полоска выделения | Нарисован `tools/make_placeholders.py` в этом репозитории | Как у кода мода |
 | `resources/placeholders/tray-panel.png` | Белая скруглённая панель лотка (9-slice) | то же | то же |
 | `resources/placeholders/tray-slot.png` | Белая скруглённая ячейка лотка (9-slice) | то же | то же |
+| `resources/placeholders/avatar-circle.png` | Белый круг под аватаром в карточке профиля | то же | то же |
+
+Иконка игрока в карточке профиля и кнопки в попапе «…» — спрайты самой игры (текущий кадр ванильных кнопок,
+кубик игрока через `SimplePlayer`), в мод они не копируются.

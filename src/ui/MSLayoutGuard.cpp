@@ -49,10 +49,10 @@ namespace
   }
 } // namespace
 
-MSLayoutGuard* MSLayoutGuard::create(MSMenuColumn* column, std::vector<std::string> skipped)
+MSLayoutGuard* MSLayoutGuard::create(MSMenuColumn* column, MSProfileCard* card, std::vector<std::string> skipped)
 {
   auto guard = new MSLayoutGuard();
-  if (guard->init(column, std::move(skipped)))
+  if (guard->init(column, card, std::move(skipped)))
   {
     guard->autorelease();
     return guard;
@@ -61,13 +61,14 @@ MSLayoutGuard* MSLayoutGuard::create(MSMenuColumn* column, std::vector<std::stri
   return nullptr;
 }
 
-bool MSLayoutGuard::init(MSMenuColumn* column, std::vector<std::string> skipped)
+bool MSLayoutGuard::init(MSMenuColumn* column, MSProfileCard* card, std::vector<std::string> skipped)
 {
   if (!CCNode::init() || !column)
     return false;
   m_column = column;
+  m_card = card;
   m_skipped = std::move(skipped);
-  for (auto id : {"profile-menu", "player-username", "close-menu"})
+  for (auto id : {"player-username", "close-menu"})
     m_skipped.emplace_back(id);
   this->scheduleUpdate();
   return true;
@@ -81,7 +82,15 @@ void MSLayoutGuard::update(float)
   auto const& theme = Theme::get();
   auto winSize = CCDirector::get()->getWinSize();
 
-  auto bottom = this->pinProfile(layer) + theme.columnClearance;
+  // Above the profile card
+  auto bottom = theme.trayMargin;
+  if (m_card && m_card->getParent() == layer)
+  {
+    auto card = m_card->getArea();
+    if (!isEmpty(card))
+      bottom = card.getMaxY();
+  }
+  bottom += theme.columnClearance;
   auto top = winSize.height * theme.columnTop;
   // Under close-menu's buttons (the mods' ones: the close button itself is hidden, it's the Quit item)
   auto above = visibleBounds(layer->getChildByID("close-menu"));
@@ -90,28 +99,6 @@ void MSLayoutGuard::update(float)
   m_column->fit(top, bottom);
 
   this->keepOut(layer);
-}
-
-float MSLayoutGuard::pinProfile(CCNode* layer)
-{
-  auto const& theme = Theme::get();
-  auto profile = layer->getChildByID("profile-menu");
-  auto name = layer->getChildByID("player-username");
-  auto bounds = unite(visibleBounds(profile), visibleBounds(name));
-  if (isEmpty(bounds))
-    return theme.trayMargin;
-
-  // Both by the same offset: the name stays where it was next to the profile button
-  CCPoint offset{theme.trayMargin - bounds.getMinX(), theme.trayMargin - bounds.getMinY()};
-  if (std::abs(offset.x) > SETTLED || std::abs(offset.y) > SETTLED)
-  {
-    for (auto node : {profile, name})
-    {
-      if (node)
-        node->setPosition(node->getPosition() + offset);
-    }
-  }
-  return bounds.getMaxY() + offset.y;
 }
 
 void MSLayoutGuard::keepOut(CCNode* layer)
@@ -126,7 +113,7 @@ void MSLayoutGuard::keepOut(CCNode* layer)
 
   for (auto child : CCArrayExt<CCNode*>(layer->getChildren()))
   {
-    if (child == m_column || child == this || !child->isVisible())
+    if (child == m_column || child == m_card || child == this || !child->isVisible())
       continue;
     std::string_view id = child->getID();
     if (id.starts_with(prefix) || std::find(m_skipped.begin(), m_skipped.end(), id) != m_skipped.end())

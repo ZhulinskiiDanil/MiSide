@@ -27,6 +27,7 @@ def main():
         "item-accent.png": rounded((8, 64), 4),
         "tray-panel.png": rounded((96, 96), 24),
         "tray-slot.png": rounded((64, 64), 16),
+        "avatar-circle.png": rounded((96, 96), 48),
     }
     for name, image in sprites.items():
         image.save(OUT / name, optimize=True)
