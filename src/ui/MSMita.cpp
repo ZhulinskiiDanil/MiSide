@@ -1,6 +1,7 @@
 #include "MSMita.hpp"
 
 #include "../Theme.hpp"
+#include "MSStyle.hpp"
 
 #include <Geode/utils/file.hpp>
 
@@ -170,7 +171,7 @@ namespace
 
   // Her outline: the usual sprite vertex shader, and a fragment shader that adds a line where a transparent pixel
   // has a drawn one within the line's width. Her own pixels are left as they are; nothing shows around the canvas'
-  // rectangle, which is transparent. cocos declares CC_MVPMatrix and CC_Texture0 itself
+  // rectangle, which is transparent. cocos 2.2 declares only CC_MVPMatrix and the like; the texture is ours to declare
   constexpr char const* OUTLINE_VERTEX = R"(
 attribute vec4 a_position;
 attribute vec2 a_texCoord;
@@ -196,6 +197,7 @@ precision mediump float;
 #endif
 varying vec4 v_fragmentColor;
 varying vec2 v_texCoord;
+uniform sampler2D CC_Texture0;
 uniform vec2 u_texel;
 uniform vec4 u_outline;
 void main()
@@ -353,27 +355,19 @@ void MSMita::makeOutline()
   auto const& theme = Theme::get();
   if (!theme.mitaOutlineEnabled || theme.mitaOutlineOpacity == 0 || theme.mitaOutlineWidth <= 0)
     return;
-  // Hers alone: not in the shader cache, not on any other sprite
-  auto program = new CCGLProgram();
-  auto ok = program->initWithVertexShaderByteArray(OUTLINE_VERTEX, OUTLINE_FRAGMENT);
-  if (ok)
+  // Hers alone: not in the shader cache, not on any other sprite. Tried once a session
+  static bool s_failed = false;
+  if (s_failed)
+    return;
+  auto program = ms::createProgram(OUTLINE_VERTEX, OUTLINE_FRAGMENT, "Mita's outline shader (she's drawn without it)");
+  if (!program)
   {
-    program->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
-    program->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
-    program->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
-    ok = program->link();
-  }
-  if (!ok)
-  {
-    program->release();
-    logOnce("her outline shader doesn't compile here, she's drawn without the outline");
+    s_failed = true;
     return;
   }
-  program->updateUniforms();
   m_outlineTexel = program->getUniformLocationForName("u_texel");
   m_outlineColor = program->getUniformLocationForName("u_outline");
   m_outline = program;
-  program->release();
 }
 
 void MSMita::updateOutline(CCTexture2D* texture)

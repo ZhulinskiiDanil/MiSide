@@ -37,6 +37,10 @@ namespace ms
   cocos2d::CCNode* createStretched(std::string const& sprite, cocos2d::CCSize size, cocos2d::ccColor3B color,
                                    GLubyte opacity);
 
+  // A sprite shader program of the menu's own (never put in the shader cache), with the usual attributes bound and
+  // linked; autoreleased. Null when it doesn't compile or link, logged with the driver's messages and `what`
+  cocos2d::CCGLProgram* createProgram(char const* vertex, char const* fragment, char const* what);
+
   // Silent when the sound is missing
   void playSound(std::string const& name);
 } // namespace ms

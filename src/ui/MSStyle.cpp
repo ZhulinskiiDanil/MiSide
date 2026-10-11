@@ -124,6 +124,27 @@ namespace ms
     return rectangle;
   }
 
+  CCGLProgram* createProgram(char const* vertex, char const* fragment, char const* what)
+  {
+    auto program = new CCGLProgram();
+    // It reports a shader that didn't compile only by failing to link, and keeps the messages
+    program->initWithVertexShaderByteArray(vertex, fragment);
+    program->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
+    program->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
+    program->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
+    if (!program->link())
+    {
+      auto text = [](char const* log) { return std::string(log ? log : ""); };
+      log::error("{} doesn't compile here. Vertex shader: {} Fragment shader: {} Program: {}", what,
+                 text(program->vertexShaderLog()), text(program->fragmentShaderLog()), text(program->programLog()));
+      program->release();
+      return nullptr;
+    }
+    program->updateUniforms();
+    program->autorelease();
+    return program;
+  }
+
   void playSound(std::string const& name)
   {
     if (!resourceExists(name))

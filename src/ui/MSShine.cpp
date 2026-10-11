@@ -29,7 +29,8 @@ void main()
 }
 )";
 
-  // The texture is the label rendered white, premultiplied. The band is measured in the label's width: the
+  // cocos 2.2 puts only the matrices and the time before a shader: the texture is declared here. The texture is
+  // the label rendered white, premultiplied. The band is measured in the label's width: the
   // texture coordinate divided by where the label ends in the texture. Out: premultiplied, only where the
   // letters are
   constexpr char const* SHINE_FRAGMENT = R"(
@@ -38,6 +39,7 @@ precision mediump float;
 #endif
 varying vec4 v_fragmentColor;
 varying vec2 v_texCoord;
+uniform sampler2D CC_Texture0;
 uniform vec2 u_extent;
 uniform float u_center;
 uniform float u_width;
@@ -82,24 +84,10 @@ void main()
     if (s_tried)
       return s_shader.program ? &s_shader : nullptr;
     s_tried = true;
-    auto program = new CCGLProgram();
-    auto ok = program->initWithVertexShaderByteArray(SHINE_VERTEX, SHINE_FRAGMENT);
-    if (ok)
-    {
-      program->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
-      program->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
-      program->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
-      ok = program->link();
-    }
-    if (!ok)
-    {
-      program->release();
-      log::warn("The shine shader doesn't compile here: the items have no shine");
+    auto program = ms::createProgram(SHINE_VERTEX, SHINE_FRAGMENT, "The shine shader (the items have no shine)");
+    if (!program)
       return nullptr;
-    }
-    program->updateUniforms();
     s_shader.program = program;
-    program->release();
     s_shader.extent = program->getUniformLocationForName("u_extent");
     s_shader.center = program->getUniformLocationForName("u_center");
     s_shader.width = program->getUniformLocationForName("u_width");
