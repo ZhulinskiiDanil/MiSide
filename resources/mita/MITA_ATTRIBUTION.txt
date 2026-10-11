@@ -1,0 +1,8 @@
+Mita
+Author credited by source GLB: Elite Big Speakerman
+Author URL: https://sketchfab.com/EvesStudio2008
+Source: https://sketchfab.com/3d-models/mita-5dc5cf2928b14fa3bd4d7c24c0cc7ff7
+License declared in source GLB: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License link: https://creativecommons.org/licenses/by/4.0/
+Changes: imported into Blender; portrait camera; lighting and material adjustments; rendered animation; resampled 5.28-second Idle to 127 frames at 24 FPS; transparent PNG and atlas packaging.
+Original archive did not contain a separate license text file. Original author/license metadata is preserved verbatim in source_metadata.json. Keep this attribution with redistributed assets.

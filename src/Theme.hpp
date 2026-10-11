@@ -154,6 +154,21 @@ struct Theme
   // How far the nearest layer moves at the full parallax strength
   float parallaxRange = 0;
 
+  // ! --- Mita --- !
+  // The animated character on the right, from resources/mita. Points on the reference screen (569×320)
+  bool mitaEnabled = false;
+  // Her bottom middle; held to the right edge on other window shapes, never over the menu
+  float mitaX = 0;
+  float mitaY = 0;
+  // Points per pixel of her 640×720 canvas
+  float mitaScale = 0;
+  // 0: the manifest's
+  float mitaFps = 0;
+  bool mitaParallaxEnabled = false;
+  float mitaParallaxMaxX = 0;
+  // Down only, so the cut at the bottom of her frame never shows a gap
+  float mitaParallaxMaxY = 0;
+
   // ! --- The tray and the profile --- !
   float trayMargin = 0;
   float trayPadding = 0;

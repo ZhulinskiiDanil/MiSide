@@ -2,6 +2,7 @@
 #include "ui/MSBackground.hpp"
 #include "ui/MSLayoutGuard.hpp"
 #include "ui/MSLogo.hpp"
+#include "ui/MSMita.hpp"
 #include "ui/MSMenuColumn.hpp"
 #include "ui/MSModTray.hpp"
 #include "ui/MSMorePopup.hpp"
@@ -10,6 +11,8 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
+
+#include <limits>
 
 using namespace geode::prelude;
 
@@ -117,6 +120,8 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addProfileCard();
     this->addTray();
     this->addGuard();
+    // Last: her place in the drawing order comes from everything else that's in the layer by now
+    this->addMita();
     return true;
   }
 
@@ -317,5 +322,40 @@ class $modify(MSMenuLayer, MenuLayer)
       return;
     guard->setID("layout-guard"_spr);
     this->addChild(guard);
+  }
+
+  // ! --- Mita --- !
+
+  void addMita()
+  {
+    auto mita = MSMita::create();
+    if (!mita)
+      return;
+    mita->setID("mita"_spr);
+    this->addChild(mita, this->mitaZ());
+  }
+
+  // Over the background, under everything else that shows: one under the lowest visible node that isn't the
+  // background (the tray, the vanilla menus, the mods' nodes). Hidden vanilla nodes don't count
+  int mitaZ()
+  {
+    auto background = this->getChildByID("background"_spr);
+    auto floor = background ? background->getZOrder() : BACKGROUND_Z;
+    auto lowest = std::numeric_limits<int>::max();
+    for (auto child : CCArrayExt<CCNode*>(this->getChildren()))
+    {
+      if (child != background && child->isVisible())
+        lowest = std::min(lowest, child->getZOrder());
+    }
+    if (lowest == std::numeric_limits<int>::max())
+      return floor + 1;
+    if (lowest - 1 <= floor)
+    {
+      log::warn("A node at z {} is as low as the background: Mita goes right over the background, over it too",
+                lowest);
+      return floor + 1;
+    }
+    log::debug("Mita at z {}: over the background ({}), under the lowest node shown ({})", lowest - 1, floor, lowest);
+    return lowest - 1;
   }
 };

@@ -127,6 +127,17 @@ namespace
     theme.characterDepth = 0.6f;
     theme.parallaxRange = 2;
 
+    // ! --- Mita --- !
+    theme.mitaEnabled = true;
+    theme.mitaX = 414.5f;
+    theme.mitaY = 0;
+    // 320 / 720: her canvas as high as the screen
+    theme.mitaScale = 0.4444444444f;
+    theme.mitaFps = 24;
+    theme.mitaParallaxEnabled = false;
+    theme.mitaParallaxMaxX = 3;
+    theme.mitaParallaxMaxY = 2;
+
     // ! --- The tray and the profile --- !
     theme.trayMargin = 8;
     theme.trayPadding = 4;
@@ -263,6 +274,15 @@ namespace
     field("character-height", theme.characterHeight);
     field("character-depth", theme.characterDepth);
     field("parallax-range", theme.parallaxRange);
+
+    field("mita-enabled", theme.mitaEnabled);
+    field("mita-x", theme.mitaX);
+    field("mita-y", theme.mitaY);
+    field("mita-scale", theme.mitaScale);
+    field("mita-fps", theme.mitaFps);
+    field("mita-parallax-enabled", theme.mitaParallaxEnabled);
+    field("mita-parallax-max-x", theme.mitaParallaxMaxX);
+    field("mita-parallax-max-y", theme.mitaParallaxMaxY);
 
     field("tray-margin", theme.trayMargin);
     field("tray-padding", theme.trayPadding);

@@ -15,6 +15,7 @@ The background art is in `resources/background/`, the font and the sounds are fr
 - **The profile card** in the bottom left corner, small and quiet: a round avatar with the player's cube in their colors, and their name. It opens the profile like the vanilla button (which it presses with `activate()`)
 - **Nothing covers the menu**: any other node in its way (a mod's too) is moved to the right of it
 - **The background** is dark: the room's layers tinted and dimmed, a darkening over them, a soft crimson glow on the right, a shade on the left under the menu. The layers follow the mouse a little (2 pt). An optional character layer on the right is off until there's art for it
+- **Mita** on the right: an animated idle loop (127 frames at 24 fps, from a CC BY 4.0 model, see LICENSES.md) over the background and under every button. She plays from the time that passed, so at the same speed at any frame rate. Her 22 atlas pages stream: at most two on the GPU (~21 MiB), decoded ahead on a worker thread with Windows' PNG decoder, uploaded on the main thread, freed when the menu closes. Missing or broken files: the menu works without her, the log says why once
 - **The transition**: a short darkening, then the game's own transition. No transition is hooked, other screens change exactly as before
 
 ## Settings
@@ -44,6 +45,8 @@ Colors, fonts, sprites, sounds, spacing and timings all come from the theme (`sr
 }
 ```
 
+Mita's keys: `mita-enabled` (true), `mita-x` / `mita-y` (414.5, 0: her bottom middle), `mita-scale` (0.4444444444 points per pixel of her 640×720 canvas, so as high as the screen), `mita-fps` (24; 0 takes the manifest's), `mita-parallax-enabled` (false), `mita-parallax-max-x` / `mita-parallax-max-y` (3, 2; down only, so the cut at the bottom never shows a gap). On a narrower window she stays against the right edge and is cut there rather than covering the buttons.
+
 Positions are in points on the 569×320 screen from its bottom left corner (`column-left`, `first-row-y`, `row-pitch` — from one row's middle to the next one's, `exit-y`, `logo-bottom`/`logo-top`, `subtitle-top`, `card-left`/`card-bottom`...). Missing keys keep their defaults, a value of the wrong type is ignored with a warning in the log. The theme is read again every time the main menu opens.
 
 ## How it stays compatible
@@ -55,6 +58,15 @@ Positions are in points on the 569×320 screen from its bottom left corner (`col
 - **Node IDs are Geode's** (`loader/src/ids/MenuLayer.cpp`). A node that isn't found is skipped with a warning in the log
 - **Late**: the `MenuLayer::init` hook runs after the other mods' (its priority), and the tray and the column's space are arranged on the first frame, after every `init`, then again whenever something changes
 - Only `MenuLayer` is hooked (`init` and `keyDown`). `keyDown` passes every key on
+- Mita takes no touches or keys and goes under every node that shows (her z is one under the lowest visible one that isn't the background, found when the menu is made). Her textures and frames are her own, never in cocos' shared caches; nothing global is purged
+
+## Tests
+
+```
+cmake -S tests -B build-tests -G Ninja && cmake --build build-tests && ctest --test-dir build-tests
+```
+
+Mita's playback decisions (`src/ui/MitaPlan.hpp`) simulated without the game: the frame for the time at 30, 60, 144 and 240 fps, stutters, decoders from 60 to 400 ms per page, the 126→0 seam, never more than two pages on the GPU.
 
 ## Building
 
@@ -117,6 +129,18 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] Any mod hooking `MenuLayer::onPlay`, `onGarage`, `onCreator` or `onOptions`: its hook runs when the item is chosen, exactly as with the vanilla button
 - [ ] A mod that moves the vanilla buttons to another menu: the items still find them (the log names any that weren't found)
 - [ ] A mod that redoes the main menu too: no crash; with *Vanilla menu* on, that mod's menu is back
+
+**Mita**
+
+- [ ] She stands on the right, her feet cut by the bottom edge, over the room and under the tray, the card, the column and every mod's button; nothing she covers stops being clickable
+- [ ] Her loop is smooth at 30, 60 and 144+ fps (cap the frame rate in GD's settings) and takes the same 5.3 s each time; no jump at the loop's seam
+- [ ] On a dark background her edges have no light or dark fringe
+- [ ] Texture quality Low / Medium / High: the same size on screen every time (as high as the screen)
+- [ ] A narrower window (4:3) and resizing it: she keeps to the right edge, never over the buttons
+- [ ] The log (debug level) shows each page's decode and upload time and "2 pages on the GPU" at most; check the times on your machine
+- [ ] Open and leave the menu many times (and leave it right as it opens): no crash, no growth in the game's memory in Task Manager; the log says the pages were freed
+- [ ] Rename `mita-manifest.json` or one atlas in the installed mod's resources: the menu works without her, one error in the log
+- [ ] `"mita-enabled": false` in theme.json: no Mita, nothing loaded
 
 **The Vanilla menu setting**
 

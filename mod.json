@@ -60,7 +60,11 @@
 		],
 		"files": [
 			"resources/sounds/hover.ogg",
-			"resources/sounds/click.ogg"
+			"resources/sounds/click.ogg",
+			"resources/mita/mita_atlas_*.png",
+			"resources/mita/mita-manifest.json",
+			"resources/mita/MITA_ATTRIBUTION.txt",
+			"resources/mita/mita-source-metadata.json"
 		],
 		"fonts": {
 			"miside-font": {
