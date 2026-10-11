@@ -145,12 +145,15 @@ void MSMenuItem::addShine(std::string const& text)
   auto const& theme = Theme::get();
   if (!theme.shineEnabled || theme.shineDuration <= 0 || theme.shineIntensity <= 0)
     return;
-  // A white copy of the label, made once, over the label in the same place and size; the hit area stays the row
-  m_shine = MSShine::create(text, theme.itemScale, theme.font);
-  if (!m_shine)
+  // Made once from a white render of the label: the core over the label, the glow under it and its shadow. The
+  // hit area stays the row
+  auto shine = MSShine::create(text, theme.itemScale, theme.font);
+  if (!shine.core || !shine.glow)
     return;
-  m_shine->setPosition({0, 0});
-  m_text->addChild(m_shine);
+  m_shine = shine.core;
+  m_shineGlow = shine.glow;
+  m_text->addChild(m_shineGlow, -1);
+  m_text->addChild(m_shine, 1);
 }
 
 // ! --- Exit leaning away --- !
@@ -215,7 +218,10 @@ void MSMenuItem::update(float dt)
     auto const& theme = Theme::get();
     m_shinePass.advance(dt, theme.shineDuration, theme.shineFadeOut);
     auto strength = m_shinePass.active() ? theme.shineIntensity * m_shinePass.fade() : 0.f;
-    m_shine->setPass(m_shinePass.center(theme.shineDuration, theme.shineBandWidth), strength);
+    // From fully hidden to fully gone, the glow's reach past the letters counted too
+    auto center = m_shinePass.center(theme.shineDuration, theme.shineBandWidth + 2 * m_shine->margin());
+    m_shine->setPass(center, strength);
+    m_shineGlow->setPass(center, strength);
   }
 
   auto unavailable = this->isUnavailable();

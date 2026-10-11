@@ -53,8 +53,9 @@ protected:
   cocos2d::CCNode* m_text = nullptr;
   cocos2d::CCNode* m_label = nullptr;
   cocos2d::CCNode* m_accent = nullptr;
-  // The shine over the label (drawn only during a pass), and this item's own pass
+  // The shine: its core over the label, its glow under it (drawn only during a pass), and this item's own pass
   MSShine* m_shine = nullptr;
+  MSShine* m_shineGlow = nullptr;
   ShinePass m_shinePass;
   float m_textX = 0;
   bool m_highlighted = false;

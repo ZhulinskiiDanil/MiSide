@@ -119,6 +119,10 @@ struct Theme
   // How much the band leans: its top is this many label widths ahead of its bottom
   float shineSlant = 0;
   float shineFadeOut = 0;
+  // A soft pink glow around the letters the band is on, under the label: about this many points out from them
+  float shineGlowRadius = 0;
+  float shineGlowIntensity = 0;
+  cocos2d::ccColor3B shineGlowColor;
   // A soft glow around the highlighted row
   cocos2d::ccColor3B rowGlowColor;
   GLubyte rowGlowOpacity = 0;

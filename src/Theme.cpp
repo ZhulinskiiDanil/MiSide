@@ -102,6 +102,10 @@ namespace
     theme.shineCore = 0.5f;
     theme.shineSlant = 0.15f;
     theme.shineFadeOut = 0.12f;
+    theme.shineGlowRadius = 3;
+    // The blur spreads the letters thin: this brings the halo by them back near full
+    theme.shineGlowIntensity = 2.2f;
+    theme.shineGlowColor = ccc3(0xff, 0xa6, 0xd8);
     theme.rowGlowColor = ccc3(0xff, 0x5f, 0xb4);
     theme.rowGlowOpacity = 110;
     theme.rowGlowSpread = 7;
@@ -290,6 +294,9 @@ namespace
     field("shine-core", theme.shineCore);
     field("shine-slant", theme.shineSlant);
     field("shine-fade-out", theme.shineFadeOut);
+    field("shine-glow-radius", theme.shineGlowRadius);
+    field("shine-glow-intensity", theme.shineGlowIntensity);
+    field("shine-glow-color", theme.shineGlowColor);
     field("row-glow-color", theme.rowGlowColor);
     field("row-glow-opacity", theme.rowGlowOpacity);
     field("row-glow-spread", theme.rowGlowSpread);
