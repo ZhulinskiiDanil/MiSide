@@ -133,11 +133,16 @@ M PLUS Rounded 1c (Google Fonts, SIL OFL) — скруглённый, с пол�
 | `hover.ogg` | Наведение / выбор стрелками | OGG Vorbis | `ui/MSMenuColumn.cpp` | `hover-sound` | Kenney UI Audio `rollover2.ogg` (CC0) |
 | `click.ogg` | Выбор пункта | OGG Vorbis | `ui/MSMenuColumn.cpp`, `ui/MSProfileCard.cpp` | `click-sound` | Kenney UI Audio `click1.ogg` (CC0) |
 
-## Опционально: музыка меню (кодом не используется)
+## Музыка
 
-| Файл | Назначение | Формат |
-| --- | --- | --- |
-| `menu-music.ogg` | Своя музыка главного экрана, бесшовный луп | OGG Vorbis, стерео, 44.1 кГц |
+| Файл | Исходник (Downloads/miside-sounds) | Назначение | Ключ темы |
+| --- | --- | --- | --- |
+| `music/miside-music-menu-update.ogg` | 02 MusicMenu Update.mp3 | Главное меню (по умолчанию) | `menu-music-path` |
+| `music/miside-music-menu.ogg` | 01 MusicMenu.mp3 | Главное меню, альтернатива | `menu-music-path` |
+| `music/miside-menu-alternative.ogg` | 26 MiSide Menu Alternative.mp3 | Главное меню, альтернатива | `menu-music-path` |
+| `music/miside-ambient-chibi-room.ogg` | 06 Ambient - Chibi Room.mp3 | Гардероб | `garage-music-path` |
+| `music/miside-ambient-loop-room.ogg` | 05 Ambient - LoopRoom.mp3 | Ambient паузы | `pause-ambient-path` |
 
-Музыку меню GD включает не `MenuLayer`, а общий код игры; подмена — выход за пределы `MenuLayer`
-(`OPEN_QUESTIONS.md`).
+OGG Vorbis q6, стерео, 44.1 кГц. Тишина в начале и конце обрезана (`silenceremove` до −70 dB): у 01 было 5.4 с
+тишины в конце, у 02 — 0.1 с в начале и ~1 с в конце, у 26 — ~1 с в конце; у петель 05 и 06 убрана пустота
+кодировщика MP3 на стыке (88.000 и 129.600 с). Остальные треки не подключены и не скопированы.

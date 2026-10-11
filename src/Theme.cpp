@@ -172,6 +172,17 @@ namespace
     theme.confirmTextPadding = 3.6f;
     theme.confirmDuration = 0.2f;
 
+    // ! --- Music --- !
+    // Suggested from the tracks' names, not how MiSide uses them. The other menu tracks: "miside-music-menu.ogg",
+    // "miside-menu-alternative.ogg"
+    theme.menuMusicEnabled = true;
+    theme.menuMusicPath = "miside-music-menu-update.ogg";
+    theme.menuMusicVolume = 1;
+    theme.garageMusicEnabled = true;
+    theme.garageMusicPath = "miside-ambient-chibi-room.ogg";
+    theme.garageMusicVolume = 0.85f;
+    theme.garageMusicFade = 0.5f;
+
     // ! --- The pause menu --- !
     // Measured on MiSide's pause (2560×1440): title capitals 15.3 pt, subtitle 6.4 pt, rows 148×14.9 pt every 16.2,
     // their text 8.2 pt, Quit 7.3 pt further down; the bar from 195.3 to 524.4 pt at the first row's height
@@ -247,9 +258,10 @@ namespace
     theme.pauseBlurDebug = false;
     theme.pauseDimColor = ccc3(0x1a, 0x0a, 0x1e);
     theme.pauseDimOpacity = 170;
-    theme.pauseAmbientEnabled = false;
-    theme.pauseAmbientPath = "";
-    theme.pauseAmbientVolume = 0.5f;
+    // Quiet, under the paused level
+    theme.pauseAmbientEnabled = true;
+    theme.pauseAmbientPath = "miside-ambient-loop-room.ogg";
+    theme.pauseAmbientVolume = 0.35f;
     theme.pauseAmbientFade = 1;
     theme.pauseExtraEnabled = true;
     theme.pauseExtraMenus = "left-button-menu,right-button-menu,bottom-button-menu";
@@ -469,6 +481,14 @@ namespace
     field("confirm-text-offset", theme.confirmTextOffset);
     field("confirm-text-padding", theme.confirmTextPadding);
     field("confirm-duration", theme.confirmDuration);
+
+    field("menu-music-enabled", theme.menuMusicEnabled);
+    field("menu-music-path", theme.menuMusicPath);
+    field("menu-music-volume", theme.menuMusicVolume);
+    field("garage-music-enabled", theme.garageMusicEnabled);
+    field("garage-music-path", theme.garageMusicPath);
+    field("garage-music-volume", theme.garageMusicVolume);
+    field("garage-music-fade", theme.garageMusicFade);
 
     field("pause-enabled", theme.pauseEnabled);
     field("pause-left", theme.pauseLeft);

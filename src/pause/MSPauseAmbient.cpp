@@ -1,10 +1,10 @@
 #include "MSPauseAmbient.hpp"
 
+#include "../Music.hpp"
 #include "../Theme.hpp"
 
 #include <Geode/fmod/fmod.hpp>
 
-#include <filesystem>
 #include <set>
 
 using namespace geode::prelude;
@@ -16,22 +16,6 @@ namespace
     static std::set<std::string> s_logged;
     if (s_logged.insert(message).second)
       log::info("Pause ambient: {}", message);
-  }
-
-  // A path as it is, or a name in the mod's config folder, then its resources
-  std::filesystem::path resolve(std::string const& name)
-  {
-    std::error_code error;
-    std::filesystem::path path(name);
-    if (path.is_absolute() && std::filesystem::exists(path, error))
-      return path;
-    for (auto const& dir : {Mod::get()->getConfigDir(), Mod::get()->getResourcesDir()})
-    {
-      auto candidate = dir / path;
-      if (std::filesystem::exists(candidate, error))
-        return candidate;
-    }
-    return {};
   }
 } // namespace
 
@@ -57,19 +41,16 @@ void MSPauseAmbient::start()
   // Still playing (fading out): back in, the same one
   if (!m_channel)
   {
-    auto path = resolve(theme.pauseAmbientPath);
+    // Not found: logged once by find()
+    auto path = music::find(theme.pauseAmbientPath);
     if (path.empty())
-    {
-      logOnce(fmt::format("{} not found (a path, or a name in {})", theme.pauseAmbientPath,
-                          Mod::get()->getConfigDir().string()));
       return;
-    }
     auto system = FMODAudioEngine::get()->m_system;
     if (!system ||
-        system->createSound(path.string().c_str(), FMOD_LOOP_NORMAL | FMOD_CREATESTREAM, nullptr, &m_sound) != FMOD_OK ||
+        system->createSound(path.c_str(), FMOD_LOOP_NORMAL | FMOD_CREATESTREAM, nullptr, &m_sound) != FMOD_OK ||
         system->playSound(m_sound, nullptr, true, &m_channel) != FMOD_OK)
     {
-      logOnce(fmt::format("{} can't be played", path.string()));
+      logOnce(fmt::format("{} can't be played", path));
       this->release();
       return;
     }

@@ -132,6 +132,8 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addGuard();
     // Last: her place in the drawing order comes from everything else that's in the layer by now
     this->addMita();
+    // The menu's music back (from the icon kit's): GD starts it only when it isn't already playing
+    GameManager::get()->fadeInMenuMusic();
     return true;
   }
 

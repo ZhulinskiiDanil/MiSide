@@ -204,6 +204,19 @@ struct Theme
   // The list fading out and the confirmation in, and back; nothing is chosen before it has faded in
   float confirmDuration = 0;
 
+  // ! --- Music --- !
+  // Played by GD itself, on its music channel: the main menu's in place of GD's menu loop (so it goes on through the
+  // menus, stops for levels and follows the music volume and mute), the icon kit's while it's open. A file name in
+  // the mod's resources or config folder, or a path. Volume: relative to the music volume
+  bool menuMusicEnabled = false;
+  std::string menuMusicPath;
+  float menuMusicVolume = 0;
+  bool garageMusicEnabled = false;
+  std::string garageMusicPath;
+  float garageMusicVolume = 0;
+  // The menu's music fading out before the icon kit's comes in, and the icon kit's fading out on leaving
+  float garageMusicFade = 0;
+
   // ! --- The pause menu --- !
   // MiSide's pause: a big title, a small subtitle, a column of see-through rows on the left with Quit apart under
   // them, the level's name in a long bar on the right, the level blurred and tinted behind. Points of the 569×320
