@@ -336,11 +336,12 @@ namespace
     theme.vignetteSprite = "vignette-soft.png"_spr;
     theme.vignetteColor = ccc3(0x12, 0x03, 0x0e);
     theme.vignetteOpacity = 180;
-    theme.particleCount = 14;
-    theme.particleColor = ccc3(0xff, 0x8c, 0xc6);
-    theme.particleOpacity = 150;
-    theme.particleSizeMin = 1.2f;
-    theme.particleSizeMax = 3.f;
+    // Soft glows, so only their middle reads: big and bright enough to be seen (1.2-3 pt at 150 hardly were)
+    theme.particleCount = 22;
+    theme.particleColor = ccc3(0xff, 0x9c, 0xd6);
+    theme.particleOpacity = 235;
+    theme.particleSizeMin = 3.f;
+    theme.particleSizeMax = 7.f;
     theme.particleSpeed = 5;
     theme.particleLife = 8;
 
