@@ -1,5 +1,6 @@
 #include "Theme.hpp"
 #include "ui/MSBackground.hpp"
+#include "ui/MSLayoutGuard.hpp"
 #include "ui/MSMenuColumn.hpp"
 #include "ui/MSModTray.hpp"
 #include "ui/MSTransition.hpp"
@@ -53,9 +54,11 @@ namespace
     {"Выход", "Quit", "close-menu", "close-button"},
   };
 
-  // The menus whose buttons go in the tray: the other mods add theirs here. The ones in the corners
-  // (profile-menu, close-menu, top-right-menu, social-media-menu, more-games-menu) stay where they are
-  char const* const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "main-menu", "side-menu"};
+  // The menus whose buttons go in the tray, in this order: the ones the other mods add theirs to, then the
+  // vanilla corners that would be in the column's or the tray's way. profile-menu stays in the bottom left
+  // corner, close-menu and top-right-menu at the top
+  char const* const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "main-menu", "side-menu",
+                                      "social-media-menu", "more-games-menu"};
 
   // Behind everything of the menu
   constexpr int BACKGROUND_Z = -100;
@@ -103,6 +106,7 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addColumn();
     this->addTransition();
     this->addTray();
+    this->addGuard();
     return true;
   }
 
@@ -215,5 +219,21 @@ class $modify(MSMenuLayer, MenuLayer)
       return;
     tray->setID("mod-tray"_spr);
     this->addChild(tray, TRAY_Z);
+  }
+
+  // ! --- Nothing over the column --- !
+
+  void addGuard()
+  {
+    auto column = m_fields->m_column;
+    if (!column)
+      return;
+    std::vector<std::string> skipped{std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)};
+    skipped.emplace_back("main-menu-bg");
+    auto guard = MSLayoutGuard::create(column, std::move(skipped));
+    if (!guard)
+      return;
+    guard->setID("layout-guard"_spr);
+    this->addChild(guard);
   }
 };

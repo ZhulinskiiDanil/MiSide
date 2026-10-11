@@ -3,44 +3,34 @@
 #include "../Theme.hpp"
 #include "MSStyle.hpp"
 
-#include <Geode/ui/SimpleAxisLayout.hpp>
+#include <cmath>
 
 using namespace geode::prelude;
 
 namespace
 {
-  // A button's bounds at rest: its press animation (a scale on CCMenuItemSpriteExtra) doesn't move the tray
-  CCRect restingBox(CCNode* child)
+  // A button's scale at rest: while its press animation runs, the scale it returns to
+  float restingScale(CCNode* node)
   {
-    auto scaleX = child->getScaleX();
-    auto scaleY = child->getScaleY();
-    if (auto button = typeinfo_cast<CCMenuItemSpriteExtra*>(child))
+    if (auto button = typeinfo_cast<CCMenuItemSpriteExtra*>(node))
     {
       if (button->isSelected() || button->numberOfRunningActions() > 0)
-        scaleX = scaleY = button->m_baseScale;
+        return button->m_baseScale;
     }
-    auto size = child->getContentSize();
-    auto anchor = child->isIgnoreAnchorPointForPosition() ? CCPointZero : child->getAnchorPoint();
-    auto position = child->getPosition();
-    return {position.x - size.width * scaleX * anchor.x, position.y - size.height * scaleY * anchor.y,
-            size.width * scaleX, size.height * scaleY};
+    return node->getScaleX();
   }
 
-  CCRect unite(CCRect const& a, CCRect const& b)
+  bool isAnimating(CCNode* node)
   {
-    auto minX = std::min(a.getMinX(), b.getMinX());
-    auto minY = std::min(a.getMinY(), b.getMinY());
-    return {minX, minY, std::max(a.getMaxX(), b.getMaxX()) - minX, std::max(a.getMaxY(), b.getMaxY()) - minY};
+    auto button = typeinfo_cast<CCMenuItemSpriteExtra*>(node);
+    return button && (button->isSelected() || button->numberOfRunningActions() > 0);
   }
 
-  bool isColumn(CCNode* menu, CCRect const& box)
+  // How much a node is scaled on the screen by its parents
+  float worldScale(CCNode* node)
   {
-    auto layout = menu->getLayout();
-    if (auto axis = typeinfo_cast<AxisLayout*>(layout))
-      return axis->getAxis() == Axis::Column;
-    if (auto axis = typeinfo_cast<SimpleAxisLayout*>(layout))
-      return axis->getAxis() == Axis::Column;
-    return box.size.height > box.size.width;
+    auto transform = node->nodeToWorldTransform();
+    return std::sqrt(transform.a * transform.a + transform.b * transform.b);
   }
 } // namespace
 
@@ -73,12 +63,12 @@ bool MSModTray::init(std::vector<std::string> sources)
   return true;
 }
 
-std::vector<MSModTray::Piece> MSModTray::collect(std::vector<float>& signature)
+std::vector<CCNode*> MSModTray::collect(std::vector<float>& signature)
 {
-  std::vector<Piece> pieces;
+  std::vector<CCNode*> buttons;
   auto layer = this->getParent();
   if (!layer)
-    return pieces;
+    return buttons;
   for (auto const& id : m_sources)
   {
     auto menu = layer->getChildByID(id);
@@ -91,50 +81,52 @@ std::vector<MSModTray::Piece> MSModTray::collect(std::vector<float>& signature)
       }
       continue;
     }
-    // Moved by someone else: arranged again
-    signature.push_back(menu->getPositionX());
-    signature.push_back(menu->getPositionY());
-    signature.push_back(menu->getScale());
-
-    Piece piece{menu};
-    auto any = false;
+    auto transform = menu->nodeToWorldTransform();
+    signature.insert(signature.end(), {transform.a, transform.b, transform.tx, transform.ty});
     for (auto child : CCArrayExt<CCNode*>(menu->getChildren()))
     {
-      if (!child->isVisible())
+      auto size = child->getContentSize();
+      if (!child->isVisible() || size.width <= 0 || size.height <= 0)
         continue;
-      auto box = restingBox(child);
-      signature.insert(signature.end(), {box.origin.x, box.origin.y, box.size.width, box.size.height});
-      piece.box = any ? unite(piece.box, box) : box;
-      any = true;
+      signature.insert(signature.end(), {child->getPositionX(), child->getPositionY(), restingScale(child),
+                                         size.width, size.height});
+      buttons.push_back(child);
     }
-    signature.push_back(any ? 1.f : 0.f);
-    if (!any || piece.box.size.width <= 0 || piece.box.size.height <= 0)
-      continue;
-    piece.column = isColumn(menu, piece.box);
-    pieces.push_back(piece);
+    signature.push_back(-1);
   }
-  return pieces;
+  return buttons;
 }
 
 void MSModTray::update(float)
 {
   std::vector<float> signature;
-  auto pieces = this->collect(signature);
+  auto buttons = this->collect(signature);
   if (signature == m_signature)
     return;
-  this->arrange(pieces);
-  // What the menus look like once arranged, so the next frame finds nothing changed
+  this->arrange(buttons);
+  // What the buttons look like once placed, so the next frame finds nothing changed
   m_signature.clear();
   this->collect(m_signature);
 }
 
-void MSModTray::place(CCNode* menu, float scale, CCPoint corner, CCPoint target)
+void MSModTray::place(CCNode* button, float size, CCPoint center)
 {
-  auto parent = menu->getParent();
-  menu->setScale(scale);
-  auto from = parent->convertToNodeSpace(menu->convertToWorldSpace(corner));
-  auto to = parent->convertToNodeSpace(this->convertToWorldSpace(target));
-  menu->setPosition(menu->getPosition() + (to - from));
+  auto menu = button->getParent();
+  auto own = button->getContentSize();
+  // A menu scaled to nothing (an animation's first frame): placed once it has a size
+  auto menuScale = worldScale(menu);
+  if (menuScale <= 0.001f)
+    return;
+  auto scale = size / (std::max(own.width, own.height) * menuScale);
+  // The press animation returns to this scale; a running one isn't cut short
+  if (auto extra = typeinfo_cast<CCMenuItemSpriteExtra*>(button))
+    extra->m_baseScale = scale;
+  if (!isAnimating(button))
+    button->setScale(scale);
+
+  auto local = menu->convertToNodeSpace(this->convertToWorldSpace(center));
+  auto anchor = button->isIgnoreAnchorPointForPosition() ? CCPointZero : button->getAnchorPoint();
+  button->setPosition(local - CCPoint{(0.5f - anchor.x) * own.width * scale, (0.5f - anchor.y) * own.height * scale});
 }
 
 CCNode* MSModTray::slot(size_t index)
@@ -151,61 +143,48 @@ CCNode* MSModTray::slot(size_t index)
   return m_slots[index];
 }
 
-void MSModTray::arrange(std::vector<Piece> const& pieces)
+void MSModTray::arrange(std::vector<CCNode*> const& buttons)
 {
   auto const& theme = Theme::get();
+  auto count = buttons.size();
+  for (auto i = count; i < m_slots.size(); i++)
+    m_slots[i]->setVisible(false);
+  m_panel->setVisible(count > 0);
+  if (count == 0)
+    return;
+
   auto winSize = CCDirector::get()->getWinSize();
+  auto columns = std::clamp<size_t>(static_cast<size_t>(std::max(theme.trayColumns, 1.f)), 1, count);
+  auto rows = (count + columns - 1) / columns;
+
+  // Too many rows for the screen: every slot gets smaller
+  auto outer = theme.slotSize + theme.slotPadding * 2;
+  auto height = rows * outer + (rows - 1) * theme.trayGap;
+  auto fit = std::min(1.f, winSize.height * theme.trayMaxHeight / height);
+  outer *= fit;
+  auto gap = theme.trayGap * fit;
+  auto inner = theme.slotSize * fit;
+  auto pitch = outer + gap;
+
+  // From the bottom row up, each row against the right edge, in order from left to right
   auto right = winSize.width - theme.trayMargin - theme.trayPadding;
   auto bottom = theme.trayMargin + theme.trayPadding;
+  for (size_t i = 0; i < count; i++)
+  {
+    auto row = i / columns;
+    auto inRow = row == rows - 1 ? count - row * columns : columns;
+    auto column = i % columns;
+    CCPoint center{right - outer / 2 - (inRow - 1 - column) * pitch, bottom + outer / 2 + row * pitch};
 
-  // Rows from the bottom up, then the columns side by side above them, all against the right edge
-  auto y = bottom;
-  for (auto const& piece : pieces)
-  {
-    if (piece.column)
-      continue;
-    auto scale = std::min(theme.trayRowHeight / piece.box.size.height,
-                          winSize.width * theme.trayMaxWidth / piece.box.size.width);
-    this->place(piece.menu, scale, {piece.box.getMaxX(), piece.box.getMinY()}, {right, y});
-    y += piece.box.size.height * scale + theme.trayGap;
-  }
-  auto x = right;
-  for (auto const& piece : pieces)
-  {
-    if (!piece.column)
-      continue;
-    auto scale = std::min(theme.trayRowHeight / piece.box.size.width,
-                          winSize.height * theme.trayMaxHeight / piece.box.size.height);
-    this->place(piece.menu, scale, {piece.box.getMaxX(), piece.box.getMinY()}, {x, y});
-    x -= piece.box.size.width * scale + theme.trayGap;
+    auto node = this->slot(i);
+    node->setVisible(true);
+    node->setContentSize({outer, outer});
+    node->setPosition(center);
+    this->place(buttons[i], inner, center);
   }
 
-  // A slot under every button, the panel under them all
-  size_t used = 0;
-  CCRect bounds;
-  for (auto const& piece : pieces)
-  {
-    auto toTray = CCAffineTransformConcat(piece.menu->nodeToWorldTransform(), this->worldToNodeTransform());
-    for (auto child : CCArrayExt<CCNode*>(piece.menu->getChildren()))
-    {
-      if (!child->isVisible())
-        continue;
-      auto box = CCRectApplyAffineTransform(restingBox(child), toTray);
-      auto node = this->slot(used++);
-      node->setVisible(true);
-      node->setContentSize(box.size + CCSize{theme.slotPadding, theme.slotPadding} * 2);
-      node->setPosition({box.getMidX(), box.getMidY()});
-      bounds = used == 1 ? box : unite(bounds, box);
-    }
-  }
-  for (auto i = used; i < m_slots.size(); i++)
-    m_slots[i]->setVisible(false);
-
-  m_panel->setVisible(used > 0);
-  if (used > 0)
-  {
-    auto padding = theme.trayPadding + theme.slotPadding;
-    m_panel->setPosition({bounds.getMinX() - padding, bounds.getMinY() - padding});
-    m_panel->setContentSize(bounds.size + CCSize{padding, padding} * 2);
-  }
+  auto width = columns * outer + (columns - 1) * gap;
+  height = rows * outer + (rows - 1) * gap;
+  m_panel->setPosition({right - width - theme.trayPadding, bottom - theme.trayPadding});
+  m_panel->setContentSize({width + theme.trayPadding * 2, height + theme.trayPadding * 2});
 }

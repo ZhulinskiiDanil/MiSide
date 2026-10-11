@@ -43,6 +43,9 @@ bool MSBackground::init(float strength)
         auto size = sprite->getContentSize();
         if (size.width > 0 && size.height > 0)
           sprite->setScale(std::max(cover.width / size.width, cover.height / size.height));
+        // Black adds nothing: only the light shows
+        if (spec.additive)
+          sprite->setBlendFunc({GL_ONE, GL_ONE});
         node = sprite;
       }
     }

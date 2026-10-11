@@ -19,6 +19,10 @@ public:
   void addEntry(std::string const& text, cocos2d::CCMenuItem* target);
   // Lays the items out from the top and plays their intro
   void finish();
+  // Puts the column's top edge at `top` on the theme's left edge, scaled down when it wouldn't end above `bottom`
+  void fit(float top, float bottom);
+  // What the column takes on the screen, in its parent's space
+  cocos2d::CCRect getArea();
   // While an item's transition runs, nothing else is chosen
   void setBusy(bool busy);
   // From MenuLayer::keyDown. True when the key was used
@@ -36,6 +40,9 @@ protected:
   Choose m_choose;
   std::vector<MSMenuItem*> m_items;
   int m_current = -1;
+  // The items' bounds at scale 1
+  float m_width = 0;
+  float m_height = 0;
   cocos2d::CCPoint m_lastMouse;
   bool m_busy = false;
 };

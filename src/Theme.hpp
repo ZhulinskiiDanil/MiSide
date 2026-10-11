@@ -14,6 +14,8 @@ struct Theme
     std::string sprite;
     // How far it follows the mouse: 0 stays, 1 moves by the whole parallax range
     float depth = 0;
+    // Added to what's under it instead of covering it: for light drawn on black
+    bool additive = false;
   };
 
   // ! --- Colors --- !
@@ -51,8 +53,10 @@ struct Theme
 
   // ! --- Spacing --- !
   float columnLeft = 0;
-  // The first item's center, as a share of the screen's height from the bottom
+  // The column's top edge at most, as a share of the screen's height from the bottom
   float columnTop = 0;
+  // The least space between the column and anything else on the screen
+  float columnClearance = 0;
   float itemGap = 0;
   float accentWidth = 0;
   float accentGap = 0;
@@ -60,13 +64,14 @@ struct Theme
   float pressedScale = 0;
   float trayMargin = 0;
   float trayPadding = 0;
-  // Every row of the tray is scaled to this height (a column: to this width)
-  float trayRowHeight = 0;
   float trayGap = 0;
-  // Shares of the screen the tray may take; wider rows (taller columns) are scaled down to fit
-  float trayMaxWidth = 0;
-  float trayMaxHeight = 0;
+  // Every button in the tray is scaled to fit this square
+  float slotSize = 0;
   float slotPadding = 0;
+  // Slots in a row of the tray; more buttons start a new row above
+  float trayColumns = 0;
+  // The share of the screen's height the tray may take; more rows make every slot smaller
+  float trayMaxHeight = 0;
   // How far the nearest layer moves at the full parallax strength
   float parallaxRange = 0;
 

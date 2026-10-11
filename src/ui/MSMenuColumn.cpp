@@ -22,8 +22,8 @@ bool MSMenuColumn::init(Choose choose)
   if (!CCMenu::init())
     return false;
   m_choose = std::move(choose);
-  // Items are placed in the layer's coordinates
-  this->setPosition({0, 0});
+  // The items hang down from the column's origin, its top left corner; fit() places and scales it
+  this->setContentSize({0, 0});
   m_lastMouse = getMousePos();
   this->scheduleUpdate();
   return true;
@@ -41,18 +41,36 @@ void MSMenuColumn::addEntry(std::string const& text, CCMenuItem* target)
 void MSMenuColumn::finish()
 {
   auto const& theme = Theme::get();
-  auto winSize = CCDirector::get()->getWinSize();
-  auto y = winSize.height * theme.columnTop;
+  auto y = 0.f;
+  m_width = 0;
   for (size_t i = 0; i < m_items.size(); i++)
   {
     auto item = m_items[i];
     auto height = item->getContentHeight();
-    if (i > 0)
-      y -= height / 2;
-    item->setPosition({theme.columnLeft, y});
-    y -= height / 2 + theme.itemGap;
+    item->setPosition({0, -(y + height / 2)});
+    y += height + theme.itemGap;
+    m_width = std::max(m_width, item->getContentWidth());
     item->playIntro(theme.introStagger * i);
   }
+  m_height = m_items.empty() ? 0 : y - theme.itemGap;
+  auto winSize = CCDirector::get()->getWinSize();
+  this->fit(winSize.height * theme.columnTop, 0);
+}
+
+void MSMenuColumn::fit(float top, float bottom)
+{
+  auto scale = 1.f;
+  if (m_height > 0 && top - bottom < m_height)
+    scale = std::max(top - bottom, 0.f) / m_height;
+  this->setScale(scale);
+  this->setPosition({Theme::get().columnLeft, top});
+}
+
+CCRect MSMenuColumn::getArea()
+{
+  auto scale = this->getScale();
+  auto position = this->getPosition();
+  return {position.x, position.y - m_height * scale, m_width * scale, m_height * scale};
 }
 
 void MSMenuColumn::setBusy(bool busy) { m_busy = busy; }

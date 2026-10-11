@@ -39,7 +39,7 @@ namespace
       {"bg-far.png"_spr, 0.2f},
       {"bg-mid.png"_spr, 0.5f},
       {"bg-near.png"_spr, 1.f},
-      {"bg-vignette.png"_spr, 0.f},
+      {"bg-light.png"_spr, 0.f, true},
     };
     theme.accentSprite = "item-accent.png"_spr;
     theme.traySprite = "tray-panel.png"_spr;
@@ -50,7 +50,8 @@ namespace
 
     // ! --- Spacing --- !
     theme.columnLeft = 42;
-    theme.columnTop = 0.72f;
+    theme.columnTop = 0.82f;
+    theme.columnClearance = 8;
     theme.itemGap = 6;
     theme.accentWidth = 3;
     theme.accentGap = 8;
@@ -58,11 +59,11 @@ namespace
     theme.pressedScale = 0.96f;
     theme.trayMargin = 10;
     theme.trayPadding = 6;
-    theme.trayRowHeight = 30;
-    theme.trayGap = 6;
-    theme.trayMaxWidth = 0.55f;
-    theme.trayMaxHeight = 0.6f;
+    theme.trayGap = 4;
+    theme.slotSize = 26;
     theme.slotPadding = 3;
+    theme.trayColumns = 6;
+    theme.trayMaxHeight = 0.6f;
     theme.parallaxRange = 14;
 
     // ! --- Timings --- !
@@ -110,6 +111,7 @@ namespace
 
     field("column-left", theme.columnLeft);
     field("column-top", theme.columnTop);
+    field("column-clearance", theme.columnClearance);
     field("item-gap", theme.itemGap);
     field("accent-width", theme.accentWidth);
     field("accent-gap", theme.accentGap);
@@ -117,11 +119,11 @@ namespace
     field("pressed-scale", theme.pressedScale);
     field("tray-margin", theme.trayMargin);
     field("tray-padding", theme.trayPadding);
-    field("tray-row-height", theme.trayRowHeight);
     field("tray-gap", theme.trayGap);
-    field("tray-max-width", theme.trayMaxWidth);
-    field("tray-max-height", theme.trayMaxHeight);
+    field("slot-size", theme.slotSize);
     field("slot-padding", theme.slotPadding);
+    field("tray-columns", theme.trayColumns);
+    field("tray-max-height", theme.trayMaxHeight);
     field("parallax-range", theme.parallaxRange);
 
     field("hover-duration", theme.hoverDuration);
@@ -144,7 +146,8 @@ namespace
       {
         auto layers = matjson::Value::array();
         for (auto const& layer : value)
-          layers.push(matjson::makeObject({{"sprite", layer.sprite}, {"depth", layer.depth}}));
+          layers.push(matjson::makeObject(
+            {{"sprite", layer.sprite}, {"depth", layer.depth}, {"blend", layer.additive ? "add" : "normal"}}));
         json.set(key, layers);
       }
       else
@@ -179,7 +182,8 @@ namespace
         value.clear();
         for (auto const& entry : item)
           value.push_back({entry["sprite"].asString().unwrapOr(""),
-                           static_cast<float>(entry["depth"].asDouble().unwrapOr(0))});
+                           static_cast<float>(entry["depth"].asDouble().unwrapOr(0)),
+                           entry["blend"].asString().unwrapOr("normal") == "add"});
       }
       else if constexpr (std::is_same_v<T, std::string>)
         value = item.asString().unwrapOr(value);
