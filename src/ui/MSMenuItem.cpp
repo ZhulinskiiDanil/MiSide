@@ -3,6 +3,8 @@
 #include "../Theme.hpp"
 #include "MSStyle.hpp"
 
+#include <cmath>
+
 using namespace geode::prelude;
 
 namespace
@@ -11,6 +13,22 @@ namespace
   constexpr int STATE_ACTION = 0x4d53;
   // The intro's own tag: a state change doesn't cut it short
   constexpr int INTRO_ACTION = 0x4d54;
+  // The shine's: its pass and its fade run side by side
+  constexpr int SHINE_MOVE = 0x4d55;
+  constexpr int SHINE_FADE = 0x4d56;
+  // The letters' alpha above this is where the shine shows
+  constexpr float LETTER_ALPHA = 0.1f;
+  // The shine band is this much taller than the line, so it covers the letters' tops and tails
+  constexpr float SHINE_HEIGHT = 1.3f;
+  // The Exit button's tilt is at its most at this speed, in points a second
+  constexpr float TILT_SPEED = 120;
+
+  // Light added to what's under it: a glow, not a cover
+  void additive(CCNode* node)
+  {
+    if (auto sprite = typeinfo_cast<CCSprite*>(node))
+      sprite->setBlendFunc({GL_SRC_ALPHA, GL_ONE});
+  }
 
   void run(CCNode* node, CCAction* action, int tag = STATE_ACTION)
   {
@@ -64,6 +82,18 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   m_plate->ignoreAnchorPointForPosition(false);
   m_plate->setContentSize(size);
   ms::cascadeOpacity(m_plate);
+
+  // A soft glow around the row when it's lit: under the plate, hidden otherwise
+  if (theme.rowGlowOpacity > 0 && ms::resourceExists(theme.glowSprite))
+  {
+    m_glow = ms::createStretched(theme.glowSprite, size + CCSize{theme.rowGlowSpread, theme.rowGlowSpread} * 2,
+                                 theme.rowGlowColor, theme.rowGlowOpacity);
+    m_glow->setAnchorPoint({0.5f, 0.5f});
+    m_glow->setPosition(size / 2);
+    ms::cascadeOpacity(m_glow);
+    ms::setOpacity(m_glow, 0);
+    m_content->addChild(m_glow);
+  }
   m_content->addChild(m_plate);
 
   m_textX = theme.textPadding;
@@ -89,6 +119,7 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   m_label = label.label;
   m_text->setPosition({m_textX, size.height / 2 + theme.itemTextOffset});
   m_content->addChild(m_text);
+  this->addShine(text);
 
   // All of the row is clickable
   this->setContentSize(size);
@@ -108,12 +139,150 @@ bool MSMenuItem::isHighlighted() const { return m_highlighted; }
 
 bool MSMenuItem::isUnavailable() const { return !m_target || !m_target->isEnabled(); }
 
-void MSMenuItem::setHighlighted(bool highlighted)
+void MSMenuItem::setHighlighted(bool highlighted, bool shine)
 {
   if (m_highlighted == highlighted)
     return;
   m_highlighted = highlighted;
   this->refresh(true);
+  if (highlighted && shine)
+    this->playShine();
+  else if (!highlighted)
+    this->fadeShine();
+}
+
+// ! --- The shine --- !
+
+void MSMenuItem::addShine(std::string const& text)
+{
+  auto const& theme = Theme::get();
+  if (!theme.shineEnabled || theme.shineDuration <= 0 || !ms::resourceExists(theme.glowSprite) || !ms::canClip())
+    return;
+  // The same letters as the label, in the same place: only their shape shows the light (alpha-tested stencil)
+  auto stencil = ms::createLabel(text);
+  if (!stencil)
+    return;
+  stencil->setScale(theme.itemScale);
+  stencil->setAnchorPoint({0, 0});
+  m_shine = CCClippingNode::create(stencil);
+  m_shine->setAlphaThreshold(LETTER_ALPHA);
+
+  auto size = m_text->getContentSize();
+  auto band = CCNodeRGBA::create();
+  band->setCascadeOpacityEnabled(true);
+  // A wide soft glow, and a narrow bright core in it
+  auto halo = ms::createStretched(theme.glowSprite, {theme.shineWidth, size.height * SHINE_HEIGHT}, theme.shineColor,
+                                  255);
+  auto core = ms::createStretched(theme.glowSprite, {theme.shineCoreWidth, size.height * SHINE_HEIGHT},
+                                  theme.shineCoreColor, 255);
+  for (auto piece : {halo, core})
+  {
+    if (!piece)
+      continue;
+    piece->setAnchorPoint({0.5f, 0.5f});
+    additive(piece);
+    ms::cascadeOpacity(piece);
+    band->addChild(piece);
+  }
+  band->setPosition({-theme.shineWidth, size.height / 2});
+  m_shine->addChild(band);
+  m_shineBand = band;
+  // Nothing drawn (and no stencil work) between passes
+  m_shine->setVisible(false);
+  m_text->addChild(m_shine);
+}
+
+void MSMenuItem::playShine()
+{
+  if (!m_shine)
+    return;
+  auto const& theme = Theme::get();
+  // A new pass replaces the one running: nothing piles up when the mouse runs over the items
+  auto pass = ++m_shinePass;
+  m_shineBand->stopActionByTag(SHINE_MOVE);
+  m_shineBand->stopActionByTag(SHINE_FADE);
+  auto y = m_shineBand->getPositionY();
+  m_shineBand->setPositionX(-theme.shineWidth);
+  ms::setOpacity(m_shineBand, theme.shineOpacity);
+  m_shine->setVisible(true);
+  auto end = m_text->getContentWidth() + theme.shineWidth;
+  auto move = CCSequence::createWithTwoActions(
+    CCEaseSineInOut::create(CCMoveTo::create(theme.shineDuration, {end, y})), CallFuncExt::create([this, pass] {
+      if (pass == m_shinePass)
+        m_shine->setVisible(false);
+    }));
+  move->setTag(SHINE_MOVE);
+  m_shineBand->runAction(move);
+}
+
+void MSMenuItem::fadeShine()
+{
+  if (!m_shine || !m_shine->isVisible())
+    return;
+  auto const& theme = Theme::get();
+  auto pass = m_shinePass;
+  m_shineBand->stopActionByTag(SHINE_FADE);
+  auto fade = CCSequence::createWithTwoActions(CCFadeTo::create(theme.shineFadeOut, 0),
+                                               CallFuncExt::create([this, pass] {
+                                                 if (pass == m_shinePass)
+                                                   m_shine->setVisible(false);
+                                               }));
+  fade->setTag(SHINE_FADE);
+  m_shineBand->runAction(fade);
+}
+
+// ! --- Exit leaning away --- !
+
+void MSMenuItem::setDodgeHome(CCPoint home)
+{
+  // Turned and stretched around its middle
+  m_dodging = true;
+  m_dodgeHome = home;
+  this->setAnchorPoint({0.5f, 0.5f});
+  this->setPosition(home);
+}
+
+void MSMenuItem::stepDodge(float dt, CCPoint const* mouse)
+{
+  if (!m_dodging)
+    return;
+  auto const& theme = Theme::get();
+  DodgeSpring::Params params;
+  params.radius = theme.exitDodgeRadius;
+  params.maxOffset = theme.exitDodgeMax;
+  params.vertical = theme.exitDodgeVertical;
+  params.halfWidth = this->getContentWidth() / 2;
+  params.halfHeight = this->getContentHeight() / 2;
+  params.stiffness = theme.exitDodgeStiffness;
+  params.damping = theme.exitDodgeDamping;
+
+  // Pressed: it holds still until the press ends, so the click lands
+  if (this->isSelected())
+    m_dodge.hold();
+  else
+  {
+    DodgeSpring::Vec fromHome;
+    auto use = mouse && theme.exitDodgeEnabled;
+    if (use)
+      fromHome = {mouse->x - m_dodgeHome.x, mouse->y - m_dodgeHome.y};
+    m_dodge.advance(dt, m_dodge.target(use ? &fromHome : nullptr, params), params);
+  }
+
+  // Always on the screen
+  auto offset = m_dodge.offset();
+  auto winSize = CCDirector::get()->getWinSize();
+  CCPoint position{std::clamp(m_dodgeHome.x + offset.x, params.halfWidth, winSize.width - params.halfWidth),
+                   std::clamp(m_dodgeHome.y + offset.y, params.halfHeight, winSize.height - params.halfHeight)};
+  this->setPosition(position);
+
+  // Stretched along the push, a little narrower across it, tilted by its speed: the pull of the spring
+  auto length = std::hypot(offset.x, offset.y);
+  auto stretch = params.maxOffset > 0 ? theme.exitDodgeStretch * std::min(length / params.maxOffset, 1.f) : 0.f;
+  auto along = length > 0 ? std::abs(offset.x) / length : 0.f;
+  auto across = length > 0 ? std::abs(offset.y) / length : 0.f;
+  this->setScaleX(1 + stretch * along - stretch * across / 2);
+  this->setScaleY(1 + stretch * across - stretch * along / 2);
+  this->setRotation(theme.exitDodgeTilt * std::clamp(m_dodge.velocity().x / TILT_SPEED, -1.f, 1.f));
 }
 
 void MSMenuItem::update(float)
@@ -157,6 +326,7 @@ void MSMenuItem::refresh(bool animate)
   auto x = m_textX + (lit ? theme.hoverShift : 0);
   auto scale = m_pressed ? theme.pressedScale : 1.f;
   GLubyte accent = lit ? theme.itemHoverOpacity : 0;
+  GLubyte glow = lit ? theme.rowGlowOpacity : 0;
 
   if (!animate || theme.hoverDuration <= 0)
   {
@@ -165,6 +335,7 @@ void MSMenuItem::refresh(bool animate)
     ms::setColor(m_label, text);
     ms::setOpacity(m_text, textOpacity);
     ms::setOpacity(m_accent, accent);
+    ms::setOpacity(m_glow, glow);
     m_text->setPositionX(x);
     m_content->setScale(scale);
     return;
@@ -175,6 +346,7 @@ void MSMenuItem::refresh(bool animate)
   run(m_text, CCSpawn::createWithTwoActions(CCFadeTo::create(time, textOpacity),
                                             CCMoveTo::create(time, {x, m_text->getPositionY()})));
   run(m_accent, CCFadeTo::create(time, accent));
+  run(m_glow, CCFadeTo::create(time, glow));
   run(m_content, CCScaleTo::create(time, scale));
 }
 

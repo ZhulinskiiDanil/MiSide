@@ -15,41 +15,41 @@ namespace
     // ! --- Colors --- !
     theme.backdropTop = ccc3(0x2a, 0x18, 0x30);
     theme.backdropBottom = ccc3(0x12, 0x0a, 0x16);
-    theme.rowColor = ccc3(0x76, 0x24, 0x75);
-    theme.rowHoverColor = ccc3(0xba, 0x16, 0x8e);
-    theme.rowPressedColor = ccc3(0xd5, 0x2a, 0x9d);
+    theme.rowColor = ccc3(0x6e, 0x3c, 0x78);
+    theme.rowHoverColor = ccc3(0xc2, 0x5a, 0xa6);
+    theme.rowPressedColor = ccc3(0xd9, 0x47, 0x9f);
     theme.rowDisabledColor = ccc3(0x35, 0x10, 0x2e);
-    theme.itemColor = ccc3(0xf9, 0xd8, 0xf2);
-    theme.itemHoverColor = ccc3(0xff, 0xf0, 0xfb);
+    theme.itemColor = ccc3(0xf4, 0xc9, 0xea);
+    theme.itemHoverColor = ccc3(0xff, 0xf1, 0xfa);
     theme.itemPressedColor = ccc3(0xff, 0xff, 0xff);
-    theme.subtitleColor = ccc3(0xff, 0xf5, 0xfc);
-    theme.shadowColor = ccc3(0x21, 0x09, 0x1e);
+    theme.subtitleColor = ccc3(0xff, 0xff, 0xff);
+    theme.shadowColor = ccc3(0x2a, 0x0b, 0x26);
     theme.accentColor = ccc3(0xff, 0x6f, 0x91);
     theme.logoColor = ccc3(0xff, 0x3d, 0x9e);
     theme.logoHighlightColor = ccc3(0xff, 0xc6, 0xe6);
     theme.logoShadowColor = ccc3(0x3b, 0x0a, 0x2f);
     theme.logoDecorColor = ccc3(0xff, 0x8a, 0xc8);
-    theme.backgroundTint = ccc3(0x8c, 0x52, 0x7e);
+    theme.backgroundTint = ccc3(0xa0, 0x62, 0x8f);
     theme.darkenColor = ccc3(0x15, 0x05, 0x1a);
     theme.leftShadeColor = ccc3(0x08, 0x05, 0x0d);
-    theme.glowColor = ccc3(0x9e, 0x08, 0x6f);
+    theme.glowColor = ccc3(0xb0, 0x12, 0x7a);
     theme.fadeColor = ccc3(0x09, 0x04, 0x0d);
     theme.trayColor = ccc3(0x1a, 0x10, 0x20);
     theme.slotColor = ccc3(0xff, 0xff, 0xff);
     theme.cardColor = ccc3(0x16, 0x0a, 0x1d);
     theme.avatarColor = ccc3(0x2e, 0x1b, 0x34);
-    theme.nameColor = ccc3(0xf9, 0xd8, 0xf2);
+    theme.nameColor = ccc3(0xf4, 0xc9, 0xea);
     theme.popupColor = ccc3(0x22, 0x14, 0x28);
-    theme.rowOpacity = 190;
-    theme.rowHoverOpacity = 235;
-    theme.rowPressedOpacity = 245;
+    theme.rowOpacity = 150;
+    theme.rowHoverOpacity = 225;
+    theme.rowPressedOpacity = 240;
     theme.rowDisabledOpacity = 100;
     theme.itemOpacity = 255;
     theme.itemHoverOpacity = 255;
-    theme.shadowOpacity = 100;
-    theme.darkenOpacity = 125;
+    theme.shadowOpacity = 110;
+    theme.darkenOpacity = 115;
     theme.leftShadeOpacity = 190;
-    theme.glowOpacity = 90;
+    theme.glowOpacity = 100;
     theme.characterOpacity = 255;
     theme.fadeOpacity = 200;
     theme.trayOpacity = 80;
@@ -60,21 +60,33 @@ namespace
 
     // ! --- Fonts --- !
     theme.font = "miside-font.fnt"_spr;
+    theme.titleFont = "miside-title.fnt"_spr;
     theme.fallbackFont = "Arial";
     theme.fallbackFontSize = 24;
     // Capitals about 8.5 pt high: the font's are 11.3 pt at scale 1
     theme.itemScale = 0.75f;
-    theme.itemTextOffset = 0.6f;
+    theme.itemTextOffset = -1.2f;
     // Capitals about 10 pt high
-    theme.subtitleScale = 0.9f;
+    theme.subtitleScale = 0.62f;
     theme.nameScale = 0.5f;
     theme.moreScale = 0.9f;
     theme.popupTitleScale = 0.9f;
-    theme.shadowSteps = 1;
-    theme.shadowOffset = 0.5f;
-    theme.logoShadowOffset = 1.2f;
+    theme.shadowSteps = 2;
+    theme.shadowOffset = 0.6f;
+    theme.logoShadowOffset = 1.4f;
     theme.logoHighlightOffset = 0.7f;
     theme.logoDecorSize = 0.4f;
+    theme.logoGradientTop = ccc3(0xff, 0xc9, 0xe8);
+    theme.logoGradientBottom = ccc3(0xff, 0x2e, 0x93);
+    theme.logoDepthColor = ccc3(0x9e, 0x16, 0x5c);
+    theme.logoSparkleColor = ccc3(0xff, 0xff, 0xff);
+    theme.logoGridColor = ccc3(0xff, 0x8a, 0xc8);
+    theme.logoDepthSteps = 3;
+    theme.logoDepthOffset = 0.7f;
+    theme.logoSparkles = 4;
+    theme.logoSparkleSize = 3.5f;
+    theme.logoGridStep = 7;
+    theme.logoGridOpacity = 34;
 
     // ! --- Sprites and sounds --- !
     theme.layers = {
@@ -95,16 +107,38 @@ namespace
     theme.clickSound = "click.ogg"_spr;
     theme.soundVolume = 0.5f;
 
+    // ! --- Hover and the Exit button --- !
+    theme.shineEnabled = true;
+    theme.shineColor = ccc3(0xff, 0x9c, 0xd2);
+    theme.shineCoreColor = ccc3(0xff, 0xf4, 0xfb);
+    theme.shineOpacity = 230;
+    theme.shineDuration = 0.5f;
+    theme.shineWidth = 16;
+    theme.shineCoreWidth = 5;
+    theme.shineFadeOut = 0.12f;
+    theme.rowGlowColor = ccc3(0xff, 0x5f, 0xb4);
+    theme.rowGlowOpacity = 110;
+    theme.rowGlowSpread = 7;
+    theme.exitDodgeEnabled = true;
+    theme.exitDodgeRadius = 55;
+    theme.exitDodgeMax = 11;
+    theme.exitDodgeVertical = 0.35f;
+    theme.exitDodgeStretch = 0.04f;
+    theme.exitDodgeTilt = 3;
+    theme.exitDodgeStiffness = 170;
+    theme.exitDodgeDamping = 0.55f;
+
     // ! --- The menu --- !
     theme.columnLeft = 59;
-    theme.logoBottom = 244;
-    theme.logoTop = 280;
-    theme.subtitleTop = 233;
+    theme.logoBottom = 236;
+    theme.logoWidth = 176;
+    theme.logoTop = 294;
+    theme.subtitleTop = 229;
     theme.firstRowY = 195;
-    theme.rowPitch = 16;
+    theme.rowPitch = 17;
     theme.rowWidth = 148;
-    theme.rowHeight = 14;
-    theme.textPadding = 3;
+    theme.rowHeight = 15;
+    theme.textPadding = 5;
     theme.exitWidth = 59;
     theme.exitY = 37;
     theme.columnClearance = 6;
@@ -113,6 +147,22 @@ namespace
     theme.accentGap = 0;
     theme.hoverShift = 0;
     theme.pressedScale = 1.f;
+
+    // ! --- Decoration over the room --- !
+    theme.patternSprite = "pattern-tile.png"_spr;
+    theme.patternColor = ccc3(0xff, 0xb8, 0xdc);
+    theme.patternOpacity = 16;
+    theme.patternTile = 64;
+    theme.vignetteSprite = "vignette-soft.png"_spr;
+    theme.vignetteColor = ccc3(0x12, 0x03, 0x0e);
+    theme.vignetteOpacity = 180;
+    theme.particleCount = 14;
+    theme.particleColor = ccc3(0xff, 0x8c, 0xc6);
+    theme.particleOpacity = 150;
+    theme.particleSizeMin = 1.2f;
+    theme.particleSizeMax = 3.f;
+    theme.particleSpeed = 5;
+    theme.particleLife = 8;
 
     // ! --- The background --- !
     theme.backgroundFocusX = 0.5f;
@@ -129,15 +179,19 @@ namespace
 
     // ! --- Mita --- !
     theme.mitaEnabled = true;
-    theme.mitaX = 414.5f;
-    theme.mitaY = 0;
+    theme.mitaX = 400;
+    theme.mitaY = -75.6f;
     // 320 / 720: her canvas as high as the screen
-    theme.mitaScale = 0.4444444444f;
+    theme.mitaScale = 0.582f;
     theme.mitaFps = 24;
     theme.mitaParallaxEnabled = false;
     theme.mitaParallaxMaxX = 3;
     theme.mitaParallaxMaxY = 2;
     theme.mitaFreezeFrame = -1;
+    theme.mitaOutlineEnabled = true;
+    theme.mitaOutlineColor = ccc3(0xff, 0x4f, 0xa3);
+    theme.mitaOutlineOpacity = 170;
+    theme.mitaOutlineWidth = 1.5f;
 
     // ! --- The tray and the profile --- !
     theme.trayMargin = 8;
@@ -219,6 +273,7 @@ namespace
     field("popup-opacity", theme.popupOpacity);
 
     field("font", theme.font);
+    field("title-font", theme.titleFont);
     field("fallback-font", theme.fallbackFont);
     field("fallback-font-size", theme.fallbackFontSize);
     field("item-scale", theme.itemScale);
@@ -232,6 +287,17 @@ namespace
     field("logo-shadow-offset", theme.logoShadowOffset);
     field("logo-highlight-offset", theme.logoHighlightOffset);
     field("logo-decor-size", theme.logoDecorSize);
+    field("logo-gradient-top", theme.logoGradientTop);
+    field("logo-gradient-bottom", theme.logoGradientBottom);
+    field("logo-depth-color", theme.logoDepthColor);
+    field("logo-sparkle-color", theme.logoSparkleColor);
+    field("logo-grid-color", theme.logoGridColor);
+    field("logo-depth-steps", theme.logoDepthSteps);
+    field("logo-depth-offset", theme.logoDepthOffset);
+    field("logo-sparkles", theme.logoSparkles);
+    field("logo-sparkle-size", theme.logoSparkleSize);
+    field("logo-grid-step", theme.logoGridStep);
+    field("logo-grid-opacity", theme.logoGridOpacity);
 
     field("layers", theme.layers);
     field("row-sprite", theme.rowSprite);
@@ -246,8 +312,29 @@ namespace
     field("click-sound", theme.clickSound);
     field("sound-volume", theme.soundVolume);
 
+    field("shine-enabled", theme.shineEnabled);
+    field("shine-color", theme.shineColor);
+    field("shine-core-color", theme.shineCoreColor);
+    field("shine-opacity", theme.shineOpacity);
+    field("shine-duration", theme.shineDuration);
+    field("shine-width", theme.shineWidth);
+    field("shine-core-width", theme.shineCoreWidth);
+    field("shine-fade-out", theme.shineFadeOut);
+    field("row-glow-color", theme.rowGlowColor);
+    field("row-glow-opacity", theme.rowGlowOpacity);
+    field("row-glow-spread", theme.rowGlowSpread);
+    field("exit-dodge-enabled", theme.exitDodgeEnabled);
+    field("exit-dodge-radius", theme.exitDodgeRadius);
+    field("exit-dodge-max", theme.exitDodgeMax);
+    field("exit-dodge-vertical", theme.exitDodgeVertical);
+    field("exit-dodge-stretch", theme.exitDodgeStretch);
+    field("exit-dodge-tilt", theme.exitDodgeTilt);
+    field("exit-dodge-stiffness", theme.exitDodgeStiffness);
+    field("exit-dodge-damping", theme.exitDodgeDamping);
+
     field("column-left", theme.columnLeft);
     field("logo-bottom", theme.logoBottom);
+    field("logo-width", theme.logoWidth);
     field("logo-top", theme.logoTop);
     field("subtitle-top", theme.subtitleTop);
     field("first-row-y", theme.firstRowY);
@@ -263,6 +350,21 @@ namespace
     field("accent-gap", theme.accentGap);
     field("hover-shift", theme.hoverShift);
     field("pressed-scale", theme.pressedScale);
+
+    field("pattern-sprite", theme.patternSprite);
+    field("pattern-color", theme.patternColor);
+    field("pattern-opacity", theme.patternOpacity);
+    field("pattern-tile", theme.patternTile);
+    field("vignette-sprite", theme.vignetteSprite);
+    field("vignette-color", theme.vignetteColor);
+    field("vignette-opacity", theme.vignetteOpacity);
+    field("particle-count", theme.particleCount);
+    field("particle-color", theme.particleColor);
+    field("particle-opacity", theme.particleOpacity);
+    field("particle-size-min", theme.particleSizeMin);
+    field("particle-size-max", theme.particleSizeMax);
+    field("particle-speed", theme.particleSpeed);
+    field("particle-life", theme.particleLife);
 
     field("background-focus-x", theme.backgroundFocusX);
     field("background-focus-y", theme.backgroundFocusY);
@@ -285,6 +387,10 @@ namespace
     field("mita-parallax-max-x", theme.mitaParallaxMaxX);
     field("mita-parallax-max-y", theme.mitaParallaxMaxY);
     field("mita-freeze-frame", theme.mitaFreezeFrame);
+    field("mita-outline-enabled", theme.mitaOutlineEnabled);
+    field("mita-outline-color", theme.mitaOutlineColor);
+    field("mita-outline-opacity", theme.mitaOutlineOpacity);
+    field("mita-outline-width", theme.mitaOutlineWidth);
 
     field("tray-margin", theme.trayMargin);
     field("tray-padding", theme.trayPadding);

@@ -1,6 +1,7 @@
 #include "MSBackground.hpp"
 
 #include "../Theme.hpp"
+#include "MSParticles.hpp"
 #include "MSStyle.hpp"
 
 #include <cmath>
@@ -116,6 +117,8 @@ void MSBackground::addOverlays()
     this->addChild(darken);
   }
 
+  this->addPattern();
+
   // A soft crimson light on the right: a color, not a brightness
   if (theme.glowOpacity > 0 && theme.glowWidth > 0 && theme.glowHeight > 0)
   {
@@ -133,6 +136,10 @@ void MSBackground::addOverlays()
       log::warn("Glow sprite {} not found, no glow", theme.glowSprite);
   }
 
+  // Slow pink motes, over the room and under the menu
+  if (auto particles = MSParticles::create())
+    this->addChild(particles);
+
   this->addCharacter();
 
   // The left side, under the menu, darkest at the edge
@@ -143,6 +150,46 @@ void MSBackground::addOverlays()
     shade->setContentSize({theme.leftShadeWidth, winSize.height});
     this->addChild(shade);
   }
+
+  // Dark edges, last
+  if (theme.vignetteOpacity > 0 && ms::resourceExists(theme.vignetteSprite))
+  {
+    if (auto vignette = ms::createStretched(theme.vignetteSprite, winSize, theme.vignetteColor, theme.vignetteOpacity))
+    {
+      vignette->setAnchorPoint({0, 0});
+      this->addChild(vignette);
+    }
+  }
+}
+
+void MSBackground::addPattern()
+{
+  auto const& theme = Theme::get();
+  if (theme.patternOpacity == 0 || theme.patternTile <= 0 || !ms::resourceExists(theme.patternSprite))
+    return;
+  auto sprite = CCSprite::create(theme.patternSprite.c_str());
+  if (!sprite)
+    return;
+  auto texture = sprite->getTexture();
+  auto tile = texture->getContentSize();
+  // Repeating needs a power-of-two texture; another size would show one tile stretched instead
+  auto power = [](unsigned v) { return v && !(v & (v - 1)); };
+  if (!power(texture->getPixelsWide()) || !power(texture->getPixelsHigh()) || tile.width <= 0)
+  {
+    log::warn("Pattern {} isn't a power of two on each side, left out", theme.patternSprite);
+    return;
+  }
+  ccTexParams params{GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT};
+  texture->setTexParameters(&params);
+  // The texture repeats over the whole screen; the sprite is scaled so one tile is `pattern-tile` points
+  auto winSize = CCDirector::get()->getWinSize();
+  auto scale = theme.patternTile / tile.width;
+  sprite->setTextureRect({0, 0, winSize.width / scale, winSize.height / scale});
+  sprite->setScale(scale);
+  sprite->setAnchorPoint({0, 0});
+  sprite->setColor(theme.patternColor);
+  sprite->setOpacity(theme.patternOpacity);
+  this->addChild(sprite);
 }
 
 void MSBackground::addCharacter()

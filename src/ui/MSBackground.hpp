@@ -27,6 +27,8 @@ protected:
   void addLayers();
   void addOverlays();
   void addCharacter();
+  // The faint repeating pattern over the room
+  void addPattern();
 
   std::vector<Layer> m_layers;
   float m_strength = 0;

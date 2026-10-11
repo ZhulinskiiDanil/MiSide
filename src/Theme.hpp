@@ -75,6 +75,8 @@ struct Theme
   // ! --- Fonts --- !
   // A BMFont with Cyrillic; when it's missing, the system font below
   std::string font;
+  // The subtitle's and the logo's, heavier
+  std::string titleFont;
   std::string fallbackFont;
   float fallbackFontSize = 0;
   float itemScale = 0;
@@ -92,6 +94,19 @@ struct Theme
   float logoHighlightOffset = 0;
   // The text logo's cube and spike, as a share of the text's line height
   float logoDecorSize = 0;
+  // The logo's letters: a gradient from top to bottom, a few darker copies under them for depth, sparkles on
+  // them, a thin grid behind
+  cocos2d::ccColor3B logoGradientTop;
+  cocos2d::ccColor3B logoGradientBottom;
+  cocos2d::ccColor3B logoDepthColor;
+  cocos2d::ccColor3B logoSparkleColor;
+  cocos2d::ccColor3B logoGridColor;
+  float logoDepthSteps = 0;
+  float logoDepthOffset = 0;
+  float logoSparkles = 0;
+  float logoSparkleSize = 0;
+  float logoGridStep = 0;
+  GLubyte logoGridOpacity = 0;
 
   // ! --- Sprites and sounds --- !
   // Back to front
@@ -112,10 +127,38 @@ struct Theme
   std::string clickSound;
   float soundVolume = 0;
 
+  // ! --- Hover and the Exit button --- !
+  // One soft light through the letters when the mouse comes onto an item: a narrow core, a wider glow
+  bool shineEnabled = false;
+  cocos2d::ccColor3B shineColor;
+  cocos2d::ccColor3B shineCoreColor;
+  GLubyte shineOpacity = 0;
+  float shineDuration = 0;
+  float shineWidth = 0;
+  float shineCoreWidth = 0;
+  float shineFadeOut = 0;
+  // A soft glow around the highlighted row
+  cocos2d::ccColor3B rowGlowColor;
+  GLubyte rowGlowOpacity = 0;
+  float rowGlowSpread = 0;
+  // Exit leans away from the mouse, held to its place as if by a spring. Points on the reference screen
+  bool exitDodgeEnabled = false;
+  float exitDodgeRadius = 0;
+  float exitDodgeMax = 0;
+  // Its push up and down, as a share of the sideways one: it is wide and low, so it stays under the mouse
+  float exitDodgeVertical = 0;
+  // Stretched this much along the push at the full push, tilted up to this many degrees by its speed
+  float exitDodgeStretch = 0;
+  float exitDodgeTilt = 0;
+  // The spring: how stiff, and how damped (1: no overshoot)
+  float exitDodgeStiffness = 0;
+  float exitDodgeDamping = 0;
+
   // ! --- The menu --- !
   // The left edge of the logo, the subtitle and the items
   float columnLeft = 0;
   float logoBottom = 0;
+  float logoWidth = 0;
   float logoTop = 0;
   // The subtitle's top edge
   float subtitleTop = 0;
@@ -136,6 +179,26 @@ struct Theme
   float accentGap = 0;
   float hoverShift = 0;
   float pressedScale = 0;
+
+  // ! --- Decoration over the room --- !
+  // A faint repeating pattern of hearts, stars and flowers (a white tile, tinted)
+  std::string patternSprite;
+  cocos2d::ccColor3B patternColor;
+  GLubyte patternOpacity = 0;
+  // One tile's size in points
+  float patternTile = 0;
+  // Dark edges
+  std::string vignetteSprite;
+  cocos2d::ccColor3B vignetteColor;
+  GLubyte vignetteOpacity = 0;
+  // A few small pink motes drifting slowly up
+  float particleCount = 0;
+  cocos2d::ccColor3B particleColor;
+  GLubyte particleOpacity = 0;
+  float particleSizeMin = 0;
+  float particleSizeMax = 0;
+  float particleSpeed = 0;
+  float particleLife = 0;
 
   // ! --- The background --- !
   // The point of the art kept on screen when it's cropped to cover it, as shares of its width and height
@@ -170,6 +233,12 @@ struct Theme
   float mitaParallaxMaxY = 0;
   // A frame to hold still on, to check one at a time; -1 plays
   float mitaFreezeFrame = 0;
+  // A thin pink line around her outline, drawn by her own shader (only hers)
+  bool mitaOutlineEnabled = false;
+  cocos2d::ccColor3B mitaOutlineColor;
+  GLubyte mitaOutlineOpacity = 0;
+  // In her texture's pixels (the atlas leaves 2 between frames)
+  float mitaOutlineWidth = 0;
 
   // ! --- The tray and the profile --- !
   float trayMargin = 0;

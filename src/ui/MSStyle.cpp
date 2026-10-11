@@ -14,21 +14,37 @@ namespace ms
     return files->isFileExist(files->fullPathForFilename(name.c_str(), false));
   }
 
-  CCNode* createLabel(std::string const& text)
+  CCNode* createLabel(std::string const& text, std::string const& font)
   {
     auto const& theme = Theme::get();
-    if (resourceExists(theme.font))
+    auto const& file = font.empty() ? theme.font : font;
+    if (resourceExists(file))
     {
-      if (auto label = CCLabelBMFont::create(text.c_str(), theme.font.c_str()))
+      if (auto label = CCLabelBMFont::create(text.c_str(), file.c_str()))
         return label;
     }
     static bool s_warned = false;
     if (!s_warned)
     {
       s_warned = true;
-      log::warn("Font {} not found, the menu uses the system font {}", theme.font, theme.fallbackFont);
+      log::warn("Font {} not found, the menu uses the system font {}", file, theme.fallbackFont);
     }
     return CCLabelTTF::create(text.c_str(), theme.fallbackFont.c_str(), theme.fallbackFontSize);
+  }
+
+  bool canClip()
+  {
+    // Asked once: the window's buffers don't change
+    static int s_bits = -1;
+    if (s_bits < 0)
+    {
+      GLint bits = 0;
+      glGetIntegerv(GL_STENCIL_BITS, &bits);
+      s_bits = bits;
+      if (s_bits <= 0)
+        log::warn("No stencil buffer: the shine on the items and the logo's gradient are left out");
+    }
+    return s_bits > 0;
   }
 
   void cascadeOpacity(CCNode* node)
@@ -49,10 +65,10 @@ namespace ms
       rgba->setColor(color);
   }
 
-  Text createText(std::string const& text, float scale, ccColor3B color)
+  Text createText(std::string const& text, float scale, ccColor3B color, std::string const& font)
   {
     auto const& theme = Theme::get();
-    auto label = createLabel(text);
+    auto label = createLabel(text, font);
     if (!label)
       return {};
     label->setScale(scale);
@@ -69,7 +85,7 @@ namespace ms
     auto steps = std::max(static_cast<int>(theme.shadowSteps), 0);
     for (auto step = steps; step >= 1; step--)
     {
-      auto shadow = createLabel(text);
+      auto shadow = createLabel(text, font);
       if (!shadow)
         continue;
       shadow->setScale(scale);

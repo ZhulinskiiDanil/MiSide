@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DodgeSpring.hpp"
+
 #include <Geode/Geode.hpp>
 
 #include <functional>
@@ -16,13 +18,19 @@ public:
   static MSMenuItem* create(std::string const& text, cocos2d::CCMenuItem* target, Callback callback, float width);
 
   cocos2d::CCMenuItem* getTarget() const;
-  // Hover and the keyboard's choice look the same
-  void setHighlighted(bool highlighted);
+  // Hover and the keyboard's choice look the same. shine: one light through the letters as it lights up
+  void setHighlighted(bool highlighted, bool shine = true);
   bool isHighlighted() const;
   // Its vanilla button can't be pressed now
   bool isUnavailable() const;
   // Fades in when the menu opens
   void playIntro(float delay);
+
+  // Exit: it leans away from the mouse around this place (its middle, in the column's space)
+  void setDodgeHome(cocos2d::CCPoint home);
+  // Every frame, from the column: the mouse in the column's space, or null when there's no mouse to lean from
+  // (the keyboard is in use, a popup is over the menu, a transition runs)
+  void stepDodge(float dt, cocos2d::CCPoint const* mouse);
 
   void selected() override;
   void unselected() override;
@@ -30,6 +38,9 @@ public:
 
 protected:
   bool init(std::string const& text, cocos2d::CCMenuItem* target, Callback callback, float width);
+  void addShine(std::string const& text);
+  void playShine();
+  void fadeShine();
   void refresh(bool animate);
   void update(float dt) override;
 
@@ -38,11 +49,20 @@ protected:
   // The plate, the text and the accent bar; its opacity fades them together
   cocos2d::CCNode* m_content = nullptr;
   cocos2d::CCNode* m_plate = nullptr;
+  cocos2d::CCNode* m_glow = nullptr;
   cocos2d::CCNode* m_text = nullptr;
   cocos2d::CCNode* m_label = nullptr;
   cocos2d::CCNode* m_accent = nullptr;
+  // The shine: a soft band cut to the letters' shape, hidden between passes
+  cocos2d::CCClippingNode* m_shine = nullptr;
+  cocos2d::CCNode* m_shineBand = nullptr;
+  // Each pass's number: a pass that ended doesn't hide a newer one
+  int m_shinePass = 0;
   float m_textX = 0;
   bool m_highlighted = false;
   bool m_pressed = false;
   bool m_unavailable = false;
+  bool m_dodging = false;
+  cocos2d::CCPoint m_dodgeHome;
+  DodgeSpring m_dodge;
 };

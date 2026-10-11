@@ -168,6 +168,55 @@ namespace
   // A request looks ahead by this much more than a load takes
   constexpr double LOAD_MARGIN = 1.5;
 
+  // Her outline: the usual sprite vertex shader, and a fragment shader that adds a line where a transparent pixel
+  // has a drawn one within the line's width. Her own pixels are left as they are; nothing shows around the canvas'
+  // rectangle, which is transparent. cocos declares CC_MVPMatrix and CC_Texture0 itself
+  constexpr char const* OUTLINE_VERTEX = R"(
+attribute vec4 a_position;
+attribute vec2 a_texCoord;
+attribute vec4 a_color;
+#ifdef GL_ES
+varying lowp vec4 v_fragmentColor;
+varying mediump vec2 v_texCoord;
+#else
+varying vec4 v_fragmentColor;
+varying vec2 v_texCoord;
+#endif
+void main()
+{
+  gl_Position = CC_MVPMatrix * a_position;
+  v_fragmentColor = a_color;
+  v_texCoord = a_texCoord;
+}
+)";
+
+  constexpr char const* OUTLINE_FRAGMENT = R"(
+#ifdef GL_ES
+precision mediump float;
+#endif
+varying vec4 v_fragmentColor;
+varying vec2 v_texCoord;
+uniform vec2 u_texel;
+uniform vec4 u_outline;
+void main()
+{
+  vec4 color = texture2D(CC_Texture0, v_texCoord);
+  vec2 d = u_texel * 0.7071;
+  float around = texture2D(CC_Texture0, v_texCoord + vec2(u_texel.x, 0.0)).a;
+  around = max(around, texture2D(CC_Texture0, v_texCoord - vec2(u_texel.x, 0.0)).a);
+  around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(0.0, u_texel.y)).a);
+  around = max(around, texture2D(CC_Texture0, v_texCoord - vec2(0.0, u_texel.y)).a);
+  around = max(around, texture2D(CC_Texture0, v_texCoord + d).a);
+  around = max(around, texture2D(CC_Texture0, v_texCoord - d).a);
+  around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(d.x, -d.y)).a);
+  around = max(around, texture2D(CC_Texture0, v_texCoord + vec2(-d.x, d.y)).a);
+  float edge = clamp(around - color.a, 0.0, 1.0) * u_outline.a;
+  float alpha = color.a + edge * (1.0 - color.a);
+  vec3 rgb = alpha > 0.0 ? (color.rgb * color.a + u_outline.rgb * edge * (1.0 - color.a)) / alpha : vec3(0.0);
+  gl_FragColor = vec4(rgb, alpha) * v_fragmentColor;
+}
+)";
+
   // Each problem once a session, however many times the menu opens
   void logOnce(std::string const& message)
   {
@@ -216,6 +265,8 @@ bool MSMita::readManifest()
   auto const& reference = manifest["placement"]["referenceScreen"];
   m_reference = CCSize(static_cast<float>(reference[0].asDouble().unwrapOr(569)),
                        static_cast<float>(reference[1].asDouble().unwrapOr(320)));
+  // Where her drawing starts in the canvas (all frames together); the canvas' edge when it isn't said
+  m_alphaLeft = static_cast<float>(manifest["canvas"]["alphaBoundsUnionTopLeft"][0].asDouble().unwrapOr(0));
   if (count <= 0 || m_canvas.width <= 0 || m_canvas.height <= 0 || m_reference.height <= 0 ||
       !manifest["atlases"].isArray() || !manifest["frames"].isArray())
   {
@@ -292,8 +343,58 @@ bool MSMita::init()
     return false;
   }
   m_plan = std::make_unique<MitaPlan>(static_cast<int>(m_atlases.size()));
+  this->makeOutline();
   this->setContentSize(CCDirector::get()->getWinSize());
   return true;
+}
+
+void MSMita::makeOutline()
+{
+  auto const& theme = Theme::get();
+  if (!theme.mitaOutlineEnabled || theme.mitaOutlineOpacity == 0 || theme.mitaOutlineWidth <= 0)
+    return;
+  // Hers alone: not in the shader cache, not on any other sprite
+  auto program = new CCGLProgram();
+  auto ok = program->initWithVertexShaderByteArray(OUTLINE_VERTEX, OUTLINE_FRAGMENT);
+  if (ok)
+  {
+    program->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
+    program->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
+    program->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
+    ok = program->link();
+  }
+  if (!ok)
+  {
+    program->release();
+    logOnce("her outline shader doesn't compile here, she's drawn without the outline");
+    return;
+  }
+  program->updateUniforms();
+  m_outlineTexel = program->getUniformLocationForName("u_texel");
+  m_outlineColor = program->getUniformLocationForName("u_outline");
+  m_outline = program;
+  program->release();
+}
+
+void MSMita::updateOutline(CCTexture2D* texture)
+{
+  if (!m_outline || !m_sprite || !texture || texture == m_outlineFor)
+    return;
+  // Only for straight alpha, which her textures are; anything else gets the usual shader
+  if (texture->hasPremultipliedAlpha())
+  {
+    m_sprite->setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor));
+    return;
+  }
+  auto const& theme = Theme::get();
+  m_outlineFor = texture;
+  m_sprite->setShaderProgram(m_outline);
+  m_outline->use();
+  m_outline->setUniformLocationWith2f(m_outlineTexel, theme.mitaOutlineWidth / texture->getPixelsWide(),
+                                      theme.mitaOutlineWidth / texture->getPixelsHigh());
+  auto color = theme.mitaOutlineColor;
+  m_outline->setUniformLocationWith4f(m_outlineColor, color.r / 255.f, color.g / 255.f, color.b / 255.f,
+                                      theme.mitaOutlineOpacity / 255.f);
 }
 
 void MSMita::onEnter()
@@ -338,6 +439,7 @@ void MSMita::stop()
     m_sprite = nullptr;
   }
   m_shownFrame = -1;
+  m_outlineFor = nullptr;
   if (m_plan)
     this->freePages(m_plan->clear());
   if (!m_pages.empty())
@@ -458,10 +560,12 @@ void MSMita::layout()
     m_sprite->setScale(height / (size.height * parentScale));
   auto width = size.width * m_sprite->getScale() * parentScale;
 
-  // Held to the right edge, as on the reference screen; never over the menu's buttons
+  // Held to the right edge, as on the reference screen; her drawing (not the canvas' transparent margin) never
+  // over the menu's buttons
   auto x = winSize.width - (m_reference.width - theme.mitaX) * m_unit;
   auto keepClear = theme.columnLeft + theme.rowWidth + theme.columnClearance;
-  x = std::max(x, keepClear + width / 2);
+  auto drawnLeft = (m_canvas.width / 2 - m_alphaLeft) * width / m_canvas.width;
+  x = std::max(x, keepClear + drawnLeft);
   m_home = CCPoint(x, theme.mitaY * m_unit);
 }
 
@@ -498,6 +602,7 @@ void MSMita::show(int index)
   // Set again after the texture changes: premultiplied or not, the color is never multiplied twice
   auto premultiplied = page->texture->hasPremultipliedAlpha();
   m_sprite->setBlendFunc({static_cast<GLenum>(premultiplied ? GL_ONE : GL_SRC_ALPHA), GL_ONE_MINUS_SRC_ALPHA});
+  this->updateOutline(page->texture);
   m_shownFrame = index;
   // The page before is done with
   this->freePages(m_plan->showed(frame.atlas));

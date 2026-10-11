@@ -9,3 +9,8 @@ target_include_directories(mita-plan-test PRIVATE ../src/ui)
 
 enable_testing()
 add_test(NAME mita-plan COMMAND mita-plan-test)
+
+# The Exit button's spring alone
+add_executable(dodge-spring-test dodge_spring_test.cpp)
+target_include_directories(dodge-spring-test PRIVATE ../src/ui)
+add_test(NAME dodge-spring COMMAND dodge-spring-test)

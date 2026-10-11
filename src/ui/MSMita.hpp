@@ -74,10 +74,20 @@ protected:
   void layout();
   // Logs what the sprite really shows and how big, and warns when it isn't what was meant
   void checkSprite();
+  // Her own shader for the pink line around her outline; null when it's off or doesn't compile
+  void makeOutline();
+  // The line's width and color for the texture shown now (the last atlas page is smaller)
+  void updateOutline(cocos2d::CCTexture2D* texture);
 
   std::vector<Atlas> m_atlases;
   std::vector<Frame> m_frames;
   cocos2d::CCSize m_canvas;
+  // Her drawn part's left edge in the canvas, in pixels: what's kept off the menu
+  float m_alphaLeft = 0;
+  geode::Ref<cocos2d::CCGLProgram> m_outline;
+  GLint m_outlineTexel = -1;
+  GLint m_outlineColor = -1;
+  cocos2d::CCTexture2D* m_outlineFor = nullptr;
   cocos2d::CCSize m_reference;
   float m_fps = 0;
   std::unique_ptr<MitaPlan> m_plan;

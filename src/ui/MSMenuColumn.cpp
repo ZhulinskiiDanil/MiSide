@@ -71,7 +71,7 @@ void MSMenuColumn::setLogo(CCNode* logo)
 void MSMenuColumn::setSubtitle(std::string const& text)
 {
   auto const& theme = Theme::get();
-  auto subtitle = ms::createText(text, theme.subtitleScale, theme.subtitleColor);
+  auto subtitle = ms::createText(text, theme.subtitleScale, theme.subtitleColor, theme.titleFont);
   if (!subtitle.node)
     return;
   m_subtitle = this->wrap(subtitle.node);
@@ -98,7 +98,12 @@ void MSMenuColumn::finish()
   for (size_t i = 0; i < m_rows.size(); i++)
     m_rows[i]->setPosition({theme.columnLeft, theme.firstRowY - theme.rowPitch * i});
   if (m_exit)
+  {
     m_exit->setPosition({theme.columnLeft, theme.exitY});
+    // It leans away from the mouse around its middle
+    m_exit->setDodgeHome({theme.columnLeft + m_exit->getContentWidth() / 2, theme.exitY});
+  }
+  this->measureArea();
 
   for (size_t i = 0; i < m_items.size(); i++)
     m_items[i]->playIntro(theme.introStagger * i);
@@ -109,16 +114,22 @@ void MSMenuColumn::finish()
   }
 }
 
-CCRect MSMenuColumn::getArea()
+void MSMenuColumn::measureArea()
 {
+  auto const& theme = Theme::get();
   CCRect area;
   auto any = false;
   for (auto child : CCArrayExt<CCNode*>(this->getChildren()))
   {
     if (!child->isVisible())
       continue;
-    // Where the item rests, not where its intro is
+    // Where the item rests; Quit with the room it may lean into
     auto box = child->boundingBox();
+    if (child == m_exit)
+    {
+      auto lean = theme.exitDodgeMax * 1.25f;
+      box = {box.origin.x - lean, box.origin.y - lean, box.size.width + lean * 2, box.size.height + lean * 2};
+    }
     if (!any)
       area = box;
     else
@@ -130,7 +141,13 @@ CCRect MSMenuColumn::getArea()
     }
     any = true;
   }
-  return CCRectApplyAffineTransform(area, this->nodeToParentTransform());
+  m_area = area;
+}
+
+CCRect MSMenuColumn::getArea()
+{
+  // Measured once: Quit leaning away doesn't move what's kept out of the menu's way
+  return CCRectApplyAffineTransform(m_area, this->nodeToParentTransform());
 }
 
 void MSMenuColumn::setBusy(bool busy) { m_busy = busy; }
@@ -157,16 +174,22 @@ bool MSMenuColumn::isOnTop()
   return true;
 }
 
-void MSMenuColumn::update(float)
+void MSMenuColumn::update(float dt)
 {
   auto mouse = getMousePos();
-  if (mouse.equals(m_lastMouse))
-    return;
+  auto moved = !mouse.equals(m_lastMouse);
   m_lastMouse = mouse;
-  if (m_busy || !this->isOnTop())
-    return;
-
+  if (moved)
+    m_mouseActive = true;
+  auto usable = !m_busy && this->isOnTop();
   auto local = this->convertToNodeSpace(mouse);
+
+  // Quit leans away from the mouse, every frame (it springs back with no mouse to lean from)
+  if (m_exit)
+    m_exit->stepDodge(dt, usable && m_mouseActive ? &local : nullptr);
+
+  if (!moved || !usable)
+    return;
   auto under = -1;
   for (size_t i = 0; i < m_items.size(); i++)
   {
@@ -179,10 +202,11 @@ void MSMenuColumn::update(float)
   if (under == m_hover)
     return;
   m_hover = under;
-  this->showHighlight();
+  // The shine on coming onto a row; not when leaving lights the keyboard's row again
+  this->showHighlight(m_hover >= 0);
 }
 
-void MSMenuColumn::showHighlight()
+void MSMenuColumn::showHighlight(bool shine)
 {
   auto count = static_cast<int>(m_items.size());
   auto index = m_hover >= 0 ? m_hover : m_keyboard;
@@ -195,7 +219,7 @@ void MSMenuColumn::showHighlight()
   m_shown = index;
   if (m_shown < 0)
     return;
-  m_items[m_shown]->setHighlighted(true);
+  m_items[m_shown]->setHighlighted(true, shine);
   ms::playSound(Theme::get().hoverSound);
 }
 
@@ -213,7 +237,9 @@ bool MSMenuColumn::onKey(enumKeyCodes key)
     auto step = key == KEY_Up ? count - 1 : 1;
     m_keyboard = m_shown < 0 ? (key == KEY_Up ? count - 1 : 0) : (m_shown + step) % count;
     m_hover = -1;
-    this->showHighlight();
+    // The keys in use: Quit stops leaning away until the mouse moves again
+    m_mouseActive = false;
+    this->showHighlight(true);
     return true;
   }
   case KEY_Enter:

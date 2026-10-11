@@ -39,8 +39,10 @@ protected:
   MSMenuItem* makeItem(std::string const& text, cocos2d::CCMenuItem* target, float width);
   // A node that isn't an item: wrapped in a disabled one, as the menu holds items
   cocos2d::CCMenuItem* wrap(cocos2d::CCNode* node);
-  // Shows the hovered row, or the keyboard's
-  void showHighlight();
+  // Shows the hovered row, or the keyboard's. shine: it lit up because of the mouse coming or a key
+  void showHighlight(bool shine);
+  // The rows' and Quit's rest places (Quit with room to lean away), in the column's space
+  void measureArea();
   void choose(MSMenuItem* item);
   // Nothing (a popup, a scene transition) is over the menu
   bool isOnTop();
@@ -57,5 +59,8 @@ protected:
   int m_keyboard = -1;
   int m_shown = -1;
   cocos2d::CCPoint m_lastMouse;
+  // The mouse moved since the last key: Quit leans away from it only then
+  bool m_mouseActive = false;
+  cocos2d::CCRect m_area;
   bool m_busy = false;
 };

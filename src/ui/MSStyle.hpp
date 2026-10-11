@@ -10,8 +10,12 @@ namespace ms
   // A file the game can load: a sprite (with its -hd / -uhd variant), a font, a sound
   bool resourceExists(std::string const& name);
 
-  // The theme's font, or the system font when it's missing (it has Cyrillic too)
-  cocos2d::CCNode* createLabel(std::string const& text);
+  // The theme's font (or `font`), or the system font when it's missing (it has Cyrillic too)
+  cocos2d::CCNode* createLabel(std::string const& text, std::string const& font = "");
+
+  // The window has a stencil buffer: shapes can be cut to the letters (CCClippingNode). Without one a clipped
+  // effect would show as a plain rectangle, so it isn't made
+  bool canClip();
 
   struct Text
   {
@@ -22,7 +26,7 @@ namespace ms
   };
 
   // The theme's font with the theme's soft shadow: a few fainter copies of the text, down and to the right
-  Text createText(std::string const& text, float scale, cocos2d::ccColor3B color);
+  Text createText(std::string const& text, float scale, cocos2d::ccColor3B color, std::string const& font = "");
 
   // Opacity set on the node reaches its children, and theirs
   void cascadeOpacity(cocos2d::CCNode* node);

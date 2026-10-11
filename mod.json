@@ -56,7 +56,9 @@
 			"resources/placeholders/item-accent.png",
 			"resources/placeholders/tray-panel.png",
 			"resources/placeholders/tray-slot.png",
-			"resources/placeholders/avatar-circle.png"
+			"resources/placeholders/avatar-circle.png",
+			"resources/placeholders/pattern-tile.png",
+			"resources/placeholders/vignette-soft.png"
 		],
 		"files": [
 			"resources/sounds/hover.ogg",
@@ -68,8 +70,13 @@
 		],
 		"fonts": {
 			"miside-font": {
-				"path": "resources/fonts/RobotoMenu-CondensedBold.ttf",
+				"path": "resources/fonts/MPLUSRounded1c-Bold.ttf",
 				"size": 64,
+				"charset": "32-126,1025,1040-1103,1105,8211,8212,8226,8230"
+			},
+			"miside-title": {
+				"path": "resources/fonts/MPLUSRounded1c-ExtraBold.ttf",
+				"size": 96,
 				"charset": "32-126,1025,1040-1103,1105,8211,8212,8226,8230"
 			}
 		}

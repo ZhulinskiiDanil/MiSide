@@ -9,22 +9,34 @@ namespace
 {
   // The text logo's words
   constexpr char const* WORDMARK = "Geometry Dash";
-  // The decorations' shape, in shares of their size: the space around them, and where they sit on the text
-  constexpr float DECOR_GAP = 0.35f;
-  constexpr float DECOR_BASELINE = 0.22f;
-  constexpr float SPIKE_WIDTH = 0.8f;
-  constexpr float SPIKE_HEIGHT = 0.9f;
-  constexpr float DECOR_OUTLINE = 0.5f;
+  // The letters' alpha above this is where the gradient shows
+  constexpr float LETTER_ALPHA = 0.1f;
+  // Where the sparkles sit on the words: shares of their width, and of their line's height from the bottom
+  constexpr float SPARKLES[][2] = {{0.06f, 0.78f}, {0.33f, 0.86f}, {0.58f, 0.8f}, {0.9f, 0.84f}, {0.2f, 0.7f}};
+  // A sparkle's arms: long ones and short ones, as a share of its size
+  constexpr float SPARKLE_THIN = 0.18f;
+  constexpr float SPARKLE_SHORT = 0.55f;
 
-  CCNode* copyOf(ccColor3B color, CCPoint offset)
+  CCNode* letters(ccColor3B color, CCPoint offset)
   {
-    auto label = ms::createLabel(WORDMARK);
+    auto label = ms::createLabel(WORDMARK, Theme::get().titleFont);
     if (!label)
       return nullptr;
     label->setAnchorPoint({0, 0});
     label->setPosition(offset);
     ms::setColor(label, color);
     return label;
+  }
+
+  // A four-armed sparkle
+  void sparkle(CCDrawNode* draw, CCPoint at, float size, ccColor4F color)
+  {
+    auto thin = size * SPARKLE_THIN;
+    auto shortArm = size * SPARKLE_SHORT;
+    CCPoint vertical[] = {{at.x, at.y + size}, {at.x + thin, at.y}, {at.x, at.y - size}, {at.x - thin, at.y}};
+    CCPoint horizontal[] = {{at.x - shortArm, at.y}, {at.x, at.y + thin}, {at.x + shortArm, at.y}, {at.x, at.y - thin}};
+    draw->drawPolygon(vertical, 4, color, 0, color);
+    draw->drawPolygon(horizontal, 4, color, 0, color);
   }
 } // namespace
 
@@ -43,39 +55,72 @@ MSLogo* MSLogo::create()
 CCNode* MSLogo::createWordmark()
 {
   auto const& theme = Theme::get();
-  auto main = copyOf(theme.logoColor, {0, 0});
-  if (!main)
+  auto top = letters(theme.logoGradientBottom, {0, 0});
+  if (!top)
     return nullptr;
-  auto size = main->getContentSize();
+  auto size = top->getContentSize();
   auto node = CCNode::create();
+  auto depth = std::max(static_cast<int>(theme.logoDepthSteps), 0);
 
-  // Under it: the dark shadow, then the light copy a little higher, so only its top edge shows over the shadow
-  if (auto shadow = copyOf(theme.logoShadowColor, {theme.logoShadowOffset, -theme.logoShadowOffset}))
+  // Under the letters: a soft dark shadow, then darker copies stepping down and right, for depth
+  if (auto shadow = letters(theme.logoShadowColor, {theme.logoShadowOffset + depth * theme.logoDepthOffset,
+                                                    -theme.logoShadowOffset - depth * theme.logoDepthOffset}))
+  {
+    ms::setOpacity(shadow, theme.shadowOpacity);
     node->addChild(shadow);
-  if (auto highlight = copyOf(theme.logoHighlightColor, {0, theme.logoHighlightOffset}))
-    node->addChild(highlight);
-  node->addChild(main);
+  }
+  for (auto step = depth; step >= 1; step--)
+  {
+    if (auto copy = letters(theme.logoDepthColor, {step * theme.logoDepthOffset, -step * theme.logoDepthOffset}))
+      node->addChild(copy);
+  }
 
-  // After the words, sitting on their baseline: a GD cube turned on its corner, and a spike
-  auto height = size.height * theme.logoDecorSize;
-  auto gap = height * DECOR_GAP;
-  auto base = size.height * DECOR_BASELINE;
-  auto outline = theme.logoShadowOffset * DECOR_OUTLINE;
-  auto decor = CCDrawNode::create();
-  auto fill = ccc4FFromccc3B(theme.logoDecorColor);
-  auto dark = ccc4FFromccc3B(theme.logoShadowColor);
-  auto x = size.width + gap;
-  CCPoint cube[] = {{x + height / 2, base}, {x + height, base + height / 2}, {x + height / 2, base + height},
-                    {x, base + height / 2}};
-  decor->drawPolygon(cube, 4, fill, outline, dark);
-  x += height + gap;
-  CCPoint spike[] = {{x, base}, {x + height * SPIKE_WIDTH, base},
-                     {x + height * SPIKE_WIDTH / 2, base + height * SPIKE_HEIGHT}};
-  decor->drawPolygon(spike, 3, fill, outline, dark);
-  node->addChild(decor);
+  // The letters: a gradient from light at the top to deep at the bottom, cut to their shape. Without a stencil
+  // buffer, the deep color alone
+  if (ms::canClip())
+  {
+    auto stencil = letters(theme.logoGradientBottom, {0, 0});
+    auto clip = CCClippingNode::create(stencil);
+    clip->setAlphaThreshold(LETTER_ALPHA);
+    auto gradient = CCLayerGradient::create(Theme::withAlpha(theme.logoGradientTop, 255),
+                                            Theme::withAlpha(theme.logoGradientBottom, 255));
+    gradient->setContentSize(size);
+    clip->addChild(gradient);
+    node->addChild(clip);
+  }
+  else
+    node->addChild(top);
 
-  node->setContentSize({x + height * SPIKE_WIDTH + theme.logoShadowOffset, size.height});
+  // A few sparkles on the letters' tops
+  auto count = std::clamp(static_cast<int>(theme.logoSparkles), 0, static_cast<int>(std::size(SPARKLES)));
+  if (count > 0 && theme.logoSparkleSize > 0)
+  {
+    auto draw = CCDrawNode::create();
+    auto color = ccc4FFromccc3B(theme.logoSparkleColor);
+    for (int i = 0; i < count; i++)
+      sparkle(draw, {size.width * SPARKLES[i][0], size.height * SPARKLES[i][1]}, theme.logoSparkleSize / 2, color);
+    node->addChild(draw);
+  }
+
+  node->setContentSize({size.width + depth * theme.logoDepthOffset + theme.logoShadowOffset, size.height});
   return node;
+}
+
+CCNode* MSLogo::createGrid(CCSize area)
+{
+  auto const& theme = Theme::get();
+  if (theme.logoGridOpacity == 0 || theme.logoGridStep <= 0)
+    return nullptr;
+  auto draw = CCDrawNode::create();
+  auto color = ccc4FFromccc3B(theme.logoGridColor);
+  color.a = theme.logoGridOpacity / 255.f;
+  // Hairlines, a step apart
+  auto line = 0.25f;
+  for (auto x = 0.f; x <= area.width; x += theme.logoGridStep)
+    draw->drawSegment({x, 0}, {x, area.height}, line, color);
+  for (auto y = 0.f; y <= area.height; y += theme.logoGridStep)
+    draw->drawSegment({0, y}, {area.width, y}, line, color);
+  return draw;
 }
 
 bool MSLogo::init()
@@ -83,13 +128,14 @@ bool MSLogo::init()
   if (!CCNode::init())
     return false;
   auto const& theme = Theme::get();
-  CCSize area{theme.rowWidth, theme.logoTop - theme.logoBottom};
+  CCSize area{theme.logoWidth, theme.logoTop - theme.logoBottom};
   this->setContentSize(area);
   this->setAnchorPoint({0, 0});
 
   CCNode* art = nullptr;
   if (ms::resourceExists(theme.logoSprite))
     art = CCSprite::create(theme.logoSprite.c_str());
+  auto stand = !art;
   if (!art)
     art = this->createWordmark();
   if (!art)
@@ -102,6 +148,13 @@ bool MSLogo::init()
   art->setAnchorPoint({0, 0});
   art->ignoreAnchorPointForPosition(false);
   art->setPosition({0, (area.height - size.height * art->getScale()) / 2});
+
+  // The grid behind the text logo only: real art brings its own
+  if (stand)
+  {
+    if (auto grid = this->createGrid(area))
+      this->addChild(grid);
+  }
   this->addChild(art);
   return true;
 }

@@ -9,13 +9,16 @@ The background art is in `resources/background/`, the font and the sounds are fr
 ## What it does
 
 - **The menu on the left**: a small logo, "MAIN MENU" under it, then a compact column of low purple-pink plates (148×14 pt, one every 16 pt): PLAY, WARDROBE, CREATE, SETTINGS, ACHIEVEMENTS, STATISTICS (in Russian or English, upper case, a condensed bold font). EXIT stands apart, shorter, near the bottom. The whole plate is clickable; hover and the arrow keys light up the same way (the plate's color, no movement), Enter chooses. When the mouse leaves, the keyboard's choice is lit again
-- **The logo** is a text stand-in for now ("Geometry Dash" in pink with a highlight, a shadow, a GD cube and spike): the theme's `logo-sprite` takes the real art when there is some
+- **Rounded type**: M PLUS Rounded 1c Bold for the items, ExtraBold for "MAIN MENU" and the logo, pink-lilac text with a soft shadow on muted translucent lilac plates; the lit row is lighter and pinker with a soft glow
+- **One shine** runs through the letters of an item when the mouse comes onto it (or the arrow keys choose it): a soft pink band with a bright core, cut to the letters' shape, once, about half a second
+- **EXIT leans away** from the mouse as if held to its place by a spring: the closer the mouse, the further (up to 11 pt), stretched and tilted a little, back with a damped spring when the mouse leaves. It always stays under a mouse that aims at it and holds still while pressed, so it's always clickable. Keyboard only: it doesn't move
+- **The logo**: "Geometry Dash" in the heavy rounded font with a pink gradient, depth, a shadow, sparkles and a thin grid behind (a text logo; the theme's `logo-sprite` takes real art)
 - **Each item presses its vanilla button** through `activate()`, so every mod hooking `onPlay`, `onGarage`, `onCreator`, `onOptions` and the others keeps working. No vanilla button, no item
 - **The tray**: one row in the bottom right corner, every button scaled to the same small slot: the buttons other mods add (the Geode button too) and the vanilla ones that do something and have no item (the daily chest, Newgrounds). At its end, **"…"** opens a popup with RobTop, the social links and More Games
 - **The profile card** in the bottom left corner, small and quiet: a round avatar with the player's cube in their colors, and their name. It opens the profile like the vanilla button (which it presses with `activate()`)
 - **Nothing covers the menu**: any other node in its way (a mod's too) is moved to the right of it
-- **The background** is dark: the room's layers tinted and dimmed, a darkening over them, a soft crimson glow on the right, a shade on the left under the menu. The layers follow the mouse a little (2 pt). An optional character layer on the right is off until there's art for it
-- **Mita** on the right: an animated idle loop (127 frames at 24 fps, from a CC BY 4.0 model, see LICENSES.md) over the background and under every button. She plays from the time that passed, so at the same speed at any frame rate. Her 22 atlas pages stream: at most two on the GPU (~21 MiB), decoded ahead on a worker thread with Windows' PNG decoder, uploaded on the main thread, freed when the menu closes. Missing or broken files: the menu works without her, the log says why once
+- **The background** is dark and pink: the room's layers tinted and dimmed, a darkening, a faint repeating pattern of hearts, stars and flowers, a soft crimson glow on the right, a few slow pink motes, a shade on the left under the menu, a vignette. The layers follow the mouse a little (2 pt)
+- **Mita** on the right, as a close portrait (face and shoulders, the top of her hair past the top edge) with a thin pink line around her outline: an animated idle loop (127 frames at 24 fps, from a CC BY 4.0 model, see LICENSES.md) over the background and under every button. She plays from the time that passed, so at the same speed at any frame rate. Her 22 atlas pages stream: at most two on the GPU (~21 MiB), decoded ahead on a worker thread with Windows' PNG decoder, uploaded on the main thread, freed when the menu closes. Missing or broken files: the menu works without her, the log says why once
 - **The transition**: a short darkening, then the game's own transition. No transition is hooked, other screens change exactly as before
 
 ## Settings
@@ -44,6 +47,8 @@ Colors, fonts, sprites, sounds, spacing and timings all come from the theme (`sr
 	]
 }
 ```
+
+New keys (all with defaults; a missing or wrong one keeps its default): `title-font`; `shine-enabled`, `shine-color`, `shine-core-color`, `shine-opacity`, `shine-duration`, `shine-width`, `shine-core-width`, `shine-fade-out`; `row-glow-color`, `row-glow-opacity`, `row-glow-spread`; `exit-dodge-enabled`, `exit-dodge-radius` (55), `exit-dodge-max` (11), `exit-dodge-vertical`, `exit-dodge-stretch` (0.04), `exit-dodge-tilt` (3°), `exit-dodge-stiffness`, `exit-dodge-damping`; `pattern-sprite`, `pattern-color`, `pattern-opacity` (16), `pattern-tile`; `vignette-sprite`, `vignette-color`, `vignette-opacity`; `particle-count` (14), `particle-color`, `particle-opacity`, `particle-size-min/max`, `particle-speed`, `particle-life`; `logo-width`, `logo-gradient-top/bottom`, `logo-depth-color/steps/offset`, `logo-sparkle-color`, `logo-sparkles`, `logo-sparkle-size`, `logo-grid-color/step/opacity`; `mita-outline-enabled`, `mita-outline-color`, `mita-outline-opacity`, `mita-outline-width`.
 
 Mita's keys: `mita-enabled` (true), `mita-x` / `mita-y` (414.5, 0: her bottom middle), `mita-scale` (0.4444444444 points per pixel of her 640×720 canvas, so as high as the screen), `mita-fps` (24; 0 takes the manifest's), `mita-parallax-enabled` (false), `mita-parallax-max-x` / `mita-parallax-max-y` (3, 2; down only, so the cut at the bottom never shows a gap), `mita-freeze-frame` (-1 plays; 0…126 holds that frame still, to check frames one at a time). On a narrower window she stays against the right edge and is cut there rather than covering the buttons.
 
@@ -76,7 +81,7 @@ geode build --ninja
 
 Or `cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo && cmake --build build --config RelWithDebInfo`. Needs the [Geode SDK](https://docs.geode-sdk.org/getting-started/sdk) (`GEODE_SDK`) and Geode CLI. Geode 5.10.1, GD 2.2081, Windows.
 
-The UI placeholders are drawn by `python tools/make_placeholders.py` (Pillow). The font is [Roboto](https://fonts.google.com/specimen/Roboto) (SIL Open Font License) fixed at Bold and 80% width by `tools/make_font.py` (fontTools), as cocos2d-x 2.2 reads static fonts, the sounds are from [Kenney's UI Audio](https://kenney.nl/assets/ui-audio) (CC0): see [LICENSES.md](LICENSES.md).
+The UI placeholders are drawn by `python tools/make_placeholders.py` (Pillow). The fonts are [M PLUS Rounded 1c](https://fonts.google.com/specimen/M+PLUS+Rounded+1c) Bold and ExtraBold (SIL Open Font License), the sounds are from [Kenney's UI Audio](https://kenney.nl/assets/ui-audio) (CC0): see [LICENSES.md](LICENSES.md).
 
 ## Compatibility checklist
 
@@ -110,7 +115,8 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] The profile card is in the bottom left corner, under EXIT, not touching it: the player's cube in their colors (with the glow if it's on) in a small circle, their name next to it
 - [ ] Clicking the card opens your profile, like the vanilla button; with an account name changed, the card shows the new one at the next menu
 - [ ] Nothing (a vanilla menu, a mod's button or label) is over the column's items or right next to them; the log says (debug level) which nodes were moved
-- [ ] Behind the plates: only the dark background, no stripes
+- [ ] Behind the plates: only the dark background, no stripes; the hearts/stars/flowers pattern barely visible, never over the text or her face; a few motes drifting slowly up
+- [ ] Without a stencil buffer (the log says so once): no shine and a plain pink logo, nothing else changes
 - [ ] The window and the curtain on the right aren't washed out; the glow tints them, it doesn't whiten them
 - [ ] The logo fits its area over "MAIN MENU" and doesn't touch the buttons at the top left
 
@@ -130,8 +136,21 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] A mod that moves the vanilla buttons to another menu: the items still find them (the log names any that weren't found)
 - [ ] A mod that redoes the main menu too: no crash; with *Vanilla menu* on, that mod's menu is back
 
+**Hover and EXIT**
+
+- [ ] Move onto each item: one shine runs through its letters, left to right, in about half a second, and stops; the letters stay readable; no white rectangle over the plate
+- [ ] Run the mouse quickly up and down over all the items: no shine left glowing, nothing piling up; moving back onto an item starts a new one
+- [ ] The arrow keys: the same highlight and one shine per move
+- [ ] Bring the mouse near EXIT from each side: it leans away, more the closer the mouse is, stretched and tilted a little, then springs back with a little bounce when the mouse leaves; no jitter with the mouse resting on it, no jumps
+- [ ] Click EXIT from every side, slowly and quickly: every click lands and the quit popup opens; pressing and dragging off it cancels as usual
+- [ ] At 30, 60 and 144 fps EXIT moves the same way
+- [ ] Use only the keyboard to reach EXIT: it doesn't move; Enter quits
+- [ ] A popup over the menu: EXIT springs back home and doesn't follow the mouse under the popup
+
 **Mita**
 
+- [ ] She's a close portrait: face and shoulders, the top of her hair cut by the top edge, her chest by the bottom one; her face never cut during the whole loop; her drawing right of the menu
+- [ ] A thin pink line around her outline, no rectangle around her, no glow over her face; her details as sharp as before
 - [ ] Still frames first: `"mita-freeze-frame": 0`, then 5, 6 (the first frame of the second atlas page) and 126, with parallax off. Each one is the whole portrait, as in `preview.gif`, the same size and place each time. The log (debug) says `texture rect 640x720 px`, `on screen 284.444x320.000 at (414.50, 0.00)` on a 16:9 window, with no "she's drawn" warning
 - [ ] Then `-1` to play: the same portrait moving, no jumps between frames 5 and 6 or 126 and 0
 - [ ] She stands on the right, her feet cut by the bottom edge, over the room and under the tray, the card, the column and every mod's button; nothing she covers stops being clickable
