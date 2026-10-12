@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include "EyeVertices.hpp"
 #define CGLTF_IMPLEMENTATION
 #include <cgltf.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -30,6 +31,7 @@ struct Model::Data {
     std::unique_ptr<cgltf_data, decltype(&cgltf_free)> gltf{nullptr, cgltf_free};
     struct Source {
         cgltf_node* node;
+        bool face = false;
         std::vector<glm::vec3> positions;
         std::array<std::vector<glm::vec3>, 2> morphs;
         std::vector<glm::uvec4> joints;
@@ -50,7 +52,7 @@ struct Model::Data {
     std::vector<size_t> order;
     glm::mat3 headRestOrientation{1};
     float duration = 0;
-    int head = -1, leftEye = -1, rightEye = -1;
+    int head = -1, torso = -1;
 };
 Model::~Model() = default;
 Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
@@ -87,9 +89,8 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
         auto& node = raw->nodes[i];
         if (!node.parent) visit(visit, &node);
         std::string name = node.name ? node.name : "";
+        if (name == "Spine_082_128") m->torso = static_cast<int>(i);
         if (name == "Head_0125_182") m->head = static_cast<int>(i);
-        if (name == "Left Eye_0142_203") m->leftEye = static_cast<int>(i);
-        if (name == "Right Eye_0144_206") m->rightEye = static_cast<int>(i);
         if (!node.mesh) continue;
         require(node.skin != nullptr, "Expected skinned Mita mesh");
         for (size_t j = 0; j < node.mesh->primitives_count; ++j) {
@@ -106,6 +107,8 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
             Mesh mesh;
             mesh.image = static_cast<unsigned>(material->emissive_texture.texture->image - raw->images);
             Data::Source source; source.node = &node;
+            source.face = primitive.targets_count > 0;
+            if (source.face) require(position->count == 2451, "Unexpected face topology for iris tracking");
             for (size_t v = 0; v < position->count; ++v) {
                 source.positions.emplace_back(read(position, v));
                 source.joints.emplace_back(read(joints, v));
@@ -140,7 +143,7 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
             meshes.push_back(std::move(mesh)); m->sources.push_back(std::move(source));
         }
     }
-    require(m->head >= 0 && m->leftEye >= 0 && m->rightEye >= 0 && !meshes.empty(), "Mita rig does not match");
+    require(m->head >= 0 && m->torso >= 0 && !meshes.empty(), "Mita rig does not match");
     float rest[16];
     cgltf_node_transform_world(&raw->nodes[m->head], rest);
     auto restWorld = glm::make_mat4(rest);
@@ -165,7 +168,7 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
     require(m->duration > 0, "Empty idle animation");
     pose(0, 0);
 }
-void Model::pose(double seconds, float exitWeight, glm::vec2 gaze) {
+void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze) {
     auto raw = m->gltf.get();
     float t = static_cast<float>(std::fmod(std::max(seconds, 0.0) * 0.65, m->duration));
     for (size_t i = 0; i < raw->nodes_count; ++i) {
@@ -189,6 +192,7 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze) {
     float swayTime = static_cast<float>(std::fmod(std::max(seconds, 0.0), 13.0));
     float sway = swayTime > 9 ? std::sin((swayTime - 9) / 4 * 6.2831853f) * 0.025f : 0;
     gaze = glm::clamp(gaze, glm::vec2(-1), glm::vec2(1));
+    headGaze = glm::clamp(headGaze, glm::vec2(-1), glm::vec2(1));
     for (auto i : m->order) {
         auto& node = raw->nodes[i];
         auto local = node.has_matrix ? glm::make_mat4(node.matrix) :
@@ -197,15 +201,13 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze) {
         auto parent = node.parent ? m->world[node.parent - raw->nodes] : glm::mat4(1);
         auto world = parent * local;
         float yaw = 0, pitch = 0, roll = 0;
+        if (static_cast<int>(i) == m->torso) yaw = -0.40f;
         if (static_cast<int>(i) == m->head) {
             // Aim from the neutral rig pose, not on top of the idle clip's head tilt.
             // The neck position and the rest of the body keep the author's animation.
             for (int axis = 0; axis < 3; ++axis)
                 world[axis] = glm::vec4(m->headRestOrientation[axis] * glm::length(glm::vec3(world[axis])), 0);
-            yaw = gaze.x * 0.34f; pitch = -gaze.y * 0.32f; roll = sway;
-        }
-        if (static_cast<int>(i) == m->leftEye || static_cast<int>(i) == m->rightEye) {
-            yaw = gaze.x * 0.16f; pitch = -gaze.y * 0.12f;
+            yaw = headGaze.x * 0.23f; pitch = -headGaze.y * 0.075f; roll = sway;
         }
         if (yaw || pitch || roll) {
             auto pivot = glm::vec3(world[3]);
@@ -228,6 +230,11 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze) {
         for (size_t v = 0; v < mesh.vertices.size(); ++v) {
             glm::vec4 p(source.positions[v] + source.morphs[0][v] * blink +
                         source.morphs[1][v] * (1 - exitWeight), 1);
+            if (source.face && std::binary_search(EyeVertices.begin(), EyeVertices.end(), static_cast<unsigned>(v))) {
+                // Iris movement stays independent of the head and fades out under closed eyelids.
+                p.x += gaze.x * 0.0045f * (1 - blink);
+                p.y += gaze.y * 0.0085f * (1 - blink);
+            }
             glm::vec4 out(0);
             for (int k = 0; k < 4; ++k) out += (skin[source.joints[v][k]] * p) * source.weights[v][k];
             // A few author vertices are unweighted; Blender leaves those in mesh space too.

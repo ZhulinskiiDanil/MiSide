@@ -21,7 +21,7 @@ public:
     ~Model();
     Model(Model const&) = delete;
     Model& operator=(Model const&) = delete;
-    void pose(double seconds, float exitWeight, glm::vec2 gaze = {});
+    void pose(double seconds, float exitWeight, glm::vec2 gaze = {}, glm::vec2 headGaze = {});
     std::vector<Mesh> meshes;
     std::vector<Image> images;
 private:

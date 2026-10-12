@@ -110,6 +110,9 @@ protected:
   bool m_exitConfirmation = false;
   float m_expression = 0;
   cocos2d::CCPoint m_gaze;
+  cocos2d::CCPoint m_headGaze;
+  cocos2d::CCPoint m_lastGazeAim;
+  float m_gazeHold = 0;
   std::optional<cocos2d::CCPoint> m_menuGazeTarget;
   float m_renderWait = 0;
   unsigned m_contextGeneration = 0;

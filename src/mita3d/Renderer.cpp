@@ -158,7 +158,7 @@ void Renderer::abandonContext() {
     m->images.clear();
 }
 unsigned Renderer::texture() const { return m->output; }
-void Renderer::render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze) {
+void Renderer::render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze) {
     State state;
     width = std::clamp(width, 64, 1920); height = std::clamp(height, 64, 2160);
     if (width != m->width || height != m->height) {
@@ -179,7 +179,7 @@ void Renderer::render(int width, int height, double seconds, float exitWeight, g
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) throw std::runtime_error("Incomplete Mita render FBO");
         m->width = width; m->height = height;
     }
-    m->model.pose(seconds, exitWeight, gaze);
+    m->model.pose(seconds, exitWeight, gaze, headGaze);
     glBindFramebuffer(GL_FRAMEBUFFER, m->fbo); glViewport(0, 0, width, height);
     for (auto cap : State::caps) glDisable(cap);
     glEnable(GL_DEPTH_TEST); glEnable(GL_MULTISAMPLE);

@@ -9,7 +9,7 @@ public:
     ~Renderer();
     Renderer(Renderer const&) = delete;
     Renderer& operator=(Renderer const&) = delete;
-    void render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze);
+    void render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze = {});
     unsigned texture() const;
     bool hit(float u, float v) const;
     void abandonContext();

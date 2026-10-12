@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
         float expression = argc > 3 ? std::stof(argv[3]) : 0;
         double seconds = argc > 4 ? std::stod(argv[4]) : 0;
         glm::vec2 gaze = argc > 6 ? glm::vec2(std::stof(argv[5]), std::stof(argv[6])) : glm::vec2(0);
-        renderer.render(960, 1080, seconds, expression, gaze);
+        renderer.render(960, 1080, seconds, expression, gaze, gaze);
         GLint viewport[4], active; GLboolean depth, color[4];
         glGetIntegerv(GL_VIEWPORT, viewport); glGetIntegerv(GL_ACTIVE_TEXTURE, &active);
         glGetBooleanv(GL_DEPTH_WRITEMASK, &depth); glGetBooleanv(GL_COLOR_WRITEMASK, color);

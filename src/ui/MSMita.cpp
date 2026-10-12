@@ -701,7 +701,8 @@ void MSMita::update3D(float dt)
   m_expression += ((m_exitHovered && !m_exitConfirmation ? 1.f : 0.f) - m_expression) * (1 - std::exp(-dt / 0.18f));
   auto win = CCDirector::get()->getWinSize();
   CCPoint aim(0, 0);
-  if (!m_exitConfirmation && m_menuGazeTarget && m_sprite && !ms::coveredBy(this) && win.width > 0 && win.height > 0)
+  bool trackingMenu = !m_exitConfirmation && m_menuGazeTarget && m_sprite && !ms::coveredBy(this) && win.width > 0 && win.height > 0;
+  if (trackingMenu)
   {
     auto size = m_sprite->getContentSize();
     auto eyes = m_sprite->convertToWorldSpace({size.width * 0.5f, size.height * 0.59f});
@@ -709,14 +710,22 @@ void MSMita::update3D(float dt)
     aim = CCPoint(std::clamp(delta.x / (win.width * 0.6f), -1.f, 1.f),
                   std::clamp(delta.y / (win.height * 0.42f), -1.f, 1.f));
   }
-  m_gaze = m_gaze + (aim - m_gaze) * (1 - std::exp(-dt / 0.16f));
+  if (trackingMenu) {
+    m_lastGazeAim = aim;
+    m_gazeHold = 0.65f;
+  } else {
+    m_gazeHold = m_exitConfirmation ? 0.f : std::max(0.f, m_gazeHold - dt);
+  }
+  auto headAim = m_gazeHold > 0 ? m_lastGazeAim : aim;
+  m_gaze = m_gaze + (aim - m_gaze) * (1 - std::exp(-dt / 0.025f));
+  m_headGaze = m_headGaze + (headAim - m_headGaze) * (1 - std::exp(-dt / 0.38f));
   auto frame = CCEGLView::sharedOpenGLView()->getFrameSize();
   int height = std::clamp(static_cast<int>(frame.height), 540, 1440);
   int width = height * 8 / 9;
   m_renderWait += dt;
   if (m_sprite && height == m_renderHeight && m_renderWait < 1.f / 60.f) return;
   m_renderWait = std::fmod(m_renderWait, 1.f / 60.f);
-  m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y});
+  m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y}, {m_headGaze.x, m_headGaze.y});
   if (!m_sprite || height != m_renderHeight)
   {
     auto texture = new RenderTexture(m_renderer->texture(), width, height);
