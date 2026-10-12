@@ -1,5 +1,5 @@
-// Desktop OpenGL 3.0 through GLEW and Windows' WIC: Windows only for now. Elsewhere the renderer can't be made,
-// and MSMita shows the atlases instead
+// Desktop OpenGL 3.0 through GLEW and Windows' WIC on Windows; OpenGL ES 2.0 and stb_image on Android. Elsewhere
+// the renderer can't be made, and MSMita shows the atlases instead
 #ifdef _WIN32
 #define NOMINMAX
 #include <Windows.h>
@@ -214,6 +214,253 @@ bool Renderer::hit(float u, float v) const {
     return pixel[3] >= 128;
 }
 }
+#elif defined(__ANDROID__)
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#include <stb_image.h>
+#include "Renderer.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
+#include <string>
+
+namespace mita3d {
+namespace {
+// All GL calls here bypass cocos' caches; restore their exact incoming values. OpenGL ES 2.0 has no vertex array
+// objects, so the two attributes used here (cocos' position and colour slots) are put back as they were too
+struct State {
+    GLint program, buffer, elements, fbo, rbo, activeTexture, texture0, viewport[4];
+    GLint depthFunc, pack, unpack;
+    GLboolean depthMask, colorMask[4];
+    GLfloat clearColor[4], clearDepth, depthRange[2];
+    static constexpr GLenum caps[] = {GL_BLEND, GL_DEPTH_TEST, GL_CULL_FACE, GL_SCISSOR_TEST, GL_STENCIL_TEST,
+        GL_DITHER, GL_SAMPLE_ALPHA_TO_COVERAGE};
+    GLboolean enabled[std::size(caps)];
+    struct Attribute { GLint enabled, size, type, normalized, stride, buffer; void* pointer; };
+    Attribute attributes[2];
+    State() {
+        glGetIntegerv(GL_CURRENT_PROGRAM, &program); glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &buffer);
+        glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &elements); glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+        glGetIntegerv(GL_RENDERBUFFER_BINDING, &rbo);
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture); glActiveTexture(GL_TEXTURE0);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &texture0); glGetIntegerv(GL_VIEWPORT, viewport);
+        glGetIntegerv(GL_DEPTH_FUNC, &depthFunc); glGetBooleanv(GL_DEPTH_WRITEMASK, &depthMask);
+        glGetBooleanv(GL_COLOR_WRITEMASK, colorMask); glGetFloatv(GL_COLOR_CLEAR_VALUE, clearColor);
+        glGetFloatv(GL_DEPTH_CLEAR_VALUE, &clearDepth); glGetFloatv(GL_DEPTH_RANGE, depthRange);
+        glGetIntegerv(GL_PACK_ALIGNMENT, &pack); glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpack);
+        for (size_t i = 0; i < std::size(caps); ++i) enabled[i] = glIsEnabled(caps[i]);
+        for (GLuint i = 0; i < 2; ++i) {
+            auto& a = attributes[i];
+            glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &a.enabled);
+            glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, &a.size);
+            glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, &a.type);
+            glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &a.normalized);
+            glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &a.stride);
+            glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &a.buffer);
+            glGetVertexAttribPointerv(i, GL_VERTEX_ATTRIB_ARRAY_POINTER, &a.pointer);
+        }
+    }
+    ~State() {
+        for (GLuint i = 0; i < 2; ++i) {
+            auto const& a = attributes[i];
+            glBindBuffer(GL_ARRAY_BUFFER, a.buffer);
+            glVertexAttribPointer(i, a.size, a.type, a.normalized, a.stride, a.pointer);
+            if (a.enabled) glEnableVertexAttribArray(i); else glDisableVertexAttribArray(i);
+        }
+        glUseProgram(program); glBindBuffer(GL_ARRAY_BUFFER, buffer); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elements);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo); glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        glBindTexture(GL_TEXTURE_2D, texture0); glActiveTexture(activeTexture);
+        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+        glDepthFunc(depthFunc); glDepthMask(depthMask); glDepthRangef(depthRange[0], depthRange[1]);
+        glColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+        glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]); glClearDepthf(clearDepth);
+        glPixelStorei(GL_PACK_ALIGNMENT, pack); glPixelStorei(GL_UNPACK_ALIGNMENT, unpack);
+        for (size_t i = 0; i < std::size(caps); ++i) { if (enabled[i]) glEnable(caps[i]); else glDisable(caps[i]); }
+    }
+};
+GLuint shader(GLenum type, char const* source) {
+    GLuint id = glCreateShader(type);
+    glShaderSource(id, 1, &source, nullptr); glCompileShader(id);
+    GLint ok = 0; glGetShaderiv(id, GL_COMPILE_STATUS, &ok);
+    if (!ok) { char log[2048]{}; glGetShaderInfoLog(id, sizeof(log), nullptr, log); glDeleteShader(id); throw std::runtime_error(log); }
+    return id;
+}
+constexpr char VERTEX[] = R"(attribute vec3 a_position;
+attribute vec2 a_uv;
+uniform mat4 u_camera;
+varying vec2 v_uv;
+void main() { gl_Position = u_camera * vec4(a_position, 1.0); v_uv = a_uv; }
+)";
+constexpr char FRAGMENT[] = R"(precision mediump float;
+uniform sampler2D u_image;
+varying vec2 v_uv;
+void main() {
+    vec4 color = texture2D(u_image, v_uv);
+    // The author's materials are opaque, emissive, with painted lighting.
+    gl_FragColor = vec4(color.rgb, 1.0);
+}
+)";
+bool hasExtension(char const* name) {
+    auto list = reinterpret_cast<char const*>(glGetString(GL_EXTENSIONS));
+    if (!list) return false;
+    auto length = std::strlen(name);
+    for (auto at = std::strstr(list, name); at; at = std::strstr(at + length, name))
+        if ((at == list || at[-1] == ' ') && (at[length] == ' ' || at[length] == '\0')) return true;
+    return false;
+}
+}
+struct Renderer::Data {
+    Model model;
+    GLuint program = 0, vbo = 0, fbo = 0, depth = 0, output = 0;
+    // One index buffer per mesh, 16-bit (OpenGL ES 2.0 has no 32-bit indices without an extension)
+    std::vector<GLuint> indexBuffers;
+    std::vector<GLsizei> indexCounts;
+    GLint camera = -1;
+    int width = 0, height = 0, samples = 0;
+    // EXT_multisampled_render_to_texture: the GPU resolves the samples into the texture by itself
+    PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC renderbufferMultisample = nullptr;
+    PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC textureMultisample = nullptr;
+    std::vector<GLuint> images;
+    explicit Data(std::filesystem::path const& path) : model(path) {}
+    ~Data() {
+        if (program) glDeleteProgram(program);
+        glDeleteTextures(static_cast<GLsizei>(images.size()), images.data());
+        glDeleteBuffers(static_cast<GLsizei>(indexBuffers.size()), indexBuffers.data());
+        glDeleteTextures(1, &output); glDeleteFramebuffers(1, &fbo); glDeleteRenderbuffers(1, &depth);
+        glDeleteBuffers(1, &vbo);
+    }
+};
+Renderer::Renderer(std::filesystem::path const& path) {
+    State state;
+    m = std::make_unique<Data>(path);
+    GLuint vs = shader(GL_VERTEX_SHADER, VERTEX);
+    GLuint fs = 0;
+    try { fs = shader(GL_FRAGMENT_SHADER, FRAGMENT); } catch (...) { glDeleteShader(vs); throw; }
+    m->program = glCreateProgram();
+    glAttachShader(m->program, vs); glAttachShader(m->program, fs);
+    glBindAttribLocation(m->program, 0, "a_position"); glBindAttribLocation(m->program, 1, "a_uv");
+    glLinkProgram(m->program); glDeleteShader(vs); glDeleteShader(fs);
+    GLint ok; glGetProgramiv(m->program, GL_LINK_STATUS, &ok);
+    if (!ok) throw std::runtime_error("Cannot link Mita shader");
+    m->camera = glGetUniformLocation(m->program, "u_camera");
+    glUseProgram(m->program); glUniform1i(glGetUniformLocation(m->program, "u_image"), 0);
+    glGenBuffers(1, &m->vbo);
+    // The triangles never change, only the vertices: each mesh's indices go up once
+    for (auto const& mesh : m->model.meshes) {
+        std::vector<std::uint16_t> indices;
+        indices.reserve(mesh.indices.size());
+        for (auto index : mesh.indices) {
+            if (index > 0xffff) throw std::runtime_error("Mita mesh too big for 16-bit indices");
+            indices.push_back(static_cast<std::uint16_t>(index));
+        }
+        GLuint buffer; glGenBuffers(1, &buffer); m->indexBuffers.push_back(buffer);
+        m->indexCounts.push_back(static_cast<GLsizei>(indices.size()));
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(std::uint16_t), indices.data(), GL_STATIC_DRAW);
+    }
+    for (auto const& image : m->model.images) {
+        int w = 0, h = 0, channels = 0;
+        std::unique_ptr<stbi_uc, void (*)(void*)> pixels(
+            stbi_load_from_memory(image.png.data(), static_cast<int>(image.png.size()), &w, &h, &channels, 4), stbi_image_free);
+        if (!pixels) throw std::runtime_error("Cannot decode embedded Mita PNG");
+        if (!w || !h || w > 8192 || h > 8192) throw std::runtime_error("Invalid Mita texture dimensions");
+        GLuint texture; glGenTextures(1, &texture); m->images.push_back(texture);
+        glBindTexture(GL_TEXTURE_2D, texture); glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
+        // Mipmaps and repeat need power-of-two sizes on OpenGL ES 2.0
+        bool pot = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, pot ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, pot ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, pot ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        if (pot) glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    glGenFramebuffers(1, &m->fbo); glGenRenderbuffers(1, &m->depth); glGenTextures(1, &m->output);
+    if (hasExtension("GL_EXT_multisampled_render_to_texture")) {
+        m->renderbufferMultisample = reinterpret_cast<PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC>(
+            eglGetProcAddress("glRenderbufferStorageMultisampleEXT"));
+        m->textureMultisample = reinterpret_cast<PFNGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC>(
+            eglGetProcAddress("glFramebufferTexture2DMultisampleEXT"));
+        if (m->renderbufferMultisample && m->textureMultisample) {
+            GLint maxSamples = 0; glGetIntegerv(GL_MAX_SAMPLES_EXT, &maxSamples);
+            m->samples = std::clamp(maxSamples, 0, 4);
+        }
+    }
+}
+Renderer::~Renderer() = default;
+void Renderer::abandonContext() {
+    m->program = m->vbo = m->fbo = m->depth = m->output = 0;
+    m->indexBuffers.clear();
+    m->images.clear();
+}
+unsigned Renderer::texture() const { return m->output; }
+void Renderer::render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze, float swatTime) {
+    State state;
+    width = std::clamp(width, 64, 1920); height = std::clamp(height, 64, 2160);
+    if (width != m->width || height != m->height) {
+        glBindTexture(GL_TEXTURE_2D, m->output);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindFramebuffer(GL_FRAMEBUFFER, m->fbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, m->depth);
+        auto attach = [&](int samples) {
+            if (samples > 0) {
+                m->textureMultisample(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m->output, 0, samples);
+                m->renderbufferMultisample(GL_RENDERBUFFER, samples, GL_DEPTH_COMPONENT16, width, height);
+            } else {
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m->output, 0);
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height);
+            }
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m->depth);
+            return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+        };
+        // Multisampled where the GPU can, else plain
+        if (!attach(m->samples)) {
+            m->samples = 0;
+            if (!attach(0)) throw std::runtime_error("Incomplete Mita render FBO");
+        }
+        m->width = width; m->height = height;
+    }
+    m->model.pose(seconds, exitWeight, gaze, headGaze, swatTime);
+    glBindFramebuffer(GL_FRAMEBUFFER, m->fbo); glViewport(0, 0, width, height);
+    for (auto cap : State::caps) glDisable(cap);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL); glDepthMask(GL_TRUE); glDepthRangef(0, 1);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glClearColor(0, 0, 0, 0); glClearDepthf(1); glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Blender close-up scene: camera (0,-4,1.56), height 0.48 metres; glTF is Y-up.
+    float halfHeight = 0.24f, halfWidth = halfHeight * width / height;
+    float centerOffset = halfWidth * (2 * CanvasAnchorX - 1);
+    auto camera = glm::ortho(-halfWidth - centerOffset, halfWidth - centerOffset, -halfHeight, halfHeight, 0.1f, 10.f) *
+        glm::lookAt(glm::vec3(0, 1.56f, 4), glm::vec3(0, 1.56f, 0), glm::vec3(0, 1, 0));
+    glUseProgram(m->program); glUniformMatrix4fv(m->camera, 1, GL_FALSE, glm::value_ptr(camera));
+    glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
+    glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, position)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, uv)));
+    for (size_t i = 0; i < m->model.meshes.size(); ++i) {
+        auto const& mesh = m->model.meshes[i];
+        glBindTexture(GL_TEXTURE_2D, m->images.at(mesh.image));
+        glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), GL_STREAM_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indexBuffers[i]);
+        glDrawElements(GL_TRIANGLES, m->indexCounts[i], GL_UNSIGNED_SHORT, nullptr);
+    }
+}
+bool Renderer::hit(float u, float v) const {
+    if (u < 0 || v < 0 || u >= 1 || v >= 1 || !m->width) return false;
+    State state;
+    glBindFramebuffer(GL_FRAMEBUFFER, m->fbo); glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    unsigned char pixel[4]{};
+    glReadPixels(static_cast<int>(u * m->width), static_cast<int>(v * m->height), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+    return pixel[3] >= 128;
+}
+}
 #else
 #include "Renderer.hpp"
 #include <stdexcept>
@@ -221,7 +468,7 @@ bool Renderer::hit(float u, float v) const {
 namespace mita3d {
 struct Renderer::Data {};
 Renderer::Renderer(std::filesystem::path const&) {
-    throw std::runtime_error("3D Mita isn't on this platform yet (desktop OpenGL 3.0 only)");
+    throw std::runtime_error("3D Mita isn't on this platform yet (Windows and Android only)");
 }
 Renderer::~Renderer() = default;
 void Renderer::abandonContext() {}

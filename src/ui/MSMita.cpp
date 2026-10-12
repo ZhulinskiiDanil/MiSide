@@ -11,9 +11,7 @@
 #include <wincodec.h>
 #include <wrl/client.h>
 #else
-#define STB_IMAGE_STATIC
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
+// Its code is in StbImage.cpp
 #include <stb_image.h>
 #endif
 
@@ -467,10 +465,10 @@ bool MSMita::init()
     return false;
   m_modelPath = Mod::get()->getResourcesDir() / "mita.glb";
   std::error_code error;
-#ifdef GEODE_IS_WINDOWS
+#if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_ANDROID)
   m_use3D = std::filesystem::is_regular_file(m_modelPath, error);
 #else
-  // The 3D renderer is desktop OpenGL's: the atlases here
+  // No 3D renderer for this platform yet: the atlases
   m_use3D = false;
 #endif
   if (m_use3D)

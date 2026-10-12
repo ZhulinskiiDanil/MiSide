@@ -38,3 +38,8 @@ setup_geode_mod(${PROJECT_NAME})
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} windowscodecs ole32)
 endif()
+
+# Mita's 3D on OpenGL ES takes the multisampling extension's functions from EGL
+if (ANDROID)
+    target_link_libraries(${PROJECT_NAME} EGL)
+endif()
