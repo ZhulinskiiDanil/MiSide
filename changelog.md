@@ -1,3 +1,8 @@
+# v1.1.1
+
+* The official levels and the pause no longer show GD's own screen under the mod's: the mod now requires Node IDs, which Geode installs with it
+* Swipes scroll the level list and the pause's and settings' columns (Android)
+
 # v1.1.0
 
 * Android support (64-bit and 32-bit): Mita is the 2D animation there; GRAPHICS and KEYS stay desktop-only, as in GD
