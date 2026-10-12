@@ -2,7 +2,9 @@
 
 #include "Theme.hpp"
 #include "options/MSOptionsData.hpp"
+#include "options/MSOptionsScreen.hpp"
 #include "options/MSOptionsText.hpp"
+#include "options/MSWindows.hpp"
 #include "pause/MSPauseColumn.hpp"
 #include "ui/MSScreen.hpp"
 #include "ui/MSStyle.hpp"
@@ -16,9 +18,6 @@ using namespace geode::prelude;
 
 namespace
 {
-  // The info's text gets this much smaller at a time until it fits over the bottom row, down to the smallest
-  constexpr float INFO_SHRINK = 0.9f;
-  constexpr float INFO_SMALLEST = 0.18f;
   // GD's own page names that have the mod's rows after their toggles
   constexpr char const* AUDIO_PAGE = "Audio";
   constexpr char const* OTHER_PAGE = "Other";
@@ -50,16 +49,7 @@ namespace
     column->setInfo(ms::options::info(toggle, en));
   }
 
-  // GD's window that drops down (the account, the soundtracks, the support, the saved songs) over everything, as
-  // GD's settings add them
-  void dropDown(GJDropDownLayer* layer)
-  {
-    auto scene = CCDirector::get()->getRunningScene();
-    if (!layer || !scene)
-      return;
-    scene->addChild(layer, std::max(scene->getHighestChildZ(), 105));
-    layer->showLayer(false);
-  }
+  using ms::options::dropDown;
 
   std::string quality(std::string const& gd, bool en)
   {
@@ -79,101 +69,6 @@ namespace
   // Shown on rows GD has hidden for now (the resolution in full screen)
   constexpr char const* UNAVAILABLE = "—";
 } // namespace
-
-// ! --- A settings screen --- !
-
-// A screen of the mod's with a column of GD's settings, longer ones scrolling, and under it what the lit row does.
-// The GD windows it works are made for it and never shown; they go with it
-class MSOptionsScreen : public MSScreen
-{
-public:
-  ~MSOptionsScreen() override
-  {
-    for (auto const& layer : m_driven)
-      ms::options::dispose(layer);
-  }
-
-protected:
-  bool initOptions(std::string const& title)
-  {
-    if (!this->initScreen(title))
-      return false;
-    auto const& theme = Theme::get();
-    m_column = MSPauseColumn::create();
-    if (!m_column)
-      return false;
-    m_column->setRowWidth(theme.optionsRowWidth);
-    auto top = theme.screenTop + fromTop();
-    auto bottom = theme.optionsViewBottom + fromTop();
-    m_column->setViewHeight(std::max(top - bottom, theme.pauseRowHeight));
-    m_column->setOnInfo([this](std::string const& info) { this->showInfo(info); });
-    return true;
-  }
-
-  void finishOptions()
-  {
-    auto const& theme = Theme::get();
-    m_mainLayer->addChild(m_column, 10);
-    m_column->finish(theme.screenLeft, theme.screenTop + fromTop());
-  }
-
-  // GD's window, kept for the rows to work
-  template <class T>
-  T* drive(T* layer)
-  {
-    if (layer)
-      m_driven.emplace_back(layer);
-    return layer;
-  }
-
-  // Wrapped to the rows' width under the column, smaller until it fits over the bottom row
-  void showInfo(std::string const& text)
-  {
-    if (text == m_infoText)
-      return;
-    m_infoText = text;
-    if (m_info)
-    {
-      m_info->removeFromParent();
-      m_info = nullptr;
-    }
-    if (text.empty())
-      return;
-    auto const& theme = Theme::get();
-    auto width = theme.optionsRowWidth - 4;
-    auto top = theme.optionsInfoTop + fromTop();
-    auto room = std::max(top - (theme.screenBackTop + fromTop()) - 2, 4.f);
-    for (auto scale = std::max(theme.optionsInfoScale, INFO_SMALLEST);; scale *= INFO_SHRINK)
-    {
-      CCNode* node = nullptr;
-      if (ms::resourceExists(theme.font))
-        node = CCLabelBMFont::create(text.c_str(), theme.font.c_str(), width / scale, kCCTextAlignmentLeft);
-      if (!node)
-        node = ms::createLabel(text);
-      if (!node)
-        return;
-      node->setScale(scale);
-      if (node->getScaledContentSize().height > room && scale * INFO_SHRINK >= INFO_SMALLEST)
-        continue;
-      node->setAnchorPoint({0, 1});
-      node->setPosition({theme.screenLeft + 2, top});
-      ms::setColor(node, theme.optionsInfoColor);
-      m_mainLayer->addChild(node, 10);
-      m_info = node;
-      return;
-    }
-  }
-
-  bool onKey(enumKeyCodes key) override { return m_column && m_column->onKey(key); }
-
-  // Esc while typing a number stops the typing, not the screen
-  bool onBack() override { return m_column && m_column->cancelEdit(); }
-
-  MSPauseColumn* m_column = nullptr;
-  CCNode* m_info = nullptr;
-  std::string m_infoText;
-  std::vector<Ref<CCNode>> m_driven;
-};
 
 // ! --- The key bindings --- !
 
@@ -562,13 +457,13 @@ protected:
                          : "Полный экран, разрешение, текстуры, вертикальная синхронизация и частота кадров.");
 
     m_column->addHeader(en ? "MORE" : "ЕЩЁ");
-    m_column->addRow(en ? "ACCOUNT" : "АККАУНТ", [] { dropDown(AccountLayer::create()); });
+    m_column->addRow(en ? "ACCOUNT" : "АККАУНТ", [] { ms::options::openAccount(); });
     m_column->setInfo(en ? "Sign in, save and load your data." : "Вход, сохранение и загрузка данных.");
-    m_column->addRow(en ? "SOUNDTRACKS" : "САУНДТРЕКИ", [] { dropDown(SongsLayer::create()); });
+    m_column->addRow(en ? "SOUNDTRACKS" : "САУНДТРЕКИ", [] { ms::options::openSoundtracks(); });
     m_column->setInfo(en ? "The official levels' music." : "Музыка официальных уровней.");
-    m_column->addRow(en ? "HOW TO PLAY" : "КАК ИГРАТЬ", [this] { m_options->onHelp(nullptr); });
+    m_column->addRow(en ? "HOW TO PLAY" : "КАК ИГРАТЬ", [] { ms::options::openTutorial(); });
     m_column->setInfo(en ? "GD's tutorial." : "Обучение GD.");
-    m_column->addRow(en ? "SUPPORT" : "ПОДДЕРЖКА", [] { dropDown(SupportLayer::create()); });
+    m_column->addRow(en ? "SUPPORT" : "ПОДДЕРЖКА", [] { ms::options::openSupport(); });
     m_column->setInfo(en ? "Help, privacy and terms of RobTop Games." : "Помощь, конфиденциальность и условия RobTop "
                                                                         "Games.");
     m_column->addRow(en ? "RATE THE GAME" : "ОЦЕНИТЬ ИГРУ", [this] { m_options->onRate(nullptr); });
@@ -662,21 +557,10 @@ protected:
   }
 
   // What GD's lock does: the vault (another scene) with 10 secret coins, else its guard's words, which GD puts in
-  // its settings window: moved over this screen, the way they came in
+  // its settings window: shown as the mod's screen
   void openVault()
   {
-    m_options->onSecretVault(nullptr);
-    std::vector<Ref<DialogLayer>> dialogs;
-    for (auto child : CCArrayExt<CCNode*>(m_options->getChildren()))
-    {
-      if (auto dialog = typeinfo_cast<DialogLayer*>(child))
-        dialogs.emplace_back(dialog);
-    }
-    for (auto const& dialog : dialogs)
-    {
-      dialog->removeFromParentAndCleanup(false);
-      this->addChild(dialog, 100);
-    }
+    this->press(m_options, [this] { m_options->onSecretVault(nullptr); });
   }
 
   // GD's own settings window, with what other mods put in it. GD puts it in the menu (MenuLayer::openOptions), which

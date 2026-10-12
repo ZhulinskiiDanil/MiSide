@@ -1,6 +1,7 @@
 #include "Sounds.hpp"
 #include "Theme.hpp"
 #include "options/MSOptionsData.hpp"
+#include "options/MSOptionsScreen.hpp"
 #include "options/MSOptionsText.hpp"
 #include "pause/MSPauseAmbient.hpp"
 #include "pause/MSPauseBackdrop.hpp"
@@ -154,6 +155,8 @@ class $modify(MSPauseLayer, PauseLayer)
     {
       if (m_options)
         ms::options::dispose(m_options);
+      if (m_state == State::Settings)
+        ms::options::holdRestyling(false);
     }
   };
 
@@ -630,6 +633,8 @@ class $modify(MSPauseLayer, PauseLayer)
       return;
     }
     f.m_state = shown ? State::Settings : State::Main;
+    // GD's popups from these rows (its practice music info) as the mod's screens meanwhile
+    ms::options::holdRestyling(shown);
     f.m_column->setShown(!shown);
     f.m_settings->setShown(shown);
     this->fade(f.m_subtitle, !shown);

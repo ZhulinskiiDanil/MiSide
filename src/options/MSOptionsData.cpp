@@ -5,6 +5,11 @@
 #include <Geode/modify/MoreOptionsLayer.hpp>
 #include <Geode/modify/MoreVideoOptionsLayer.hpp>
 #include <Geode/modify/ParentalOptionsLayer.hpp>
+#include <Geode/modify/TextArea.hpp>
+
+#include "MSAlerts.hpp"
+
+#include <cstring>
 
 #include <unordered_set>
 
@@ -126,6 +131,21 @@ class $modify(MSGJOptionsData, GJOptionsLayer)
   }
 };
 
+// A text area keeps only its lines: the whole text it was given, kept
+class $modify(MSTextAreaData, TextArea)
+{
+  struct Fields
+  {
+    std::string m_text;
+  };
+
+  void setString(gd::string text)
+  {
+    m_fields->m_text = std::string(text);
+    TextArea::setString(text);
+  }
+};
+
 class $modify(MSKeybindingsData, KeybindingsLayer)
 {
   struct Fields
@@ -174,6 +194,62 @@ namespace ms::options
     if (layer)
       collect(layer, all);
     return all;
+  }
+
+  bool runs(CCMenuItem* item, uintptr_t offset)
+  {
+    static_assert(sizeof(SEL_MenuHandler) == sizeof(uintptr_t), "GD's callbacks are plain function pointers");
+    if (!item || !item->m_pfnSelector)
+      return false;
+    uintptr_t address = 0;
+    std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
+    return address == geode::base::get() + offset;
+  }
+
+  namespace
+  {
+    void collectLabels(CCNode* node, std::vector<CCLabelBMFont*>& out)
+    {
+      if (!node || !node->isVisible())
+        return;
+      if (auto label = typeinfo_cast<CCLabelBMFont*>(node))
+      {
+        out.push_back(label);
+        return;
+      }
+      for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
+        collectLabels(child, out);
+    }
+  } // namespace
+
+  std::string textOf(CCNode* node)
+  {
+    if (!node)
+      return "";
+    if (auto label = typeinfo_cast<CCLabelBMFont*>(node))
+      return plain(label->getString());
+    if (auto area = typeinfo_cast<TextArea*>(node))
+    {
+      auto const& text = static_cast<MSTextAreaData*>(area)->m_fields->m_text;
+      if (!text.empty())
+        return plain(text);
+    }
+    std::vector<CCLabelBMFont*> labels;
+    collectLabels(node, labels);
+    std::stable_sort(labels.begin(), labels.end(), [](auto a, auto b) {
+      return a->convertToWorldSpace(CCPointZero).y > b->convertToWorldSpace(CCPointZero).y;
+    });
+    std::string out;
+    for (auto label : labels)
+    {
+      std::string line = label->getString();
+      if (line.empty())
+        continue;
+      if (!out.empty())
+        out += " ";
+      out += line;
+    }
+    return plain(out);
   }
 
   void dispose(CCNode* layer)
