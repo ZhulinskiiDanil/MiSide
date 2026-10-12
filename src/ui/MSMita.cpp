@@ -471,7 +471,7 @@ bool MSMita::init()
   // No 3D renderer for this platform yet: the atlases
   m_use3D = false;
 #endif
-  log::info("Mita: {} ({}{})", m_use3D ? "the 3D model" : "the atlases", string::pathToString(m_modelPath),
+  log::debug("Mita: {} ({}{})", m_use3D ? "the 3D model" : "the atlases", string::pathToString(m_modelPath),
             error ? ", " + error.message() : std::string());
   if (m_use3D)
   {

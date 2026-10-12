@@ -1,3 +1,7 @@
+# v1.2.1
+
+* The log says whether Mita runs in 3D or from her 2D frames and why, and where EXIT is: for reports from phones
+
 # v1.2.0
 
 * The 3D Mita on Android too (OpenGL ES), with her gaze, expressions and swat
