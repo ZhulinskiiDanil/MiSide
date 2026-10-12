@@ -64,7 +64,9 @@ bool MSProfileCard::init(CCMenuItem* profileButton, std::string const& name)
   this->setContentSize({0, 0});
 
   auto avatar = this->createAvatar();
-  auto text = ms::createText(name, theme.nameScale, theme.nameColor);
+  // No name (no account): the avatar alone, with no room kept for the text
+  auto text = name.find_first_not_of(' ') == std::string::npos ? ms::Text{}
+                                                              : ms::createText(name, theme.nameScale, theme.nameColor);
   auto textSize = text.node ? text.node->getContentSize() : CCSize{};
   auto height = std::max(theme.avatarSize, textSize.height) + theme.cardPadding * 2;
   auto width = theme.cardPadding * 2 + theme.avatarSize + (text.node ? theme.cardGap + textSize.width : 0);

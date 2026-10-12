@@ -238,8 +238,15 @@ class $modify(MSMenuLayer, MenuLayer)
     std::vector<CCNode*> menus;
     for (auto const& entry : ENTRIES)
     {
-      // No vanilla button, no item
+      // No vanilla button, no item; but GD on phones has no quit button (its back key asks): EXIT is there all the
+      // same, asking in the column, with a hidden button of the mod's own doing what the back key does
       auto button = findButton(this, entry.menu, entry.button);
+      auto own = false;
+      if (!button && entry.exit)
+      {
+        button = CCMenuItemExt::createSpriteExtra(CCNode::create(), [this](auto) { this->keyBackClicked(); });
+        own = true;
+      }
       if (!button)
         continue;
       auto text = english ? entry.en : entry.ru;
@@ -255,6 +262,8 @@ class $modify(MSMenuLayer, MenuLayer)
         auto appearance = CCMenuItemExt::createSpriteExtra(CCNode::create(), [](auto) { ms::settings::open(); });
         column->addEntry(english ? "APPEARANCE" : "ОФОРМЛЕНИЕ", appearance);
       }
+      if (own)
+        continue;
       // The column has it now. An invisible button can't be clicked or laid out, but activate() still runs it
       hide(button);
       if (auto menu = button->getParent(); std::find(menus.begin(), menus.end(), menu) == menus.end())
