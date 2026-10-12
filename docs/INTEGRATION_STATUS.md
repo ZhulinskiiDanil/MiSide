@@ -44,3 +44,10 @@ consistent without touching matrices. Context-loss disposal still abandons stale
 
 Reference: https://github.com/cocos2d/cocos2d-x/blob/cocos2d-x-2.2.3/cocos2dx/shaders/ccGLStateCache.cpp
 The rebuilt package still needs the reported navigation sequence checked in GD.
+
+## Expression selection correction
+
+User corrected the chosen expressions: default is target_14, exit hover and
+confirmation use basis (no expression morph). Blink target_1 remains independent;
+the existing smoothed exit weight fades the smile to zero. Supersedes the earlier
+21/6 mapping in the historical hand-off and validation notes.

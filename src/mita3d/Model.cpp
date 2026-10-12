@@ -31,7 +31,7 @@ struct Model::Data {
     struct Source {
         cgltf_node* node;
         std::vector<glm::vec3> positions;
-        std::array<std::vector<glm::vec3>, 3> morphs;
+        std::array<std::vector<glm::vec3>, 2> morphs;
         std::vector<glm::uvec4> joints;
         std::vector<glm::vec4> weights;
         std::vector<glm::mat4> inverseBind;
@@ -115,8 +115,9 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
                     require(source.joints.back()[k] < node.skin->joints_count, "Skin joint out of range");
                 mesh.vertices.push_back({source.positions.back(), glm::vec2(read(uv, v))});
             }
-            constexpr unsigned targets[] = {1, 6, 21};
-            for (int k = 0; k < 3; ++k) {
+            // Blink and menu smile. Exit uses the unmodified basis pose.
+            constexpr unsigned targets[] = {1, 14};
+            for (int k = 0; k < 2; ++k) {
                 source.morphs[k].resize(position->count, glm::vec3(0));
                 if (!primitive.targets_count) continue;
                 require(primitive.targets_count > targets[k], "Missing expression targets");
@@ -214,7 +215,7 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze) {
             skin[k] = m->world[source.node->skin->joints[k] - raw->nodes] * source.inverseBind[k];
         for (size_t v = 0; v < mesh.vertices.size(); ++v) {
             glm::vec4 p(source.positions[v] + source.morphs[0][v] * blink +
-                        source.morphs[1][v] * exitWeight + source.morphs[2][v] * (1 - exitWeight), 1);
+                        source.morphs[1][v] * (1 - exitWeight), 1);
             glm::vec4 out(0);
             for (int k = 0; k < 4; ++k) out += (skin[source.joints[v][k]] * p) * source.weights[v][k];
             // A few author vertices are unweighted; Blender leaves those in mesh space too.
