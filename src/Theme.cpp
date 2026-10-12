@@ -462,6 +462,15 @@ namespace
     theme.mitaOutlineOpacity = 210;
     // About 2.4 points on the screen, as before at the old set's scale
     theme.mitaOutlineWidth = 8;
+    // MiSide's click on her face: a white flash breaking into four or five blobs, about 0.2 s
+    theme.mitaSparkEnabled = true;
+    theme.mitaSparkColor = ccc3(0xff, 0xff, 0xff);
+    theme.mitaSparkOpacity = 255;
+    theme.mitaSparkDuration = 0.2f;
+    theme.mitaSparkCount = 5;
+    theme.mitaSparkSize = 11;
+    theme.mitaSparkFlashSize = 22;
+    theme.mitaSparkSpread = 24;
 
     // ! --- The tray and the profile --- !
     theme.trayMargin = 8;
@@ -885,6 +894,14 @@ namespace
     field("mita-outline-color", theme.mitaOutlineColor);
     field("mita-outline-opacity", theme.mitaOutlineOpacity);
     field("mita-outline-width", theme.mitaOutlineWidth);
+    field("mita-spark-enabled", theme.mitaSparkEnabled);
+    field("mita-spark-color", theme.mitaSparkColor);
+    field("mita-spark-opacity", theme.mitaSparkOpacity);
+    field("mita-spark-duration", theme.mitaSparkDuration);
+    field("mita-spark-count", theme.mitaSparkCount);
+    field("mita-spark-size", theme.mitaSparkSize);
+    field("mita-spark-flash-size", theme.mitaSparkFlashSize);
+    field("mita-spark-spread", theme.mitaSparkSpread);
 
     field("tray-margin", theme.trayMargin);
     field("tray-padding", theme.trayPadding);

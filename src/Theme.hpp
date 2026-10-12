@@ -544,6 +544,16 @@ struct Theme
   // In her texture's pixels. Her frames have wide transparent sides (68 px at least, more than the line reaches into
   // the frame next to it); at their top and bottom edges the atlas repeats the edge, so no line shows there
   float mitaOutlineWidth = 0;
+  // A click on her: a white flash `mita-spark-flash-size` points across that breaks into `mita-spark-count` soft
+  // blobs of about `mita-spark-size` flying up to `mita-spark-spread` apart, all gone in `mita-spark-duration`
+  bool mitaSparkEnabled = false;
+  cocos2d::ccColor3B mitaSparkColor;
+  GLubyte mitaSparkOpacity = 0;
+  float mitaSparkDuration = 0;
+  float mitaSparkCount = 0;
+  float mitaSparkSize = 0;
+  float mitaSparkFlashSize = 0;
+  float mitaSparkSpread = 0;
 
   // ! --- The tray and the profile --- !
   float trayMargin = 0;

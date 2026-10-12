@@ -14,13 +14,17 @@ struct MitaDecodedPage;
 // The animated character on the right of the menu, from the atlases in her manifest. The pages stream: at most
 // three are on the GPU (the one for now and the next two: a page holds 83 ms of her), decoded ahead on a worker
 // thread and uploaded here on the main thread. Her textures and frames belong to this node alone, never to cocos' shared caches. The frame comes from
-// the time that passed, so she plays at the same speed at any frame rate
-class MSMita : public cocos2d::CCNode
+// the time that passed, so she plays at the same speed at any frame rate. A click on her (where she's drawn, not
+// her canvas' clear sides) sparks white light there, as in MiSide; the click goes on to whatever is under it
+class MSMita : public cocos2d::CCNode, public cocos2d::CCTargetedTouchDelegate
 {
 public:
   // Null when the theme turns her off or her files are missing or broken (logged once)
   static MSMita* create();
   ~MSMita() override;
+
+  // Never claims a touch: it only sparks
+  bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
 
   void update(float dt) override;
   void onEnter() override;
@@ -53,6 +57,10 @@ protected:
     geode::Ref<cocos2d::CCTexture2D> texture;
     std::vector<geode::Ref<cocos2d::CCSpriteFrame>> frames;
     size_t bytes = 0;
+    // Where the page is drawn: its alpha, one byte per square of MASK_STEP pixels (the square's most opaque)
+    std::vector<uint8_t> mask;
+    unsigned maskWidth = 0;
+    unsigned maskHeight = 0;
 
     Page() = default;
     Page(Page const&) = delete;
@@ -80,6 +88,11 @@ protected:
   void makeOutline();
   // The line's width and color for the texture shown now (the last atlas page is smaller)
   void updateOutline(cocos2d::CCTexture2D* texture);
+  // She's drawn at this point of the screen (in the frame shown now)
+  bool isDrawnAt(cocos2d::CCPoint world);
+  // The white light where she was clicked: a flash that breaks into a few soft blobs flying apart, gone in
+  // `mita-spark-duration`
+  void spark(cocos2d::CCPoint world);
 
   std::vector<Atlas> m_atlases;
   // Every slot's size in pixels: the largest page's

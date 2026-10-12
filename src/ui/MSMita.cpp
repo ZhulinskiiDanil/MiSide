@@ -32,8 +32,20 @@ struct MitaDecodedPage
   unsigned width = 0;
   unsigned height = 0;
   std::vector<uint8_t> pixels;
+  // Its alpha in squares of MASK_STEP pixels, the square's most opaque: what a click is tested against
+  std::vector<uint8_t> mask;
+  unsigned maskWidth = 0;
+  unsigned maskHeight = 0;
   double milliseconds = 0;
 };
+
+namespace
+{
+  // A click is tested against her alpha in squares this many pixels wide
+  constexpr unsigned MASK_STEP = 8;
+  // Opaque enough to count as her
+  constexpr uint8_t MASK_SOLID = 128;
+} // namespace
 
 // One worker thread decoding the pages asked for one after another, nearest first, with Windows' own PNG decoder
 // (WIC): no cocos object, cache or file utility is touched off the main thread. It stops while two finished pages
@@ -133,6 +145,22 @@ private:
     {
       page.pixels.clear();
       return page;
+    }
+    // The mask, made here off the main thread
+    page.maskWidth = (page.width + MASK_STEP - 1) / MASK_STEP;
+    page.maskHeight = (page.height + MASK_STEP - 1) / MASK_STEP;
+    page.mask.assign(static_cast<size_t>(page.maskWidth) * page.maskHeight, 0);
+    for (unsigned y = 0; y < page.height; y++)
+    {
+      auto row = page.pixels.data() + static_cast<size_t>(y) * stride;
+      auto maskRow = page.mask.data() + static_cast<size_t>(y / MASK_STEP) * page.maskWidth;
+      for (unsigned x = 0; x < page.width; x++)
+      {
+        auto alpha = row[x * 4 + 3];
+        auto& cell = maskRow[x / MASK_STEP];
+        if (alpha > cell)
+          cell = alpha;
+      }
     }
     page.ok = true;
     page.milliseconds =
@@ -436,13 +464,135 @@ void MSMita::onEnter()
 {
   CCNode::onEnter();
   this->start();
+  // After the menus (a button over her takes its click); never swallowing
+  CCTouchDispatcher::get()->addTargetedDelegate(this, 10, false);
 }
 
 void MSMita::onExit()
 {
   // Nothing of hers outlives the menu being on screen: the pages are loaded again if it comes back
   this->stop();
+  CCTouchDispatcher::get()->removeDelegate(this);
   CCNode::onExit();
+}
+
+// ! --- A click on her --- !
+
+bool MSMita::isDrawnAt(CCPoint world)
+{
+  if (!m_sprite || m_shownFrame < 0)
+    return false;
+  auto const& frame = m_frames[m_shownFrame];
+  auto page = this->resident(frame.atlas);
+  if (!page || page->mask.empty())
+    return false;
+  // The point in her frame, then in the page's pixels (the frame's rect is in pixels from the page's top left)
+  auto local = m_sprite->convertToNodeSpace(world);
+  auto size = m_sprite->getContentSize();
+  if (size.width <= 0 || size.height <= 0 || local.x < 0 || local.y < 0 || local.x >= size.width ||
+      local.y >= size.height)
+    return false;
+  auto x = frame.rect.origin.x + local.x / size.width * frame.rect.size.width;
+  auto y = frame.rect.origin.y + (1 - local.y / size.height) * frame.rect.size.height;
+  auto column = static_cast<unsigned>(std::max(x, 0.f)) / MASK_STEP;
+  auto row = static_cast<unsigned>(std::max(y, 0.f)) / MASK_STEP;
+  if (column >= page->maskWidth || row >= page->maskHeight)
+    return false;
+  return page->mask[static_cast<size_t>(row) * page->maskWidth + column] >= MASK_SOLID;
+}
+
+bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
+{
+  auto const& theme = Theme::get();
+  if (!theme.mitaSparkEnabled || m_failed)
+    return false;
+  // Shown, and no popup over her
+  for (CCNode* node = this; node; node = node->getParent())
+  {
+    if (!node->isVisible())
+      return false;
+  }
+  if (ms::coveredBy(this))
+    return false;
+  auto world = touch->getLocation();
+  if (this->isDrawnAt(world))
+    this->spark(world);
+  return false;
+}
+
+void MSMita::spark(CCPoint world)
+{
+  auto const& theme = Theme::get();
+  if (!ms::resourceExists(theme.glowSprite))
+    return;
+  auto duration = std::max(theme.mitaSparkDuration, 0.05f);
+  auto at = this->convertToNodeSpace(world);
+  static std::mt19937 s_random{std::random_device{}()};
+  std::uniform_real_distribution<float> unit(0.f, 1.f);
+
+  // A soft white light added to her (on her pink skin it burns to white, as in MiSide)
+  auto light = [&](float size, float stretch, float angle) -> CCSprite* {
+    auto sprite = CCSprite::create(theme.glowSprite.c_str());
+    if (!sprite)
+      return nullptr;
+    auto own = sprite->getContentSize();
+    if (own.width <= 0)
+      return nullptr;
+    sprite->setScaleX(size * stretch / own.width);
+    sprite->setScaleY(size / stretch / own.width);
+    sprite->setRotation(angle);
+    sprite->setColor(theme.mitaSparkColor);
+    sprite->setOpacity(theme.mitaSparkOpacity);
+    auto texture = sprite->getTexture();
+    auto premultiplied = texture && texture->hasPremultipliedAlpha();
+    sprite->setBlendFunc({static_cast<GLenum>(premultiplied ? GL_ONE : GL_SRC_ALPHA), GL_ONE});
+    return sprite;
+  };
+
+  // The flash: at once, a little bigger, gone in the first part
+  if (auto flash = light(theme.mitaSparkFlashSize, 1.15f, unit(s_random) * 180))
+  {
+    auto node = CCNode::create();
+    node->setPosition(at);
+    node->addChild(flash);
+    node->setScale(0.75f);
+    this->addChild(node, 10);
+    auto time = duration * 0.6f;
+    node->runAction(CCSequence::createWithTwoActions(CCEaseOut::create(CCScaleTo::create(time, 1.15f), 2),
+                                                     CCRemoveSelf::create()));
+    flash->runAction(CCEaseIn::create(CCFadeOut::create(time), 2));
+  }
+
+  // The blobs: each two lights a little apart, so it isn't round; out from the click, growing then shrinking away
+  auto count = std::clamp(static_cast<int>(theme.mitaSparkCount), 0, 16);
+  auto turn = unit(s_random) * 6.2831853f;
+  for (int i = 0; i < count; i++)
+  {
+    auto node = CCNode::create();
+    auto size = theme.mitaSparkSize * (0.6f + 0.8f * unit(s_random));
+    for (int part = 0; part < 2; part++)
+    {
+      auto sprite = light(size * (part == 0 ? 1.f : 0.7f), 1.2f + unit(s_random) * 0.6f, unit(s_random) * 180);
+      if (!sprite)
+        continue;
+      sprite->setPosition({(unit(s_random) - 0.5f) * size * 0.5f, (unit(s_random) - 0.5f) * size * 0.4f});
+      sprite->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(duration * 0.45f),
+                                                         CCFadeOut::create(duration * 0.55f)));
+      node->addChild(sprite);
+    }
+    // Spread around the click, unevenly
+    auto angle = turn + (i + unit(s_random) * 0.7f) * 6.2831853f / std::max(count, 1);
+    auto reach = theme.mitaSparkSpread * (0.5f + 0.5f * unit(s_random));
+    CCPoint away{std::cos(angle) * reach, std::sin(angle) * reach * 0.8f};
+    node->setPosition(at);
+    node->setScale(0.4f);
+    this->addChild(node, 10);
+    auto grow = CCSequence::createWithTwoActions(CCScaleTo::create(duration * 0.35f, 1),
+                                                 CCScaleTo::create(duration * 0.65f, 0.3f));
+    node->runAction(CCSequence::createWithTwoActions(
+      CCSpawn::createWithTwoActions(CCEaseOut::create(CCMoveBy::create(duration, away), 2.2f), grow),
+      CCRemoveSelf::create()));
+  }
 }
 
 void MSMita::start()
@@ -574,6 +724,9 @@ bool MSMita::upload(MitaDecodedPage& decoded, int wanted)
   }
   auto& page = *target;
   page.atlas = decoded.atlas;
+  page.mask = std::move(decoded.mask);
+  page.maskWidth = decoded.maskWidth;
+  page.maskHeight = decoded.maskHeight;
   auto texture = page.texture.data();
   // The manifest's rects and canvas in pixels, as they are: this form of createWithTexture takes pixels and makes
   // the points itself (divided by the content scale factor once, like frames from a plist)

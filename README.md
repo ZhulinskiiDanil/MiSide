@@ -261,6 +261,7 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] The background: no room; nearly black on the left, burgundy on the right, a soft purple glow behind Mita; the pattern is faint thin outlines, no rows, sizes and angles vary; no seam where its tile repeats
 - [ ] The official levels' screen has the same background; the pause still shows the blurred level
 - [ ] ACHIEVEMENTS: a whole screen, not GD's dropdown; nothing of the menu shows through; no frame, chains, page arrows or brown plates; Mita on the right doesn't cover the list
+- [ ] A click on Mita (in the menu and on the achievements screen): a white flash breaking into a few soft blobs, gone in about 0.2 s; a click on her canvas' clear sides or on a button over her does nothing of the kind, and the button still works
 - [ ] The count matches GD's (earned / all); earned rows: light text and a check; the others darker with the lock and a dark icon; the rewards' icons as in GD's own list
 - [ ] A click opens a row (condition, status, reward, progress bar when partway), another click closes it; opening another closes the first; the list doesn't jump
 - [ ] Hundreds of achievements (another mod adding them): scrolling with the wheel, a drag and the thumb stays smooth; the rows are cut cleanly at the list's top and bottom
