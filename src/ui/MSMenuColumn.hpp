@@ -30,6 +30,7 @@ public:
   cocos2d::CCRect getArea();
   // While an item's transition runs, nothing else is chosen
   void setBusy(bool busy);
+  void setOnExitHover(std::function<void(bool)> callback);
   bool isBusy() const { return m_busy; }
   // From MenuLayer::keyDown. True when the key was used
   bool onKey(cocos2d::enumKeyCodes key);
@@ -56,6 +57,9 @@ protected:
   void measureArea();
   void choose(MSMenuItem* item);
 
+  void notifyExitHover(bool hovered);
+  std::function<void(bool)> m_onExitHover;
+  bool m_exitHovered = false;
   Choose m_choose;
   // The rows, then Quit: the arrow keys' order
   std::vector<MSMenuItem*> m_items;

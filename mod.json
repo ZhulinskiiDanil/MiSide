@@ -74,6 +74,7 @@
 			"resources/placeholders/vignette-soft.png"
 		],
 		"files": [
+			"resources/mita3d/*",
 			"resources/sounds/hover.ogg",
 			"resources/sounds/click.ogg",
 			"resources/sounds/miside-*.flac",

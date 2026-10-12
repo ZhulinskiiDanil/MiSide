@@ -106,6 +106,7 @@ class $modify(MSMenuLayer, MenuLayer)
   struct Fields
   {
     MSMenuColumn* m_column = nullptr;
+    MSMita* m_mita = nullptr;
     MSTransition* m_transition = nullptr;
     MSProfileCard* m_card = nullptr;
     MSConfirm* m_confirm = nullptr;
@@ -260,6 +261,10 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addChild(column, COLUMN_Z);
     column->finish();
     m_fields->m_column = column;
+    column->setOnExitHover([this](bool on) {
+      if (m_fields->m_mita)
+        m_fields->m_mita->setExitHovered(on);
+    });
   }
 
   void addTransition()
@@ -282,6 +287,8 @@ class $modify(MSMenuLayer, MenuLayer)
     auto transition = m_fields->m_transition;
     if (!target || !column)
       return;
+    if (m_fields->m_mita)
+      m_fields->m_mita->setExitHovered(false);
     // Quit: the confirmation, in the column, instead of GD's popup
     if (item == column->getExit() && m_fields->m_confirm)
     {
@@ -323,6 +330,11 @@ class $modify(MSMenuLayer, MenuLayer)
       return;
     column->setConfirming(true);
     confirm->open();
+    if (m_fields->m_mita)
+    {
+      m_fields->m_mita->setExitHovered(false);
+      m_fields->m_mita->setExitConfirmation(true);
+    }
     m_fields->m_openedOnFrame = CCDirector::get()->getTotalFrames();
   }
 
@@ -332,6 +344,8 @@ class $modify(MSMenuLayer, MenuLayer)
     if (!confirm || !confirm->isOpen() || m_fields->m_quitting)
       return;
     confirm->close();
+    if (m_fields->m_mita)
+      m_fields->m_mita->setExitConfirmation(false);
     m_fields->m_column->setConfirming(false);
     m_fields->m_closedOnFrame = CCDirector::get()->getTotalFrames();
   }
@@ -446,6 +460,7 @@ class $modify(MSMenuLayer, MenuLayer)
       return;
     mita->setID("mita"_spr);
     this->addChild(mita, this->mitaZ());
+    m_fields->m_mita = mita;
   }
 
   // Over the background, under everything else that shows: one under the lowest visible node that isn't the

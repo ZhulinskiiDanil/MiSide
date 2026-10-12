@@ -5,7 +5,7 @@ $workspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $metadataPath = Join-Path $workspaceRoot '.workspace-zone.json'
 if (-not (Test-Path -LiteralPath $metadataPath)) { throw 'Use a prepared feature worktree, not the main checkout.' }
 $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
-if ($metadata.zone -notin @('3d', 'ui')) { throw 'Invalid workspace zone.' }
+if ($metadata.zone -notin @('3d', 'ui', 'integration')) { throw 'Invalid workspace zone.' }
 $buildRoot = Join-Path $workspaceRoot ("build-" + $metadata.zone)
 if (-not $env:GEODE_SDK -or -not (Test-Path -LiteralPath $env:GEODE_SDK)) { throw 'Set GEODE_SDK to the existing SDK directory.' }
 foreach ($tool in @('cmake', 'ninja', 'clang', 'clang++', 'geode')) { $null = Get-Command $tool -ErrorAction Stop }

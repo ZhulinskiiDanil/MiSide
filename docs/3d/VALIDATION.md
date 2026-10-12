@@ -40,7 +40,7 @@ and existing dependency source directories read-only. No shared SDK update was p
 
 ## Still requires the combined game build
 
-- Register model/attribution in mod.json and connect exit events in the UI owner's main.cpp.
+- Model registration and exit events are now connected in the integration branch; see ../INTEGRATION_STATUS.md.
 - In-game sprite orientation, scale, fade and pink outline at each GD texture quality.
 - Menu/achievements transitions, real mouse hit testing, exit hover/confirmation overlap.
 - Fullscreen/context recreation and interaction with other mods' framebuffer effects.

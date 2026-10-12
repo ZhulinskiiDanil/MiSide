@@ -161,7 +161,26 @@ CCRect MSMenuColumn::getArea()
   return CCRectApplyAffineTransform(m_area, this->nodeToParentTransform());
 }
 
-void MSMenuColumn::setBusy(bool busy) { m_busy = busy; }
+void MSMenuColumn::setBusy(bool busy)
+{
+  m_busy = busy;
+  if (busy)
+    this->notifyExitHover(false);
+}
+
+void MSMenuColumn::setOnExitHover(std::function<void(bool)> callback)
+{
+  m_onExitHover = std::move(callback);
+}
+
+void MSMenuColumn::notifyExitHover(bool hovered)
+{
+  if (m_exitHovered == hovered)
+    return;
+  m_exitHovered = hovered;
+  if (m_onExitHover)
+    m_onExitHover(hovered);
+}
 
 MSMenuItem* MSMenuColumn::getExit() const { return m_exit; }
 
@@ -172,6 +191,7 @@ void MSMenuColumn::setConfirming(bool confirming)
   if (confirming == m_confirming)
     return;
   m_confirming = confirming;
+  this->notifyExitHover(false);
   auto const& theme = Theme::get();
   auto time = std::max(theme.confirmDuration, 0.f);
   if (confirming)
@@ -242,6 +262,7 @@ void MSMenuColumn::update(float dt)
     m_mouseActive = true;
   auto usable = !m_busy && !m_confirming && this->isOnTop();
   auto local = this->convertToNodeSpace(mouse);
+  this->notifyExitHover(usable && m_mouseActive && m_exit && m_exit->boundingBox().containsPoint(local));
 
   // Quit leans away from the mouse, every frame (it springs back with no mouse to lean from)
   if (m_exit)
@@ -298,6 +319,7 @@ bool MSMenuColumn::onKey(enumKeyCodes key)
     m_hover = -1;
     // The keys in use: Quit stops leaning away until the mouse moves again
     m_mouseActive = false;
+    this->notifyExitHover(false);
     this->showHighlight(true);
     return true;
   }
