@@ -43,17 +43,20 @@ public:
   void addChoice(std::string const& text, Choice choice);
   // A group's name in the next row's place: not a row, nothing to choose
   void addHeader(std::string const& text);
-  // Apart, under the others
-  void setExit(std::string const& text, std::function<void()> action);
+  // Apart, under the others; sound: in place of the click
+  void setExit(std::string const& text, std::function<void()> action, std::string const& sound = "");
   // Places the rows from this top edge down, `left` their left edge
   void finish(float left, float firstTop);
-  // Fades out (taking nothing from the first frame) or in; at once with animate off
+  // Fades out (taking nothing from the first frame) or in; at once with animate off. Shown again, the row chosen
+  // when it hid is chosen again (no new shine), until the mouse lights another
   void setShown(bool shown, bool animate = true);
   bool isShown() const;
   // True when the key was used
   bool onKey(cocos2d::enumKeyCodes key);
 
   void update(float dt) override;
+  // Over a slider's row, the wheel moves it as Left/Right do
+  void scrollWheel(float y, float x) override;
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
   void ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
   void ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
@@ -105,6 +108,8 @@ protected:
   std::vector<SliderRow> m_sliders;
   std::vector<ChoiceRow> m_choices;
   int m_shown = -1;
+  // The row chosen when it hid (a confirmation, More), chosen again when it shows
+  int m_restore = -1;
   bool m_isShown = true;
   cocos2d::CCPoint m_lastMouse;
   // A slider being dragged, or a reset button pressed

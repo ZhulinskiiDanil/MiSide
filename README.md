@@ -274,6 +274,7 @@ To go through by hand in the game before a release. Each line: what to do, then 
 - [ ] A level completed (normal, practice, own level): the card shows GD's attempts, jumps, time (and points on a platformer) and coins exactly as GD would; every button does what GD's does; a mod's button on that layer still shows and works; the Win sound plays once
 - [ ] APPEARANCE: every choice and slider changes the same setting Geode's page shows; MUSIC / EFFECTS match GD's own settings; RESET restores the defaults; leaving after a language or logo change shows the menu remade; the column still fits above EXIT
 - [ ] Official levels: locked demons show the lock, the others their best %; leaving to the menu and coming back keeps the chosen level and the scroll; finishing or quitting a level comes back with that level chosen; Up/Down and Enter still work
+- [ ] Pause: after NO (or Esc) on the quit confirmation, and back from MORE, the row chosen before is chosen again; the wheel over MUSIC / SFX moves them by a step; in MORE, BACK stands apart under the rows; the vanilla pause is still reachable
 - [ ] A narrow window (4:3): the menu, the card and the tray keep their size and don't overlap; the background is cropped around its middle, not stretched
 - [ ] Parallax strength 0: the background is still; 2: it moves more, still no edges
 - [ ] Switching to full screen and back (with and without Borderless fix): hovering the buttons shows the usual shine with no green rectangle; Mita's outline and the pause blur still work

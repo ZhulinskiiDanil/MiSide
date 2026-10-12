@@ -59,6 +59,8 @@ bool MSPauseColumn::init()
   this->setPosition({0, 0});
   this->setContentSize({0, 0});
   m_lastMouse = getMousePos();
+  // The wheel over a slider
+  this->setMouseEnabled(true);
   this->scheduleUpdate();
   return true;
 }
@@ -230,9 +232,9 @@ void MSPauseColumn::addSlider(std::string const& text, Slider slider)
   m_sliders.push_back(std::move(row));
 }
 
-void MSPauseColumn::setExit(std::string const& text, std::function<void()> action)
+void MSPauseColumn::setExit(std::string const& text, std::function<void()> action, std::string const& sound)
 {
-  m_exit = this->makeItem(text, std::move(action));
+  m_exit = this->makeItem(text, std::move(action), sound);
 }
 
 void MSPauseColumn::finish(float left, float firstTop)
@@ -329,6 +331,8 @@ void MSPauseColumn::setShown(bool shown, bool animate)
   auto time = animate ? std::max(Theme::get().pauseDuration, 0.f) : 0.f;
   m_dragging = nullptr;
   m_resetting = nullptr;
+  if (!shown)
+    m_restore = m_shown;
   m_shown = -1;
   this->stopActionByTag(HIDE_ACTION);
   for (auto item : m_items)
@@ -360,6 +364,10 @@ void MSPauseColumn::setShown(bool shown, bool animate)
   {
     this->setVisible(true);
     m_lastMouse = CCPoint{-1, -1};
+    // Where the keys (or the mouse) were when it hid
+    if (m_restore >= 0 && m_restore < static_cast<int>(m_items.size()))
+      this->highlight(m_restore, false);
+    m_restore = -1;
     return;
   }
   if (time <= 0)
@@ -460,6 +468,24 @@ void MSPauseColumn::update(float dt)
       }
       return;
     }
+  }
+}
+
+void MSPauseColumn::scrollWheel(float y, float)
+{
+  if (y == 0 || !this->canUse())
+    return;
+  auto local = this->convertToNodeSpace(getMousePos());
+  for (auto& row : m_sliders)
+  {
+    if (!row.slider.set || !row.item->isVisible() || !row.item->boundingBox().containsPoint(local))
+      continue;
+    // The wheel down lowers it
+    auto step = std::clamp(Theme::get().pauseSliderStep, 0.01f, 0.5f) * (y > 0 ? -1 : 1);
+    auto value = std::clamp((row.slider.get ? row.slider.get() : row.shown) + step, 0.f, 1.f);
+    row.slider.set(value);
+    this->layoutSlider(row, row.slider.get ? row.slider.get() : value);
+    return;
   }
 }
 

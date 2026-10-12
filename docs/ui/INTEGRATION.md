@@ -46,3 +46,9 @@ in saved.json), not settings. `LevelPreview.*` and its API untouched. To check i
 accessory's place on long names (Theory of Everything 2, Geometrical Dominator) and that a locked demon shows the
 lock while the floppy says how many coins are needed.
 
+## UI-05 Pause usability
+
+No shared change; `MSPauseBackdrop.*` untouched. `MSPauseColumn` now takes the mouse wheel (`setMouseEnabled`): to
+check in the combined build that it doesn't take the wheel from another mod's scrolling list shown in More, and that
+the restored highlight after the confirmation looks right with a controller.
+
