@@ -112,7 +112,8 @@ class $modify(MSParentalOptionsData, ParentalOptionsLayer)
   {
     auto page = m_toggleCount / 10;
     ParentalOptionsLayer::addToggle(label, variable, info);
-    record(this, m_fields->m_toggles, label, variable ? variable : "", info, page);
+    // GD passes no text there (ParentalOptionsLayer::init leaves the register as it is): never read
+    record(this, m_fields->m_toggles, label, variable ? variable : "", nullptr, page);
   }
 };
 

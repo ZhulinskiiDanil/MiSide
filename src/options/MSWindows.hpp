@@ -16,6 +16,8 @@ namespace ms::options
   void openSongInfo(int songID);
   void openTutorial();
   void openSupport();
+  // The custom songs downloaded on this device, each with its own buttons
+  void openSavedSongs();
   // GD's list of links (the support's links and sound credits) as the mod's screen
   void openLinks(URLViewLayer* links);
 } // namespace ms::options

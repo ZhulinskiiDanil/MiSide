@@ -96,10 +96,14 @@ namespace ms::options
 class MSWindowScreen : public MSOptionsScreen
 {
 public:
+  // A part of the window shown as one row that opens a screen of its own (a list's cell): its text, and what opens
+  using Group = std::function<bool(CCNode* node, std::string& text, std::function<void()>& open)>;
+
   static MSWindowScreen* create(std::string const& title, CCNode* window, std::vector<Known> known,
-                                std::function<void()> vanilla, bool keepWindow)
+                                std::function<void()> vanilla, bool keepWindow, Group group = nullptr)
   {
     auto screen = new MSWindowScreen();
+    screen->m_group = std::move(group);
     if (screen->setup(title, window, std::move(known), std::move(vanilla), keepWindow))
     {
       screen->autorelease();
@@ -124,10 +128,18 @@ public:
   }
 
 protected:
+  struct Part
+  {
+    CCNode* node = nullptr;
+    std::string text;
+    std::function<void()> open;
+  };
+
   struct Scan
   {
     std::vector<CCMenuItem*> items;
     std::vector<CCNode*> texts;
+    std::vector<Part> parts;
     bool loading = false;
   };
 
@@ -151,6 +163,16 @@ protected:
   {
     if (!node || !node->isVisible())
       return;
+    if (m_group)
+    {
+      Part part;
+      if (m_group(node, part.text, part.open))
+      {
+        part.node = node;
+        out.parts.push_back(std::move(part));
+        return;
+      }
+    }
     if (auto item = typeinfo_cast<CCMenuItem*>(node))
     {
       out.items.push_back(item);
@@ -180,6 +202,8 @@ protected:
       out += fmt::format("|{}{}{}", static_cast<void*>(item), item->isEnabled() ? 1 : 0, buttonText(item));
     for (auto text : found.texts)
       out += "|" + ms::options::textOf(text);
+    for (auto const& part : found.parts)
+      out += fmt::format("|{}{}", static_cast<void*>(part.node), part.text);
     return out;
   }
 
@@ -297,6 +321,13 @@ protected:
     if (found.loading)
       this->addText(en ? "Wait..." : "Подождите...");
 
+    // The parts first, top to bottom
+    std::stable_sort(found.parts.begin(), found.parts.end(), [](Part const& a, Part const& b) {
+      return middle(a.node).y > middle(b.node).y;
+    });
+    for (auto const& part : found.parts)
+      m_column->addRow(ms::options::upper(part.text), part.open);
+
     for (auto const& row : rows)
     {
       auto action = row.action;
@@ -327,6 +358,7 @@ protected:
   std::string m_title;
   Ref<CCNode> m_window;
   std::vector<Known> m_known;
+  Group m_group;
   std::string m_shown;
   float m_watch = 0;
 };
@@ -600,6 +632,44 @@ namespace ms::options
   void openTutorial()
   {
     if (auto screen = MSTutorialScreen::create())
+      screen->show();
+  }
+
+  void openSavedSongs()
+  {
+    auto en = MSScreen::english();
+    // A song's own buttons (CustomSongWidget's, the cell's delete)
+    auto song = [](CCNode* node, std::string& text, std::function<void()>& open) {
+      auto cell = typeinfo_cast<CustomSongCell*>(node);
+      if (!cell)
+        return false;
+      auto info = cell->m_songInfoObject;
+      text = info ? std::string(info->m_songName) : ms::options::textOf(cell);
+      Ref<CustomSongCell> keepCell = cell;
+      open = [keepCell, title = text] {
+        std::vector<Known> known = {
+          {0xcaec0, "PLAY / STOP", "ИГРАТЬ / СТОП", "Listens to the song.", "Послушать песню."},
+          {0xc9c10, "INFO", "О ПЕСНЕ", "The song's page.", "Страница песни."},
+          {0xcae60, "USE", "ВЫБРАТЬ", "", ""},
+          {0xcabc0, "DOWNLOAD", "СКАЧАТЬ", "", ""},
+          {0xcaaa0, "CANCEL DOWNLOAD", "ОТМЕНИТЬ ЗАГРУЗКУ", "", ""},
+          {0xcab30, "REFRESH INFO", "ОБНОВИТЬ ДАННЫЕ", "", ""},
+          {0xca220, "MORE", "ЕЩЁ", "", ""},
+          {0xc9f00, "DELETE", "УДАЛИТЬ", "Deletes the song from this device.", "Удаляет песню с устройства."},
+          {0xb48e0, "DELETE", "УДАЛИТЬ", "Deletes the song from this device.", "Удаляет песню с устройства."},
+        };
+        if (auto screen = MSWindowScreen::create(ms::options::upper(title), keepCell, std::move(known), nullptr, false))
+          screen->show();
+      };
+      return true;
+    };
+    std::vector<Known> known = {
+      {0x2b7a10, "PREVIOUS PAGE", "ПРЕДЫДУЩАЯ СТРАНИЦА", "", ""},
+      {0x2b7a00, "NEXT PAGE", "СЛЕДУЮЩАЯ СТРАНИЦА", "", ""},
+      {0x2b7a20, "DELETE ALL", "УДАЛИТЬ ВСЕ", "Deletes every downloaded custom song.", "Удаляет все скачанные песни."},
+    };
+    if (auto screen = MSWindowScreen::create(en ? "SAVED SONGS" : "СОХРАНЁННЫЕ ПЕСНИ", GJSongBrowser::create(),
+                                             std::move(known), [] { dropDown(GJSongBrowser::create()); }, true, song))
       screen->show();
   }
 

@@ -196,7 +196,7 @@ protected:
                            "move it."
                          : "Сдвигает музыку относительно уровня, в миллисекундах. Клик или Enter — ввести число, "
                            "влево/вправо — изменить.");
-    m_column->addRow(en ? "SAVED SONGS" : "СОХРАНЁННЫЕ ПЕСНИ", [] { dropDown(GJSongBrowser::create()); });
+    m_column->addRow(en ? "SAVED SONGS" : "СОХРАНЁННЫЕ ПЕСНИ", [] { ms::options::openSavedSongs(); });
     m_column->setInfo(en ? "The songs saved on this device." : "Песни, сохранённые на этом устройстве.");
     m_column->addRow(en ? "FMOD DEBUG" : "ОТЛАДКА FMOD", [this] {
       if (m_more)
