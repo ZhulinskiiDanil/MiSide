@@ -321,6 +321,42 @@ bool MSPauseColumn::cancelEdit()
   return true;
 }
 
+std::vector<std::string> MSPauseColumn::rowTexts() const
+{
+  std::vector<std::string> out;
+  for (auto item : m_rows)
+    out.push_back(item->getText());
+  return out;
+}
+
+std::vector<std::string> MSPauseColumn::rowValues()
+{
+  std::vector<std::string> out;
+  for (auto item : m_rows)
+  {
+    if (auto row = this->choiceFor(item))
+      out.push_back(row->choice.value ? row->choice.value() : "");
+    else if (auto row = this->fieldFor(item))
+      out.push_back(row->field.get ? row->field.get() : "");
+    else if (auto row = this->sliderFor(item))
+      out.push_back(row->slider.get ? fmt::format("{:.2f}", row->slider.get()) : "");
+    else
+      out.emplace_back();
+  }
+  return out;
+}
+
+void MSPauseColumn::pressRow(size_t index)
+{
+  if (index >= m_rows.size())
+    return;
+  // Scrolled into view first (a row out of view is off), as the keys do
+  auto item = std::find(m_items.begin(), m_items.end(), m_rows[index]);
+  if (item != m_items.end())
+    this->reveal(static_cast<int>(item - m_items.begin()));
+  m_rows[index]->activate();
+}
+
 bool MSPauseColumn::onEditKey(enumKeyCodes key)
 {
   auto& row = m_fields[m_editing];

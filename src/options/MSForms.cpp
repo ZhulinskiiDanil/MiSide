@@ -445,6 +445,10 @@ class $modify(MSAccountSettingsLayer, GJAccountSettingsLayer)
           continue;
         Ref<CCMenuItem> button = item;
         auto word = profileWord(caption->getString(), en);
+        // Two by one caption: numbered
+        auto same = std::count_if(actions.begin(), actions.end(), [&](auto const& a) { return a.ru.starts_with("СПРАВКА: " + word); });
+        if (same > 0)
+          word += fmt::format(" ({})", same + 1);
         actions.push_back({"HELP: " + word, "СПРАВКА: " + word, [button] { button->activate(); }, ""});
       }
       if (auto screen = MSFormScreen::create(en ? "PROFILE SETTINGS" : "НАСТРОЙКИ ПРОФИЛЯ", keep, std::move(fields),

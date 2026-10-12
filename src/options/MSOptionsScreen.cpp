@@ -2,6 +2,7 @@
 
 #include "MSAlerts.hpp"
 #include "MSOptionsData.hpp"
+#include "MSWindows.hpp"
 
 #include "../Theme.hpp"
 #include "../ui/MSStyle.hpp"
@@ -39,6 +40,15 @@ namespace ms::options
   }
 
   bool restyling() { return s_restyling > 0; }
+
+  namespace
+  {
+    bool s_selfTesting = false;
+  } // namespace
+
+  bool selfTesting() { return s_selfTesting; }
+
+  void setSelfTesting(bool on) { s_selfTesting = on; }
 
   void holdRestyling(bool hold) { s_restyling = std::max(0, s_restyling + (hold ? 1 : -1)); }
 } // namespace ms::options
@@ -154,7 +164,30 @@ void MSOptionsScreen::press(CCNode* window, std::function<void()> const& action)
     for (auto child : CCArrayExt<CCNode*>(window->getChildren()))
       before.push_back(child);
   }
+  // GD puts some straight in the scene (the support's lists of links)
+  std::vector<CCNode*> sceneBefore;
+  auto scene = CCDirector::get()->getRunningScene();
+  if (scene)
+  {
+    for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
+      sceneBefore.push_back(child);
+  }
   action();
+  if (scene)
+  {
+    std::vector<Ref<URLViewLayer>> lists;
+    for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
+    {
+      auto links = typeinfo_cast<URLViewLayer*>(child);
+      if (links && std::find(sceneBefore.begin(), sceneBefore.end(), child) == sceneBefore.end())
+        lists.emplace_back(links);
+    }
+    for (auto const& links : lists)
+    {
+      links->removeFromParentAndCleanup(false);
+      ms::options::adoptPopup(links, 0);
+    }
+  }
   if (!window)
     return;
   std::vector<Ref<CCNode>> added;

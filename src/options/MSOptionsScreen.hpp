@@ -17,6 +17,9 @@ public:
   ~MSOptionsScreen() override;
   void onEnter() override;
   void onExit() override;
+  // For the mod's self-test
+  MSPauseColumn* column() const { return m_column; }
+  bool closing() const { return this->isClosing(); }
 
 protected:
   bool initOptions(std::string const& title, bool overlay = false);
@@ -61,4 +64,7 @@ namespace ms::options
   // While a settings screen (or the pause's settings) is open, GD's plain popups show as the mod's screens
   bool restyling();
   void holdRestyling(bool hold);
+  // The self-test is running: the screens log what they can't name
+  bool selfTesting();
+  void setSelfTesting(bool on);
 } // namespace ms::options

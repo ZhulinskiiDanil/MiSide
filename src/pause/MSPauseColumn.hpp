@@ -80,6 +80,10 @@ public:
   bool onKey(cocos2d::enumKeyCodes key);
   // A field being typed in stops, its text dropped: true when one was (Esc goes no further then)
   bool cancelEdit();
+  // For the mod's self-test: the rows' texts and what they show, and a row pressed as a click would
+  std::vector<std::string> rowTexts() const;
+  std::vector<std::string> rowValues();
+  void pressRow(size_t index);
 
   void update(float dt) override;
   // Over a slider's row, the wheel moves it as Left/Right do; elsewhere it scrolls a long column

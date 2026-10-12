@@ -9,6 +9,7 @@
 
 #include <Geode/modify/GJDropDownLayer.hpp>
 
+#include <cstring>
 #include <deque>
 #include <unordered_set>
 
@@ -18,8 +19,9 @@ namespace
 {
   // How often a screen looks at its window for changes
   constexpr float WATCH_TIME = 0.25f;
-  // A toggle's text is the label right of it, about level with it
+  // A toggle's text is the label right of it, about level with it; a button with none takes the nearest this close
   constexpr float LABEL_RISE = 14;
+  constexpr float NEAR_LABEL = 40;
   // The windows that stay delegates of GD's managers (an account being saved, a request being sent) are kept after
   // their screen goes, the last few of them
   constexpr size_t KEPT = 12;
@@ -61,8 +63,10 @@ namespace
     std::function<void()> action;
   };
 
-  // GD's windows: GJDropDownLayer::exitLayer, FLAlertLayer-style closes (UploadPopup::onClose, as GD's popups share it)
+  // GD's windows: GJDropDownLayer::exitLayer (and its back arrow's), FLAlertLayer-style closes (UploadPopup::onClose,
+  // as GD's popups share it)
   constexpr uintptr_t DROP_DOWN_EXIT = 0x257320;
+  constexpr uintptr_t DROP_DOWN_BACK = 0x257638;
   constexpr uintptr_t POPUP_CLOSE = 0x84670;
 
   // The text on a button: its ButtonSprite's, else the first label in it
@@ -175,7 +179,8 @@ protected:
 
   void scan(CCNode* node, Scan& out)
   {
-    if (!node || !node->isVisible())
+    // The window itself may be hidden (GD's windows that drop down are, until shown): only what's in it counts
+    if (!node || (node != m_window && !node->isVisible()))
       return;
     if (m_group)
     {
@@ -197,6 +202,9 @@ protected:
       out.loading = true;
       return;
     }
+    // A text field's own labels (its text, its placeholder) aren't the window's texts
+    if (typeinfo_cast<CCTextInputNode*>(node))
+      return;
     if (typeinfo_cast<TextArea*>(node) || typeinfo_cast<CCLabelBMFont*>(node))
     {
       out.texts.push_back(node);
@@ -261,7 +269,8 @@ protected:
       auto entry = this->known(item, order);
       if (entry && entry->skip)
         continue;
-      if (!entry && (ms::options::runs(item, DROP_DOWN_EXIT) || ms::options::runs(item, POPUP_CLOSE)))
+      if (!entry && (ms::options::runs(item, DROP_DOWN_EXIT) || ms::options::runs(item, DROP_DOWN_BACK) ||
+                     ms::options::runs(item, POPUP_CLOSE)))
         continue;
       Row row;
       row.item = item;
@@ -301,8 +310,46 @@ protected:
             row.text = ms::options::textOf(best);
         }
       }
+      // Still none: the nearest label any way round, close by
       if (row.text.empty())
-        row.text = en ? "BUTTON" : "КНОПКА";
+      {
+        CCNode* best = nullptr;
+        auto bestDistance = NEAR_LABEL;
+        for (auto text : found.texts)
+        {
+          if (used.contains(text) || !typeinfo_cast<CCLabelBMFont*>(text))
+            continue;
+          auto distance = middle(text).getDistance(row.at);
+          if (distance < bestDistance)
+          {
+            bestDistance = distance;
+            best = text;
+          }
+        }
+        if (best)
+        {
+          used.insert(best);
+          row.text = ms::options::textOf(best);
+        }
+      }
+      if (row.text.empty())
+      {
+        uintptr_t address = 0;
+        std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
+        auto base = geode::base::get();
+        auto gd = address > base && address < base + 0x1000000;
+        row.text = gd ? (en ? "BUTTON" : "КНОПКА") : (en ? "MOD'S BUTTON" : "КНОПКА МОДА");
+      }
+      if (ms::options::selfTesting() && !entry)
+      {
+        uintptr_t address = 0;
+        std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
+        auto base = geode::base::get();
+        auto at = row.at;
+        log::info("SELFTEST row \"{}\": {} {} at {:.0f},{:.0f}", row.text, typeid(*item).name(),
+                  address > base && address < base + 0x1000000 ? fmt::format("GD+{:#x}", address - base) : "not GD's",
+                  at.x, at.y);
+      }
       rows.push_back(std::move(row));
     }
     std::stable_sort(rows.begin(), rows.end(), [](Row const& a, Row const& b) {
@@ -370,9 +417,22 @@ protected:
 
   void click(Ref<CCMenuItem> item, std::function<void()> const& action)
   {
+    if (ms::options::selfTesting())
+      log::info("SELFTEST click {} enabled={} children before={}", typeid(*item.data()).name(), item->isEnabled(),
+                m_window->getChildrenCount());
     if (action)
       return action();
     this->press(m_window, [item] { item->activate(); });
+    if (ms::options::selfTesting())
+    {
+      std::string found;
+      if (auto scene = CCDirector::get()->getRunningScene())
+      {
+        for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
+          found += std::string(typeid(*child).name()) + " ";
+      }
+      log::info("SELFTEST after click: window children {}, scene: {}", m_window->getChildrenCount(), found);
+    }
   }
 
   std::string m_title;
@@ -682,6 +742,9 @@ class $modify(MSLinksDropDown, GJDropDownLayer)
   void showLayer(bool instant)
   {
     auto links = typeinfo_cast<URLViewLayer*>(this);
+    if (ms::options::selfTesting())
+      log::info("SELFTEST showLayer {} links={} restyling={}", typeid(*this).name(), links != nullptr,
+                ms::options::restyling());
     if (!links || !ms::options::restyling())
       return GJDropDownLayer::showLayer(instant);
     Ref<GJDropDownLayer> self = this;
@@ -727,7 +790,11 @@ namespace ms::options
 
   void openLinks(URLViewLayer* links)
   {
-    if (auto screen = MSLinksScreen::create(links))
+    auto screen = MSLinksScreen::create(links);
+    if (ms::options::selfTesting())
+      log::info("SELFTEST openLinks made={} objects={}", screen != nullptr,
+                links && links->m_urlObjects ? links->m_urlObjects->count() : 0u);
+    if (screen)
       screen->show();
   }
 
@@ -735,7 +802,7 @@ namespace ms::options
   {
     auto window = SongInfoLayer::create(songID);
     std::vector<Known> known = {
-      {0x494440, nullptr, nullptr, "Downloads the song to play it in the editor's levels.",
+      {0x494440, "DOWNLOAD SOUNDTRACK", "СКАЧАТЬ САУНДТРЕК", "Downloads the song to play it in the editor's levels.",
        "Скачивает песню, чтобы использовать её в уровнях редактора."},
       {0x4942b0, "MENU MUSIC", "МУЗЫКА В МЕНЮ", "Plays this song in GD's menu.", "Эта песня играет в меню GD."},
       {0x494380, "PRACTICE MUSIC", "МУЗЫКА В ПРАКТИКЕ", "Plays this song in practice mode.",

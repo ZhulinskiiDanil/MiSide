@@ -59,6 +59,15 @@ protected:
   Ref<GameLevelOptionsLayer> m_layer;
 };
 
+namespace ms::options
+{
+  void openLevelOptions(GJGameLevel* level)
+  {
+    if (auto screen = MSLevelOptionsScreen::create(level, nullptr))
+      screen->show();
+  }
+} // namespace ms::options
+
 namespace
 {
   bool vanillaMenu() { return Mod::get()->getSettingValue<bool>("vanilla-menu"); }

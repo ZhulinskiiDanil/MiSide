@@ -85,6 +85,18 @@ namespace
       items(child, out);
   }
 
+  // A node under one of this kind, below the top
+  template <class T>
+  bool inside(CCNode* node, CCNode* top)
+  {
+    for (auto parent = node->getParent(); parent && parent != top; parent = parent->getParent())
+    {
+      if (typeinfo_cast<T*>(parent))
+        return true;
+    }
+    return false;
+  }
+
   // The label nearest left of a control and level with it (or right of a toggle)
   std::string nearLabel(CCNode* control, CCNode* top, bool right)
   {
@@ -95,7 +107,8 @@ namespace
     auto bestDistance = 1e9f;
     for (auto label : all)
     {
-      if (!shown(label, top) || label->hasAncestor(control))
+      if (!shown(label, top) || label->hasAncestor(control) || inside<CCTextInputNode>(label, top) ||
+          inside<CCMenuItem>(label, top))
         continue;
       auto where = middle(label);
       if (std::abs(where.y - at.y) > LABEL_RISE)
@@ -105,6 +118,30 @@ namespace
         continue;
       bestDistance = distance;
       best = label;
+    }
+    return best ? std::string(best->getString()) : "";
+  }
+
+  // The label nearest a control any way round (a toggle's name over or under it), close by
+  std::string nearestLabel(CCNode* control, CCNode* top)
+  {
+    constexpr float CLOSE_BY = 40;
+    std::vector<CCLabelBMFont*> all;
+    labels(top, all);
+    auto at = middle(control);
+    CCLabelBMFont* best = nullptr;
+    auto bestDistance = CLOSE_BY;
+    for (auto label : all)
+    {
+      if (!shown(label, top) || label->hasAncestor(control) || inside<CCTextInputNode>(label, top) ||
+          inside<CCMenuItem>(label, top))
+        continue;
+      auto distance = middle(label).getDistance(at);
+      if (distance < bestDistance)
+      {
+        bestDistance = distance;
+        best = label;
+      }
     }
     return best ? std::string(best->getString()) : "";
   }
@@ -296,9 +333,20 @@ protected:
       Ref<SetupTriggerPopup> editor = m_editor;
       auto min = editor->getMinSliderValue(tag);
       auto max = editor->getMaxSliderValue(tag);
-      auto text = name(nearLabel(control.node, top, false), en);
+      // GD's own name for it, else the label beside it
+      std::string gd;
+      if (auto names = editor->m_inputLabels)
+      {
+        if (auto label = typeinfo_cast<CCLabelBMFont*>(names->objectForKey(tag)))
+          gd = label->getString();
+      }
+      if (gd.empty())
+        gd = nearLabel(control.node, top, false);
+      auto text = name(gd, en);
       if (text.empty())
         text = en ? "VALUE" : "ЗНАЧЕНИЕ";
+      if (ms::options::selfTesting())
+        log::info("SELFTEST UI value {} named \"{}\" ({} to {})", tag, gd, min, max);
       if (max > min)
       {
         MSPauseColumn::Slider slider;
@@ -325,9 +373,14 @@ protected:
     for (auto const& control : toggles)
     {
       Ref<CCMenuItemToggler> toggler = static_cast<CCMenuItemToggler*>(control.node);
-      auto text = name(nearLabel(toggler, top, true), en);
-      if (text.empty())
-        text = name(nearLabel(toggler, top, false), en);
+      auto gdText = nearLabel(toggler, top, true);
+      if (gdText.empty())
+        gdText = nearLabel(toggler, top, false);
+      if (gdText.empty())
+        gdText = nearestLabel(toggler, top);
+      auto text = name(gdText, en);
+      if (ms::options::selfTesting())
+        log::info("SELFTEST UI toggle {} named \"{}\"", control.tag, gdText);
       MSPauseColumn::Choice choice;
       choice.value = [toggler, en] {
         return std::string(toggler->isToggled() ? (en ? "ON" : "ВКЛ") : (en ? "OFF" : "ВЫКЛ"));

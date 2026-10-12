@@ -261,10 +261,20 @@ namespace ms::options
   {
     if (!node)
       return;
+    if (selfTesting())
+      log::info("SELFTEST adopt {}", typeid(*node).name());
     if (auto dialog = typeinfo_cast<DialogLayer*>(node))
       return showDialog(dialog);
     if (auto alert = typeinfo_cast<FLAlertLayer*>(node); alert && showAlert(alert))
       return;
+    // A list of links (the support's): as the mod's screen, GD's window dropped
+    if (auto links = typeinfo_cast<URLViewLayer*>(node))
+    {
+      Ref<URLViewLayer> keep = links;
+      openLinks(links);
+      links->cleanup();
+      return;
+    }
     auto scene = CCDirector::get()->getRunningScene();
     if (!scene)
       return;

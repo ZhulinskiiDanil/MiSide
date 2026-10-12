@@ -62,6 +62,8 @@ public:
                             Style const& style = Style::row());
 
   cocos2d::CCMenuItem* getTarget() const;
+  // The text it was made with
+  std::string const& getText() const { return m_shineText; }
   // Hover and the keyboard's choice look the same. shine: one light through the letters as it lights up
   void setHighlighted(bool highlighted, bool shine = true);
   bool isHighlighted() const;

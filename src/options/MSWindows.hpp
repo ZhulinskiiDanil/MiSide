@@ -25,4 +25,6 @@ namespace ms::options
   void mirrorPopup(FLAlertLayer* popup);
   // GD's reward chest with the mod's column over it
   void rewardOverlay(RewardUnlockLayer* reward);
+  // A level's own options (its page's options button)
+  void openLevelOptions(GJGameLevel* level);
 } // namespace ms::options

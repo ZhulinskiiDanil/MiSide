@@ -110,7 +110,7 @@ protected:
       if (last && last->action == pair.action && last->keys == pair.keys)
         continue;
       last = &pair;
-      if (pair.keys.empty())
+      if (pair.keys.find_first_not_of(' ') == std::string::npos)
       {
         m_column->addHeader(ms::options::keyAction(pair.action, en));
         continue;
