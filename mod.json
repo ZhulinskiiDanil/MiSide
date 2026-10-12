@@ -6,13 +6,20 @@
 	"id": "zhulis.miside-menu",
 	"early-load": true,
 	"name": "MiSide Menu",
-	"version": "v0.1.0",
+	"version": "v1.0.0",
 	"developer": "Zhulis",
-	"description": "The main menu in the style of MiSide: a scene in the background, a column of text items on the left, soft transitions",
+	"description": "Geometry Dash's screens in the style of MiSide's interface, with an animated Mita",
 	"tags": [
 		"interface",
 		"customization"
 	],
+	"links": {
+		"source": "https://github.com/ZhulinskiiDanil/MiSide"
+	},
+	"issues": {
+		"info": "Report bugs on the GitHub repository",
+		"url": "https://github.com/ZhulinskiiDanil/MiSide/issues"
+	},
 	"settings": {
 		"vanilla-menu": {
 			"name": "Vanilla menu",
