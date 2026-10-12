@@ -59,3 +59,15 @@ On 2026-10-12 the user reported that everything works with the package containin
 it is not a claim that every compatibility, language, or aspect-ratio case above
 was independently exercised. No known blocking issue remains from this hand-off.
 Optional effects settings remain deferred.
+
+## Main-menu gaze (cc98f25)
+
+Development continues in D:/Dev/MiSide on main at the user's request.
+Hovered menu buttons supply their world-space centers for smoothed eye tracking.
+Exit hover retains basis; opening exit confirmation now overrides it with smile
+14 and a forward gaze. Cancelling restores menu tracking. This supersedes the
+previous basis-during-confirmation behavior.
+
+Build-main succeeded with installation disabled. Model test and standalone GL
+checks passed. Menu-direction and forward-gaze previews were visually inspected.
+Actual interaction in GD remains for user verification.
