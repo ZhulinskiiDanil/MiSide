@@ -420,6 +420,20 @@ protected:
     m_column->setInfo(en ? "Applies the screen's options as GD does (it may reload the game's textures)."
                          : "Применяет настройки экрана, как это делает GD (может перезагрузить текстуры игры).");
 
+    // GD keeps its low detail mode in its support window: its callback there (it doesn't read the button) flips it,
+    // lets the menu's background load again and tells what it does the first time
+    m_support = this->drive(SupportLayer::create());
+    if (m_support)
+    {
+      MSPauseColumn::Choice lowDetail;
+      lowDetail.value = [en] { return onOff(GameManager::get()->m_performanceMode, en); };
+      lowDetail.change = [this](int) { m_support->onLowDetail(nullptr); };
+      m_column->addChoice(en ? "LOW DETAIL MODE" : "НИЗКАЯ ДЕТАЛИЗАЦИЯ ВЕЗДЕ", std::move(lowDetail));
+      m_column->setInfo(en ? "Turns off a lot of visual effects for speed (GD has it in its support window)."
+                           : "Отключает многие визуальные эффекты ради скорости (в GD этот переключатель в окне "
+                             "«Поддержка»).");
+    }
+
     if (m_advanced)
     {
       m_column->addHeader(en ? "ADVANCED" : "РАСШИРЕННЫЕ");
@@ -480,6 +494,7 @@ protected:
 
   Ref<VideoOptionsLayer> m_video;
   Ref<MoreVideoOptionsLayer> m_advanced;
+  Ref<SupportLayer> m_support;
 };
 
 // ! --- GD's settings --- !
