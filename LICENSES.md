@@ -38,7 +38,7 @@ CC0 не требует указывать автора; Kenney просит о�
 
 | Файлы в репозитории | Что это | Источник | Автор | Лицензия | Изменения |
 | --- | --- | --- | --- | --- | --- |
-| `resources/sounds/miside-*.flac` (12 файлов, см. ASSETS.md) | Звуки из демо MiSide | Скачаны по просьбе пользователя с khinsider: «MiSide Demo (Windows) (gamerip) (2023)», `downloads.khinsider.com/game-soundtracks/album/miside-demo-windows-gamerip-2023`, FLAC, 2026-10-11 | Авторы MiSide | **Не указана; рип игры, права у правообладателей MiSide** | Только переименованы |
+| `resources/sounds/miside-*.flac` (13 файлов, см. ASSETS.md; `miside-mita-click.flac` — трек 415 «MitaMouseClick», FLAC с того же альбома) | Звуки из демо MiSide | Скачаны по просьбе пользователя с khinsider: «MiSide Demo (Windows) (gamerip) (2023)», `downloads.khinsider.com/game-soundtracks/album/miside-demo-windows-gamerip-2023`, FLAC, 2026-10-11 | Авторы MiSide | **Не указана; рип игры, права у правообладателей MiSide** | Только переименованы |
 
 **Важно:** это извлечённые из игры звуки с фанатского сайта; лицензии на распространение нет. Подключены по прямой
 просьбе пользователя, для личного использования. Публиковать мод с ними нельзя без разрешения правообладателей — перед

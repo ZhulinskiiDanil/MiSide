@@ -148,6 +148,7 @@ M PLUS Rounded 1c (Google Fonts, SIL OFL) — скруглённый, с пол�
 | `miside-startpause.flac` | Открытие паузы | FLAC | `pause.cpp` | `pause-start-sound` | «Startpause» |
 | `miside-ambientpause.flac` | Ambient паузы, петля 11.71 с | FLAC | `pause/MSPauseAmbient.cpp` | `pause-ambient-path` | «Ambientpause» |
 | `miside-stress.flac` | Ambient паузы рядом с рекордом, петля 14.43 с | FLAC | `Sounds.cpp`, `pause.cpp` | `pause-stress-path` | «Stress» |
+| `miside-mita-click.flac` | Клик по Мите, вместе с искрами (0.04 с) | FLAC | `ui/MSMita.cpp` | `mita-spark-sound` | «MitaMouseClick» (трек 415) |
 
 FLAC скопированы без изменений (исходники — `Downloads/miside-sfx`): петли Ambientpause и Stress сшиты в самом
 файле (скачок на стыке меньше обычного шага сигнала), FLAC сохраняет их точно до сэмпла.

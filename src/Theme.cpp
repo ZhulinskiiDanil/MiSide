@@ -471,6 +471,7 @@ namespace
     theme.mitaSparkSize = 11;
     theme.mitaSparkFlashSize = 22;
     theme.mitaSparkSpread = 24;
+    theme.mitaSparkSound = "miside-mita-click.flac"_spr;
 
     // ! --- The tray and the profile --- !
     theme.trayMargin = 8;
@@ -902,6 +903,7 @@ namespace
     field("mita-spark-size", theme.mitaSparkSize);
     field("mita-spark-flash-size", theme.mitaSparkFlashSize);
     field("mita-spark-spread", theme.mitaSparkSpread);
+    field("mita-spark-sound", theme.mitaSparkSound);
 
     field("tray-margin", theme.trayMargin);
     field("tray-padding", theme.trayPadding);

@@ -554,6 +554,8 @@ struct Theme
   float mitaSparkSize = 0;
   float mitaSparkFlashSize = 0;
   float mitaSparkSpread = 0;
+  // Played with them
+  std::string mitaSparkSound;
 
   // ! --- The tray and the profile --- !
   float trayMargin = 0;

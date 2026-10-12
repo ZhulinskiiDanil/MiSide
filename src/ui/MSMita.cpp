@@ -288,8 +288,6 @@ void main()
     if (s_logged.insert(message).second)
       log::error("Mita: {}", message);
   }
-
-  double mebibytes(size_t bytes) { return bytes / (1024.0 * 1024.0); }
 } // namespace
 
 MSMita* MSMita::create()
@@ -515,8 +513,11 @@ bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
   if (ms::coveredBy(this))
     return false;
   auto world = touch->getLocation();
-  if (this->isDrawnAt(world))
-    this->spark(world);
+  if (!this->isDrawnAt(world))
+    return false;
+  this->spark(world);
+  // MiSide's own click on her, with the sparks, as loud as GD's effects
+  ms::playSound(theme.mitaSparkSound);
   return false;
 }
 
@@ -668,7 +669,6 @@ void MSMita::freePages(std::vector<int> const& atlases)
     // (deleting and making an 8 MiB texture every 83 ms stalls the driver)
     page->frames.clear();
     page->atlas = -1;
-    log::debug("Mita: atlas {} freed, its slot free", atlas);
   }
 }
 
@@ -739,12 +739,6 @@ bool MSMita::upload(MitaDecodedPage& decoded, int wanted)
   auto loadSeconds = (decoded.milliseconds + uploadMs) / 1000;
   m_loadSeconds = m_loadSeconds <= 0 ? loadSeconds : m_loadSeconds + (loadSeconds - m_loadSeconds) * LOAD_SMOOTHING;
   m_plan->uploaded(decoded.atlas);
-
-  size_t resident = 0;
-  for (auto const& each : m_pages)
-    resident += each->bytes;
-  log::debug("Mita: atlas {} decoded in {:.1f} ms, uploaded in {:.1f} ms; {} texture slots, {:.2f} MiB",
-             decoded.atlas, decoded.milliseconds, uploadMs, m_pages.size(), mebibytes(resident));
   // Its CPU copy goes now
   decoded.pixels = {};
   return true;
@@ -820,7 +814,7 @@ void MSMita::show(int index)
 void MSMita::checkSprite()
 {
   // What cocos actually made of it, once each time the menu opens: the frame's rect in the texture's pixels, the
-  // size in points, and the size and place on the screen
+  // size in points, and the size and place on the screen. Only a size that isn't the one meant is logged
   auto const& theme = Theme::get();
   auto scale = CC_CONTENT_SCALE_FACTOR();
   auto rect = m_sprite->getTextureRect();
@@ -829,10 +823,6 @@ void MSMita::checkSprite()
   auto box = CCRectApplyAffineTransform(CCRect{CCPointZero, content}, m_sprite->nodeToWorldTransform());
   auto expectedHeight = m_canvas.height * theme.mitaScale * m_unit;
   auto expectedWidth = m_canvas.width * theme.mitaScale * m_unit;
-  log::debug("Mita: content scale {}, texture rect {}x{} px at ({}, {}), content {}x{} pt, scale {:.4f}, on screen "
-             "{:.3f}x{:.3f} at ({:.2f}, {:.2f})",
-             scale, pixels.size.width, pixels.size.height, pixels.origin.x, pixels.origin.y, content.width,
-             content.height, m_sprite->getScale(), box.size.width, box.size.height, box.getMidX(), box.getMinY());
   if (std::abs(pixels.size.width - m_canvas.width) > 0.5f || std::abs(pixels.size.height - m_canvas.height) > 0.5f ||
       std::abs(box.size.height - expectedHeight) > 0.5f || std::abs(box.size.width - expectedWidth) > 0.5f)
     log::warn("Mita: she's drawn {:.3f}x{:.3f} from a {}x{} px rect, {:.3f}x{:.3f} from {}x{} was meant", box.size.width,
