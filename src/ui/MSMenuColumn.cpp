@@ -113,6 +113,9 @@ void MSMenuColumn::finish()
     m_exit->setPosition({theme.columnLeft, theme.exitY});
     // It leans away from the mouse around its middle
     m_exit->setDodgeHome({theme.columnLeft + m_exit->getContentWidth() / 2, theme.exitY});
+    auto at = m_exit->convertToWorldSpace({0, 0});
+    log::debug("Column: {} rows, EXIT at {:.0f},{:.0f} on screen ({} visible)", m_rows.size(), at.x, at.y,
+               m_exit->isVisible() ? "" : "not ");
   }
   this->measureArea();
 

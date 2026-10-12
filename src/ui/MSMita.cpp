@@ -471,6 +471,8 @@ bool MSMita::init()
   // No 3D renderer for this platform yet: the atlases
   m_use3D = false;
 #endif
+  log::info("Mita: {} ({}{})", m_use3D ? "the 3D model" : "the atlases", string::pathToString(m_modelPath),
+            error ? ", " + error.message() : std::string());
   if (m_use3D)
   {
     m_canvas = CCSize(960, 1080);
@@ -854,6 +856,7 @@ void MSMita::update3D(float dt)
 
 void MSMita::start()
 {
+  log::debug("Mita: starting ({}{})", m_use3D ? "3D" : "atlases", m_failed ? ", failed before" : "");
   if (m_use3D && !m_failed)
   {
     if (this->start3D())
