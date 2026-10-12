@@ -61,9 +61,9 @@ void MSOptionsScreen::onExit()
   MSScreen::onExit();
 }
 
-bool MSOptionsScreen::initOptions(std::string const& title)
+bool MSOptionsScreen::initOptions(std::string const& title, bool overlay)
 {
-  if (!this->initScreen(title))
+  if (!this->initScreen(title, overlay))
     return false;
   auto const& theme = Theme::get();
   m_column = MSPauseColumn::create();

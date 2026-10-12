@@ -19,7 +19,7 @@ public:
   void onExit() override;
 
 protected:
-  bool initOptions(std::string const& title);
+  bool initOptions(std::string const& title, bool overlay = false);
   // A paragraph over the column, wrapped to the rows' width; the column starts under it
   void addText(std::string const& text);
   void finishOptions();

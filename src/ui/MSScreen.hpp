@@ -33,8 +33,10 @@ public:
   static float fromTop();
 
 protected:
-  // The background, Mita, the title and BACK; false when the popup itself can't be made
-  bool initScreen(std::string const& title);
+  // The background, Mita, the title and BACK; false when the popup itself can't be made. overlay: over a GD window
+  // that stays in use under it (an editor of its own): no background, no Mita, no darkening, only a shade on the
+  // left for the column, and a touch off its buttons goes on to the window
+  bool initScreen(std::string const& title, bool overlay = false);
   // Another button in the bottom row, after the ones there
   MSMenuItem* addBottomButton(std::string const& text, float width, std::function<void()> action);
   // A key the screen uses (Esc and B are taken before); true when used
@@ -56,6 +58,9 @@ protected:
   geode::Ref<cocos2d::CCNode> m_hidden;
   cocos2d::CCPoint m_lastMouse;
   bool m_closing = false;
+  bool m_overlay = false;
+  // An overlay's shade under its column
+  cocos2d::CCNode* m_shade = nullptr;
   // GD may send Esc both as a key and as back on one frame: one back a frame
   unsigned m_backFrame = 0;
 };

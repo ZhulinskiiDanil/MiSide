@@ -20,6 +20,9 @@ namespace
   constexpr int CURTAIN_Z = 1000;
   // Between the bottom row's buttons
   constexpr float BUTTON_GAP = 4;
+  // An overlay's shade under its column: its darkest and how far right it reaches
+  constexpr GLubyte OVERLAY_SHADE = 225;
+  constexpr float OVERLAY_SHADE_WIDTH = 330;
 
   // The menu's darkening, coming off over what's under it after the screen has gone
   void fadeOff(CCNode* scene, GLubyte from)
@@ -40,12 +43,13 @@ float MSScreen::fromTop() { return CCDirector::get()->getWinSize().height - 320;
 
 bool MSScreen::isClosing() const { return m_closing; }
 
-bool MSScreen::initScreen(std::string const& title)
+bool MSScreen::initScreen(std::string const& title, bool overlay)
 {
   // The menus made from here on take touches before the screen itself
   CCTouchDispatcher::get()->registerForcePrio(this, 2);
   auto const& theme = Theme::get();
-  if (!this->initWithColor(Theme::withAlpha(theme.fadeColor, 255)))
+  m_overlay = overlay;
+  if (!this->initWithColor(Theme::withAlpha(theme.fadeColor, overlay ? 0 : 255)))
     return false;
   m_noElasticity = true;
   auto winSize = CCDirector::get()->getWinSize();
@@ -57,10 +61,22 @@ bool MSScreen::initScreen(std::string const& title)
   m_mainLayer->addChild(m_buttonMenu, MENU_Z);
 
   auto strength = static_cast<float>(Mod::get()->getSettingValue<double>("parallax-strength"));
-  if (auto background = MSBackground::create(strength))
+  if (overlay)
+  {
+    // The window shows through, darker under the column
+    auto shade = CCLayerGradient::create(Theme::withAlpha(theme.fadeColor, OVERLAY_SHADE),
+                                         Theme::withAlpha(theme.fadeColor, 0), {1, 0});
+    shade->setContentSize({OVERLAY_SHADE_WIDTH, winSize.height});
+    m_mainLayer->addChild(shade, BACKGROUND_Z);
+    m_shade = shade;
+  }
+  else if (auto background = MSBackground::create(strength))
     m_mainLayer->addChild(background, BACKGROUND_Z);
-  if (auto mita = MSMita::create())
-    m_mainLayer->addChild(mita, MITA_Z);
+  if (!overlay)
+  {
+    if (auto mita = MSMita::create())
+      m_mainLayer->addChild(mita, MITA_Z);
+  }
 
   ms::Shadow shadow{theme.confirmTitleShadowColor, theme.confirmTitleShadowOpacity, 1,
                     theme.confirmTitleShadowOffset};
@@ -75,8 +91,8 @@ bool MSScreen::initScreen(std::string const& title)
   m_bottomRight = theme.screenLeft - 1 - BUTTON_GAP;
   this->addBottomButton(english() ? "BACK" : "НАЗАД", theme.screenBackWidth, [this] { this->close(); });
 
-  // Comes in from the menu's darkening
-  m_curtain = CCLayerColor::create(Theme::withAlpha(theme.fadeColor, theme.fadeOpacity));
+  // Comes in from the menu's darkening (an overlay: at once)
+  m_curtain = CCLayerColor::create(Theme::withAlpha(theme.fadeColor, overlay ? 0 : theme.fadeOpacity));
   m_curtain->setContentSize(winSize);
   this->addChild(m_curtain, CURTAIN_Z);
 
@@ -112,6 +128,8 @@ MSMenuItem* MSScreen::addBottomButton(std::string const& text, float width, std:
 void MSScreen::show()
 {
   FLAlertLayer::show();
+  if (m_overlay)
+    return;
   auto const& theme = Theme::get();
   // Once it covers the screen, the menu under it hides (its Mita and its effects wait)
   m_curtain->runAction(CCSequence::createWithTwoActions(CCFadeTo::create(theme.fadeBackDuration, 0),
@@ -120,7 +138,7 @@ void MSScreen::show()
 
 void MSScreen::registerWithTouchDispatcher() { CCTouchDispatcher::get()->addTargetedDelegate(this, -500, true); }
 
-bool MSScreen::ccTouchBegan(CCTouch*, CCEvent*) { return true; }
+bool MSScreen::ccTouchBegan(CCTouch*, CCEvent*) { return !m_overlay; }
 
 void MSScreen::ccTouchMoved(CCTouch*, CCEvent*) {}
 
@@ -216,12 +234,13 @@ void MSScreen::close(std::function<void()> after)
   auto const& theme = Theme::get();
   m_curtain->stopAllActions();
   m_curtain->runAction(CCSequence::createWithTwoActions(
-    CCFadeTo::create(theme.fadeDuration, theme.fadeOpacity), CallFuncExt::create([this, after = std::move(after)] {
+    CCFadeTo::create(m_overlay ? 0 : theme.fadeDuration, m_overlay ? 0 : theme.fadeOpacity),
+    CallFuncExt::create([this, after = std::move(after)] {
       // Kept alive to the end of this, whatever removing it releases
       Ref<MSScreen> self = this;
       auto then = after;
       this->hideMenu(false);
-      if (auto scene = this->getParent())
+      if (auto scene = this->getParent(); scene && !m_overlay)
         fadeOff(scene, Theme::get().fadeOpacity);
       this->setKeypadEnabled(false);
       this->setKeyboardEnabled(false);
