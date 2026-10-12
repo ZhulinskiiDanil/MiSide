@@ -48,3 +48,21 @@ and existing dependency source directories read-only. No shared SDK update was p
   is intentional for this roughly 20k-vertex asset, avoiding a large GPU bone palette.
 
 No in-game verification or cross-platform support is claimed by these tests.
+
+## Right-hand swat revision (2026-10-12)
+
+Matched the supplied MiSide video at 0:03–0:07: arms down, raise the anatomical
+right hand, sweep past the face, return outward, lower the arm. The palm frame is
+derived from this asset's knuckles. Forearm twist is blended between complete
+poses to avoid the +/-pi branch jump during the lift and return.
+
+- The existing model test passes without relaxing its continuity threshold.
+- A separate moving-idle scan covered 12 start times with 840 samples each;
+  maximum vertex step was 0.000132, below the existing 0.00016 threshold.
+- Inspected the exact runtime bone poses in Blender through the official MCP
+  server, including front and side views. The review action has 85 frames at 30 fps.
+  `mita3d-export-pose <mita.glb> <directory>` exports these poses for inspection.
+- Runtime OpenGL preview passed state restoration, hit testing, resize and resource
+  release; measured render cost was approximately 0.8 ms/frame on this machine.
+- Built on main in `build`; installed the package into GD as explicitly requested.
+  Gameplay/input verification in the running game remains a manual check.

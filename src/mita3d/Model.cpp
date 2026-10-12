@@ -37,10 +37,20 @@ glm::quat aimBone(glm::mat3 const& basis, glm::vec3 direction) {
         glm::normalize(glm::quat(1 + dot, glm::cross(from, to)));
     return glm::normalize(turn * glm::quat_cast(basis));
 }
+glm::mat3 handFrame(glm::vec3 fingers, glm::vec3 thumbSide) {
+    auto y = glm::normalize(fingers);
+    auto x = glm::normalize(thumbSide - y * glm::dot(thumbSide, y));
+    return glm::mat3(x, y, glm::cross(x, y));
+}
 void orientBone(glm::mat4& world, glm::quat rotation) {
     auto basis = glm::mat3_cast(rotation);
     for (int axis = 0; axis < 3; ++axis)
         world[axis] = glm::vec4(basis[axis] * glm::length(glm::vec3(world[axis])), 0);
+}
+float forearmTwist(glm::quat forearm, glm::quat wrist, glm::quat wristLocal) {
+    auto delta = glm::normalize(wrist * glm::inverse(forearm * wristLocal));
+    auto axis = glm::mat3_cast(forearm)[1];
+    return 2 * std::atan2(glm::dot(glm::vec3(delta.x, delta.y, delta.z), axis), delta.w);
 }
 }
 struct Model::Data {
@@ -76,6 +86,18 @@ struct Model::Data {
     int head = -1, torso = -1;
 };
 Model::~Model() = default;
+#ifdef MITA3D_TOOLING
+void Model::exportPose(std::filesystem::path const& path) const {
+    std::ofstream out(path);
+    require(bool(out), "Cannot write rig pose");
+    out.precision(9);
+    for (auto i : m->order) {
+        out << m->gltf->nodes[i].name << '\n';
+        auto matrix = glm::value_ptr(m->world[i]);
+        for (int k = 0; k < 16; ++k) out << matrix[k] << (k == 15 ? '\n' : ' ');
+    }
+}
+#endif
 Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     require(bool(file), "Cannot open mita.glb");
@@ -231,14 +253,21 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
         else if (c.path == cgltf_animation_path_type_scale)
             m->scales[c.node] = glm::vec3(glm::mix(c.values[a], c.values[b], u));
     }
+    // Video reference: look up, raise the right hand, sweep inward, outward, then lower it.
     float swatWeight = swatTime >= 0 && swatTime < SwatDuration ?
-        ease(swatTime / 0.55f) * ease((SwatDuration - swatTime) / 0.7f) : 0;
-    float wavePhase = glm::clamp((swatTime - 0.55f) / 1.55f, 0.f, 1.f);
-    float wave = std::sin(wavePhase * 12.5663706f) * std::sin(wavePhase * 3.14159265f);
+        ease((swatTime - 0.25f) / 0.50f) * (1 - ease((swatTime - 1.65f) / 0.55f)) : 0;
+    float sweep = ease((swatTime - 0.9f) / 0.35f) * (1 - ease((swatTime - 1.35f) / 0.30f));
     for (auto i : m->rightFingers)
-        m->rotations[i] = glm::slerp(m->rotations[i], glm::quat(1, 0, 0, 0), swatWeight * 0.85f);
+        m->rotations[i] = glm::slerp(m->rotations[i], glm::quat(1, 0, 0, 0), swatWeight * 0.78f);
     auto torsoTurn = glm::mat3_cast(glm::angleAxis(-0.40f, glm::vec3(0, 1, 0)));
     glm::vec3 waveElbow(0), waveWrist(0);
+    glm::quat raisedForearm(1, 0, 0, 0);
+    // Calibrate the palm from the right knuckles; its axes are not the bone axes.
+    auto palmLocal = handFrame(glm::vec3(-0.00681f, 0.07534f, 0.00443f),
+                               glm::vec3(-0.02529f, 0.00653f, 0.04761f));
+    auto palmWorld = handFrame(glm::vec3(0.06f + sweep * 0.86f, 1.f - sweep * 0.62f, -0.05f),
+                               glm::vec3(0.45f, 0.f, 1.f));
+    auto handRotation = glm::normalize(glm::quat_cast(palmWorld * glm::transpose(palmLocal)));
     float swayTime = static_cast<float>(std::fmod(std::max(seconds, 0.0), 13.0));
     float sway = swayTime > 9 ? std::sin((swayTime - 9) / 4 * 6.2831853f) * 0.025f : 0;
     gaze = glm::clamp(gaze, glm::vec2(-1), glm::vec2(1));
@@ -279,23 +308,24 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
                 if (side && swatWeight > 0) {
                     if (joint == 0) {
                         auto shoulder = glm::vec3(world[3]);
-                        waveWrist = glm::vec3(m->world[m->head][3]) + glm::vec3(-0.00055f + wave * 0.00065f, -0.00085f, 0.00255f);
+                        waveWrist = glm::vec3(m->world[m->head][3]) +
+                            glm::vec3(-0.00135f + sweep * 0.00090f, -0.00085f - sweep * 0.00012f, 0.00215f);
                         float upper = glm::length(glm::vec3(world[1])) * glm::length(m->translations[arm[1]]);
                         float lower = glm::length(glm::vec3(world[1])) * glm::length(m->translations[arm[2]]);
                         auto delta = waveWrist - shoulder;
                         float distance = glm::clamp(glm::length(delta), 0.00001f, (upper + lower) * 0.98f);
                         auto direction = glm::normalize(delta);
-                        auto pole = glm::vec3(-1.f, -0.65f, 0.15f);
+                        auto pole = glm::vec3(-0.65f, -1.f, 0.1f);
                         auto bend = glm::normalize(pole - direction * glm::dot(pole, direction));
                         float along = (upper * upper - lower * lower + distance * distance) / (2 * distance);
                         waveElbow = shoulder + direction * along + bend * std::sqrt(std::max(0.f, upper * upper - along * along));
                         raised = aimBone(restBasis, waveElbow - shoulder);
                     } else if (joint == 1) {
-                        raised = aimBone(restBasis, waveWrist - waveElbow);
+                        auto wristLocal = glm::make_quat(raw->nodes[arm[2]].rotation);
+                        raised = aimBone(glm::mat3_cast(handRotation * glm::inverse(wristLocal)), waveWrist - waveElbow);
+                        raisedForearm = raised;
                     } else {
-                        // An open palm sweeps in front of the face; fingers point upward.
-                        raised = glm::angleAxis(-0.5f - wave * 0.45f, glm::vec3(0, 0, 1)) *
-                                 glm::angleAxis(-0.35f + wave * 0.25f, glm::vec3(0, 1, 0));
+                        raised = handRotation;
                     }
                 }
                 orientBone(world, side ? glm::slerp(idle, raised, swatWeight) : idle);
@@ -306,32 +336,20 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
             auto const& twists = side ? m->rightTwist : m->leftTwist;
             for (int joint = 0; joint < 3; ++joint) {
                 if (static_cast<int>(i) != twists[joint]) continue;
-                glm::mat3 forearm(m->world[arm[1]]), wrist(m->world[arm[2]]);
-                for (int axis = 0; axis < 3; ++axis) {
-                    forearm[axis] = glm::normalize(forearm[axis]);
-                    wrist[axis] = glm::normalize(wrist[axis]);
+                auto down = torsoTurn * glm::vec3(side ? -0.12f : 0.12f, -1.f, 0.12f);
+                auto idleElbow = aimBone(torsoTurn * m->restOrientation[arm[1]], down);
+                auto idleWrist = aimBone(torsoTurn * m->restOrientation[arm[2]], down);
+                float angle = forearmTwist(idleElbow, idleWrist, m->rotations[arm[2]]);
+                if (side && swatWeight > 0) {
+                    float raised = forearmTwist(raisedForearm, handRotation, m->rotations[arm[2]]);
+                    // Blend complete poses: extracting twist after SLERP can cross the +/-pi branch mid-lift.
+                    angle += swatWeight * std::remainder(raised - angle, 6.2831853f);
                 }
-                auto expected = glm::quat_cast(forearm) * m->rotations[arm[2]];
-                auto delta = glm::normalize(glm::quat_cast(wrist) * glm::inverse(expected));
-                auto axis = forearm[1];
-                auto parallel = axis * glm::dot(glm::vec3(delta.x, delta.y, delta.z), axis);
-                auto twist = glm::quat(delta.w, parallel);
-                if (glm::length(twist) > 0.00001f) {
-                    auto down = torsoTurn * glm::vec3(side ? -0.12f : 0.12f, -1.f, 0.12f);
-                    auto idleElbow = aimBone(torsoTurn * m->restOrientation[arm[1]], down);
-                    auto idleWrist = aimBone(torsoTurn * m->restOrientation[arm[2]], down);
-                    auto idleDelta = idleWrist * glm::inverse(idleElbow * m->rotations[arm[2]]);
-                    auto idleAxis = glm::mat3_cast(idleElbow)[1];
-                    float reference = 2 * std::atan2(glm::dot(glm::vec3(idleDelta.x, idleDelta.y, idleDelta.z), idleAxis), idleDelta.w);
-                    float angle = 2 * std::atan2(glm::dot(parallel, axis), delta.w);
-                    // Keep the same axial turn through 180 degrees instead of switching quaternion hemispheres.
-                    float branch = reference + (side ? swatWeight * 3.14159265f : 0.f);
-                    angle = branch + std::remainder(angle - branch, 6.2831853f);
-                    twist = glm::angleAxis(angle * (joint + 1) / 3.f, axis);
-                    auto pivot = glm::vec3(world[3]);
-                    world = glm::translate(glm::mat4(1), pivot) * glm::mat4_cast(twist) *
-                            glm::translate(glm::mat4(1), -pivot) * world;
-                }
+                auto axis = glm::normalize(glm::vec3(m->world[arm[1]][1]));
+                auto twist = glm::angleAxis(angle * (joint + 1) / 3.f, axis);
+                auto pivot = glm::vec3(world[3]);
+                world = glm::translate(glm::mat4(1), pivot) * glm::mat4_cast(twist) *
+                        glm::translate(glm::mat4(1), -pivot) * world;
             }
         }
         m->world[i] = world;

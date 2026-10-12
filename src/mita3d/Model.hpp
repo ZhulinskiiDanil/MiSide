@@ -25,6 +25,10 @@ public:
     void pose(double seconds, float exitWeight, glm::vec2 gaze = {}, glm::vec2 headGaze = {}, float swatTime = -1.f);
     std::vector<Mesh> meshes;
     std::vector<Image> images;
+#ifdef MITA3D_TOOLING
+    // Export the exact runtime rig for inspection in Blender.
+    void exportPose(std::filesystem::path const& path) const;
+#endif
 private:
     struct Data;
     std::unique_ptr<Data> m;
