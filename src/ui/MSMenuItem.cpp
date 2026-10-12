@@ -201,7 +201,8 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   m_label = label.label;
   m_text->setPosition({m_textX, size.height / 2 + m_style.textOffset});
   m_content->addChild(m_text);
-  this->addShine(text);
+  // Its shine is made the first time it lights up: a screen of many rows opens without rendering them all
+  m_shineText = text;
 
   // All of the row is clickable
   this->setContentSize(size);
@@ -236,6 +237,11 @@ void MSMenuItem::setHighlighted(bool highlighted, bool shine)
     return;
   m_highlighted = highlighted;
   this->refresh(true);
+  if (highlighted && shine && !m_shineMade)
+  {
+    m_shineMade = true;
+    this->addShine(m_shineText);
+  }
   // A new pass on lighting up (from its start, whatever the last one did); leaving fades the pass out
   if (highlighted && shine && m_shine)
     m_shinePass.start();

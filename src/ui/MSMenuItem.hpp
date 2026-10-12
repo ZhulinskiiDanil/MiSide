@@ -127,6 +127,9 @@ protected:
   cocos2d::CCNode* m_accessory = nullptr;
   // The shine: its core over the label, its glow under it (drawn only during a pass), and this item's own pass
   MSShine* m_shine = nullptr;
+  // The label's text, for its shine made on the first light
+  std::string m_shineText;
+  bool m_shineMade = false;
   MSShine* m_shineGlow = nullptr;
   ShinePass m_shinePass;
   float m_textX = 0;

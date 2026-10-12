@@ -24,10 +24,12 @@ namespace
   // their screen goes, the last few of them
   constexpr size_t KEPT = 12;
 
+  // Never destroyed: at the game's exit, releasing GD's windows from the mod's own unloading reaches other mods'
+  // hooks on their destructors after those mods are gone (a crash on quitting)
   std::deque<Ref<CCNode>>& kept()
   {
-    static std::deque<Ref<CCNode>> s_kept;
-    return s_kept;
+    static auto s_kept = new std::deque<Ref<CCNode>>();
+    return *s_kept;
   }
 
   void keep(CCNode* window)
