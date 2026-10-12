@@ -9,6 +9,8 @@ namespace
 {
   // A slider's label ends this far before its track; a choice's label leaves this share of the row to its value
   constexpr float TRACK_GAP = 2;
+  // A touch on a row that moves this far scrolls the rows (a swipe) instead of pressing it
+  constexpr float SWIPE_START = 6;
   constexpr float CHOICE_ROOM = 0.42f;
   constexpr int HIDE_ACTION = 0x4d57;
   constexpr int CONTROL_ACTION = 0x4d58;
@@ -921,7 +923,13 @@ bool MSPauseColumn::ccTouchBegan(CCTouch* touch, CCEvent* event)
       return true;
     }
   }
-  return CCMenu::ccTouchBegan(touch, event);
+  if (!CCMenu::ccTouchBegan(touch, event))
+    return false;
+  m_tracking = true;
+  m_swiping = false;
+  m_swipeFrom = touch->getLocation().y;
+  m_swipeOffset = m_offset;
+  return true;
 }
 
 void MSPauseColumn::ccTouchMoved(CCTouch* touch, CCEvent* event)
@@ -930,11 +938,31 @@ void MSPauseColumn::ccTouchMoved(CCTouch* touch, CCEvent* event)
     return this->dragTo(*m_dragging, this->convertTouchToNodeSpace(touch));
   if (m_resetting)
     return;
+  // Only a column longer than its view scrolls; up shows the rows under, a slot at a time
+  if (m_tracking && m_visibleSlots < static_cast<int>(m_layout.size()))
+  {
+    auto moved = touch->getLocation().y - m_swipeFrom;
+    if (!m_swiping && std::abs(moved) >= SWIPE_START)
+    {
+      m_swiping = true;
+      CCMenu::ccTouchCancelled(touch, event);
+    }
+    if (m_swiping)
+    {
+      auto pitch = std::max(Theme::get().pauseRowPitch, 1.f);
+      this->scrollTo(m_swipeOffset + static_cast<int>(std::lround(moved / pitch)));
+      return;
+    }
+  }
   CCMenu::ccTouchMoved(touch, event);
 }
 
 void MSPauseColumn::ccTouchEnded(CCTouch* touch, CCEvent* event)
 {
+  auto swiped = m_swiping;
+  m_tracking = m_swiping = false;
+  if (swiped)
+    return;
   if (m_dragging)
   {
     m_dragging = nullptr;
@@ -956,6 +984,10 @@ void MSPauseColumn::ccTouchEnded(CCTouch* touch, CCEvent* event)
 
 void MSPauseColumn::ccTouchCancelled(CCTouch* touch, CCEvent* event)
 {
+  auto swiped = m_swiping;
+  m_tracking = m_swiping = false;
+  if (swiped)
+    return;
   if (m_dragging || m_resetting)
   {
     m_dragging = nullptr;

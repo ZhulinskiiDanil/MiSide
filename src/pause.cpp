@@ -265,6 +265,7 @@ class $modify(MSPauseLayer, PauseLayer)
       }
     }
     // The vanilla pause's nodes hide (never removed)
+    ms::logMissingIDs(this, {std::begin(VANILLA), std::end(VANILLA)}, "Pause");
     for (auto id : VANILLA)
     {
       if (auto node = this->getChildByID(id); node && node->isVisible())

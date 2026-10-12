@@ -174,6 +174,7 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
       return;
 
     // The vanilla screen hides, its touches off (its pages would still scroll under ours)
+    ms::logMissingIDs(this, {std::begin(VANILLA), std::end(VANILLA)}, "Level select");
     for (auto id : VANILLA)
     {
       if (auto node = this->getChildByID(id); node && node->isVisible())

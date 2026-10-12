@@ -6,6 +6,7 @@
 #include <Geode/modify/CCShaderCache.hpp>
 
 #include <chrono>
+#include <set>
 #include <sstream>
 #include <typeinfo>
 #include <unordered_map>
@@ -128,6 +129,26 @@ namespace ms
     node->setAnchorPoint({0, 1});
     setColor(node, color);
     return node;
+  }
+
+  void logMissingIDs(CCNode* layer, std::vector<char const*> const& ids, char const* what)
+  {
+    static std::set<std::string> s_logged;
+    if (!layer || !s_logged.insert(what).second)
+      return;
+    std::string missing;
+    for (auto id : ids)
+    {
+      if (!layer->getChildByID(id))
+        missing += fmt::format(" {}", id);
+    }
+    if (missing.empty())
+      return;
+    std::string children;
+    for (auto child : CCArrayExt<CCNode*>(layer->getChildren()))
+      children += fmt::format(" [{} \"{}\" z{} {}]", typeid(*child).name(), child->getID(), child->getZOrder(),
+                              child->isVisible() ? "shown" : "hidden");
+    log::warn("{}: no node with the IDs{}; its children:{}", what, missing, children);
   }
 
   void cascadeOpacity(CCNode* node)

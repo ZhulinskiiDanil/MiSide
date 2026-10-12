@@ -3,6 +3,7 @@
 #include <Geode/Geode.hpp>
 
 #include <optional>
+#include <vector>
 #include <string>
 
 // How the menu's pieces are made from the theme, with a fallback for every missing asset
@@ -74,4 +75,8 @@ namespace ms
 
   // Silent when the sound is missing
   void playSound(std::string const& name);
+
+  // Once a session for `what`: the IDs of `ids` the layer has no child with, and its children (their types, IDs and
+  // visibility), in the log. For a screen that hides GD's nodes by their IDs, where a platform's GD differs
+  void logMissingIDs(cocos2d::CCNode* layer, std::vector<char const*> const& ids, char const* what);
 } // namespace ms

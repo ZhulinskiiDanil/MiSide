@@ -182,6 +182,11 @@ protected:
   cocos2d::CCPoint m_lastMouse;
   // A slider being dragged, or a reset button pressed
   SliderRow* m_dragging = nullptr;
+  // A swipe: the touch's start and the first slot in view then; swiping once it moved far enough
+  bool m_tracking = false;
+  bool m_swiping = false;
+  float m_swipeFrom = 0;
+  int m_swipeOffset = 0;
   SliderRow* m_resetting = nullptr;
   // The field typed in (an index of m_fields, -1: none), its text, and whether the first key replaces it
   int m_editing = -1;

@@ -57,6 +57,11 @@ protected:
   std::function<void(int)> m_onHover;
   std::function<void(int)> m_onActivate;
   std::function<void(int)> m_onScroll;
+  // A swipe: the touch's start and the first row in view then; swiping once it moved far enough
+  bool m_tracking = false;
+  bool m_swiping = false;
+  float m_swipeFrom = 0;
+  int m_swipeOffset = 0;
   std::vector<MSMenuItem*> m_rows;
   cocos2d::CCNode* m_track = nullptr;
   cocos2d::CCNode* m_thumb = nullptr;

@@ -10,6 +10,8 @@ namespace
   constexpr int MOVE_ACTION = 0x4d60;
   constexpr int HIDE_ACTION = 0x4d61;
   constexpr float SCROLL_TIME = 0.14f;
+  // A touch on a row that moves this far scrolls the rows (a swipe) instead of pressing it
+  constexpr float SWIPE_START = 6;
   // The 9-slice's corners are 5.3 pt: thin pieces are made bigger and scaled down
   constexpr float SMALL_PANEL = 2;
 
@@ -306,11 +308,32 @@ bool MSLevelList::ccTouchBegan(CCTouch* touch, CCEvent* event)
     this->ccTouchMoved(touch, event);
     return true;
   }
-  return CCMenu::ccTouchBegan(touch, event);
+  if (!CCMenu::ccTouchBegan(touch, event))
+    return false;
+  m_tracking = true;
+  m_swiping = false;
+  m_swipeFrom = touch->getLocation().y;
+  m_swipeOffset = m_offset;
+  return true;
 }
 
 void MSLevelList::ccTouchMoved(CCTouch* touch, CCEvent* event)
 {
+  if (!m_dragging && m_tracking)
+  {
+    // Up shows the rows under: whole rows, as the wheel scrolls
+    auto moved = touch->getLocation().y - m_swipeFrom;
+    if (!m_swiping && std::abs(moved) >= SWIPE_START)
+    {
+      m_swiping = true;
+      CCMenu::ccTouchCancelled(touch, event);
+    }
+    if (!m_swiping)
+      return CCMenu::ccTouchMoved(touch, event);
+    auto pitch = std::max(Theme::get().levelsRowPitch, 1.f);
+    this->scrollTo(m_swipeOffset + static_cast<int>(std::lround(moved / pitch)), true);
+    return;
+  }
   if (!m_dragging)
     return CCMenu::ccTouchMoved(touch, event);
   // The thumb's middle follows the touch
@@ -325,20 +348,26 @@ void MSLevelList::ccTouchMoved(CCTouch* touch, CCEvent* event)
 
 void MSLevelList::ccTouchEnded(CCTouch* touch, CCEvent* event)
 {
+  auto swiped = m_swiping;
+  m_tracking = m_swiping = false;
   if (m_dragging)
   {
     m_dragging = false;
     return;
   }
-  CCMenu::ccTouchEnded(touch, event);
+  if (!swiped)
+    CCMenu::ccTouchEnded(touch, event);
 }
 
 void MSLevelList::ccTouchCancelled(CCTouch* touch, CCEvent* event)
 {
+  auto swiped = m_swiping;
+  m_tracking = m_swiping = false;
   if (m_dragging)
   {
     m_dragging = false;
     return;
   }
-  CCMenu::ccTouchCancelled(touch, event);
+  if (!swiped)
+    CCMenu::ccTouchCancelled(touch, event);
 }

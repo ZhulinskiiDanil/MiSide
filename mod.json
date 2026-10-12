@@ -17,6 +17,9 @@
 	"links": {
 		"source": "https://github.com/ZhulinskiiDanil/MiSide"
 	},
+	"dependencies": {
+		"geode.node-ids": ">=v1.23.0"
+	},
 	"issues": {
 		"info": "Report bugs on the GitHub repository",
 		"url": "https://github.com/ZhulinskiiDanil/MiSide/issues"
