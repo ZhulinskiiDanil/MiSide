@@ -7,6 +7,9 @@ using namespace geode::prelude;
 
 namespace
 {
+  // A slider's label ends this far before its track; a choice's label leaves this share of the row to its value
+  constexpr float TRACK_GAP = 2;
+  constexpr float CHOICE_ROOM = 0.42f;
   constexpr int HIDE_ACTION = 0x4d57;
   constexpr int CONTROL_ACTION = 0x4d58;
   // The 9-slice plate's corners are 5.3 pt: a thinner piece is made this much bigger and scaled down, so its
@@ -59,13 +62,22 @@ bool MSPauseColumn::init()
   this->setPosition({0, 0});
   this->setContentSize({0, 0});
   m_lastMouse = getMousePos();
+  // The wheel over a slider
+  this->setMouseEnabled(true);
   this->scheduleUpdate();
   return true;
 }
 
-MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action, std::string const& sound)
+MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action, std::string const& sound,
+                                    float reserveRight)
 {
   auto const& theme = Theme::get();
+  auto style = MSMenuItem::Style::pause();
+  if (reserveRight > 0)
+  {
+    style.fitText = true;
+    style.reserveRight = reserveRight;
+  }
   auto item = MSMenuItem::create(
     text, nullptr,
     [this, action = std::move(action), sound](MSMenuItem*) {
@@ -74,7 +86,7 @@ MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void(
       ms::playSound(sound.empty() ? Theme::get().clickSound : sound);
       action();
     },
-    theme.pauseRowWidth, MSMenuItem::Style::pause());
+    theme.pauseRowWidth, style);
   if (item)
     this->addChild(item);
   return item;
@@ -83,14 +95,90 @@ MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void(
 void MSPauseColumn::addRow(std::string const& text, std::function<void()> action, std::string const& sound)
 {
   if (auto item = this->makeItem(text, std::move(action), sound))
+  {
     m_rows.push_back(item);
+    m_layout.push_back(item);
+  }
+}
+
+void MSPauseColumn::addChoice(std::string const& text, Choice choice)
+{
+  auto const& theme = Theme::get();
+  // Its index in m_choices once it's added: the vector may move, the index doesn't
+  auto index = m_choices.size();
+  auto item = this->makeItem(
+    text,
+    [this, index] {
+      auto& row = m_choices[index];
+      if (row.choice.change)
+        row.choice.change(1);
+      this->showChoice(row);
+    },
+    "", theme.pauseRowWidth * CHOICE_ROOM);
+  if (!item)
+    return;
+  ChoiceRow row;
+  row.item = item;
+  row.choice = std::move(choice);
+  auto control = CCNodeRGBA::create();
+  control->setCascadeOpacityEnabled(true);
+  control->setAnchorPoint({0, 0});
+  if (auto label = typeinfo_cast<CCLabelBMFont*>(ms::createLabel("-", theme.titleFont)))
+  {
+    label->setScale(theme.pauseSliderValueScale);
+    label->setColor(theme.pauseSliderValueColor);
+    // On the row's right, inside its padding
+    label->setAnchorPoint({1, 0.5f});
+    label->setPosition({theme.pauseRowWidth - theme.pauseTextPadding, theme.pauseRowHeight / 2});
+    control->addChild(label);
+    row.value = label;
+  }
+  item->addChild(control, 5);
+  row.control = control;
+  m_choices.push_back(std::move(row));
+  this->showChoice(m_choices.back());
+  m_rows.push_back(item);
+  m_layout.push_back(item);
+}
+
+void MSPauseColumn::addHeader(std::string const& text)
+{
+  auto const& theme = Theme::get();
+  auto header = ms::createText(text, theme.statsGroupScale, theme.statsGroupColor, theme.titleFont, ms::Shadow{});
+  if (!header.node)
+    return;
+  this->addChild(header.node);
+  m_headers.push_back(header.node);
+  m_layout.push_back(header.node);
+}
+
+MSPauseColumn::ChoiceRow* MSPauseColumn::choiceFor(MSMenuItem* item)
+{
+  for (auto& row : m_choices)
+  {
+    if (row.item == item)
+      return &row;
+  }
+  return nullptr;
+}
+
+void MSPauseColumn::showChoice(ChoiceRow& row)
+{
+  if (!row.value || !row.choice.value)
+    return;
+  auto text = row.choice.value();
+  if (text == row.shown)
+    return;
+  row.shown = text;
+  row.value->setString(text.c_str());
 }
 
 void MSPauseColumn::addSlider(std::string const& text, Slider slider)
 {
   auto const& theme = Theme::get();
-  // Choosing the row itself does nothing: its track is dragged, Left/Right move it
-  auto item = this->makeItem(text, nullptr);
+  // Choosing the row itself does nothing: its track is dragged, Left/Right move it. Its label ends before the track
+  auto reserve = theme.pauseRowWidth - theme.pauseTextPadding - theme.pauseSliderLeft + TRACK_GAP;
+  auto item = this->makeItem(text, nullptr, "", reserve);
   if (!item)
     return;
   SliderRow row;
@@ -154,12 +242,13 @@ void MSPauseColumn::addSlider(std::string const& text, Slider slider)
   item->addChild(control, 5);
   row.control = control;
   m_rows.push_back(item);
+  m_layout.push_back(item);
   m_sliders.push_back(std::move(row));
 }
 
-void MSPauseColumn::setExit(std::string const& text, std::function<void()> action)
+void MSPauseColumn::setExit(std::string const& text, std::function<void()> action, std::string const& sound)
 {
-  m_exit = this->makeItem(text, std::move(action));
+  m_exit = this->makeItem(text, std::move(action), sound);
 }
 
 void MSPauseColumn::finish(float left, float firstTop)
@@ -167,12 +256,20 @@ void MSPauseColumn::finish(float left, float firstTop)
   auto const& theme = Theme::get();
   auto height = theme.pauseRowHeight;
   m_items = m_rows;
-  for (size_t i = 0; i < m_rows.size(); i++)
-    m_rows[i]->setPosition({left, firstTop - theme.pauseRowPitch * i - height / 2});
+  // A group's name sits in its place by the rows' text, a little lower than a row's middle
+  for (size_t i = 0; i < m_layout.size(); i++)
+  {
+    auto middle = firstTop - theme.pauseRowPitch * i - height / 2;
+    auto node = m_layout[i];
+    if (std::find(m_headers.begin(), m_headers.end(), node) != m_headers.end())
+      node->setPosition({left + 2, middle - height * 0.15f});
+    else
+      node->setPosition({left, middle});
+  }
   if (m_exit)
   {
     // Under the last row by the usual gap and the theme's own
-    auto lastBottom = firstTop - theme.pauseRowPitch * (static_cast<float>(m_rows.size()) - 1) - height;
+    auto lastBottom = firstTop - theme.pauseRowPitch * (static_cast<float>(m_layout.size()) - 1) - height;
     auto top = lastBottom - (theme.pauseRowPitch - height) - theme.pauseExitGap;
     m_exit->setPosition({left, top - height / 2});
     m_items.push_back(m_exit);
@@ -195,7 +292,8 @@ void MSPauseColumn::layoutSlider(SliderRow& row, float value)
   row.fill->setContentSize(CCSize{knobLeft + knobWidth - theme.pauseSliderLeft, theme.pauseSliderHeight} * SMALL_PANEL);
   if (row.value)
   {
-    row.value->setString(fmt::format("{}", static_cast<int>(std::round(value * 100))).c_str());
+    auto text = row.slider.format ? row.slider.format(value) : fmt::format("{}", static_cast<int>(std::round(value * 100)));
+    row.value->setString(text.c_str());
     row.value->setPosition({knobLeft + knobWidth / 2, middle});
   }
 }
@@ -247,6 +345,8 @@ void MSPauseColumn::setShown(bool shown, bool animate)
   auto time = animate ? std::max(Theme::get().pauseDuration, 0.f) : 0.f;
   m_dragging = nullptr;
   m_resetting = nullptr;
+  if (!shown)
+    m_restore = m_shown;
   m_shown = -1;
   this->stopActionByTag(HIDE_ACTION);
   for (auto item : m_items)
@@ -256,22 +356,32 @@ void MSPauseColumn::setShown(bool shown, bool animate)
     item->resetLook();
     item->fadeTo(time, shown ? 255 : 0);
   }
+  // The sliders' and choices' controls and the groups' names fade with the rows
+  std::vector<CCNode*> extras(m_headers.begin(), m_headers.end());
   for (auto& row : m_sliders)
+    extras.push_back(row.control);
+  for (auto& row : m_choices)
+    extras.push_back(row.control);
+  for (auto node : extras)
   {
-    row.control->stopActionByTag(CONTROL_ACTION);
+    node->stopActionByTag(CONTROL_ACTION);
     if (time <= 0)
     {
-      row.control->setOpacity(shown ? 255 : 0);
+      ms::setOpacity(node, shown ? 255 : 0);
       continue;
     }
     auto fade = CCFadeTo::create(time, shown ? 255 : 0);
     fade->setTag(CONTROL_ACTION);
-    row.control->runAction(fade);
+    node->runAction(fade);
   }
   if (shown)
   {
     this->setVisible(true);
     m_lastMouse = CCPoint{-1, -1};
+    // Where the keys (or the mouse) were when it hid
+    if (m_restore >= 0 && m_restore < static_cast<int>(m_items.size()))
+      this->highlight(m_restore, false);
+    m_restore = -1;
     return;
   }
   if (time <= 0)
@@ -316,6 +426,15 @@ bool MSPauseColumn::onKey(enumKeyCodes key)
   auto item = m_items[m_shown];
   if (isLeft(key) || isRight(key))
   {
+    if (auto choice = this->choiceFor(item))
+    {
+      if (!choice->choice.change)
+        return false;
+      ms::playSound(Theme::get().clickSound);
+      choice->choice.change(isLeft(key) ? -1 : 1);
+      this->showChoice(*choice);
+      return true;
+    }
     auto row = this->sliderFor(item);
     if (!row || !row->slider.set)
       return false;
@@ -335,7 +454,9 @@ bool MSPauseColumn::onKey(enumKeyCodes key)
 
 void MSPauseColumn::update(float dt)
 {
-  // A change made elsewhere (GD's settings over the pause) shows on the sliders
+  // A change made elsewhere (GD's settings over the pause) shows on the sliders and the choices
+  for (auto& row : m_choices)
+    this->showChoice(row);
   for (auto& row : m_sliders)
   {
     if (!row.slider.get || row.item == nullptr || (m_dragging == &row))
@@ -361,6 +482,24 @@ void MSPauseColumn::update(float dt)
       }
       return;
     }
+  }
+}
+
+void MSPauseColumn::scrollWheel(float y, float)
+{
+  if (y == 0 || !this->canUse())
+    return;
+  auto local = this->convertToNodeSpace(getMousePos());
+  for (auto& row : m_sliders)
+  {
+    if (!row.slider.set || !row.item->isVisible() || !row.item->boundingBox().containsPoint(local))
+      continue;
+    // The wheel down lowers it
+    auto step = std::clamp(Theme::get().pauseSliderStep, 0.01f, 0.5f) * (y > 0 ? -1 : 1);
+    auto value = std::clamp((row.slider.get ? row.slider.get() : row.shown) + step, 0.f, 1.f);
+    row.slider.set(value);
+    this->layoutSlider(row, row.slider.get ? row.slider.get() : value);
+    return;
   }
 }
 

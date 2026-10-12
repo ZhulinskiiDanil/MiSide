@@ -32,6 +32,14 @@ namespace
 
   bool english() { return Mod::get()->getSettingValue<std::string>("menu-language") == "EN"; }
 
+  // The level chosen and the list's first row in view, kept between visits (GD opens this screen on its first page
+  // from the menu, and on the level played when one ends)
+  constexpr char const* SAVED_LEVEL = "levels-chosen-level";
+  constexpr char const* SAVED_OFFSET = "levels-offset";
+  // A row's accessory: the room it takes on the right, and its size
+  constexpr float ACCESSORY_ROOM = 24;
+  constexpr float LOCK_SIZE = 8;
+
   // Its exit drops the pictures' textures: the screen is gone
   class Lifetime : public CCNode
   {
@@ -50,6 +58,39 @@ namespace
       CCNode::onExit();
     }
   };
+
+  // On a row's right: GD's lock while the level needs more secret coins than collected (as GD's own page checks),
+  // else its normal mode's best, pink at 100%
+  CCNode* accessory(GJGameLevel* level, float rowWidth, float rowHeight)
+  {
+    auto const& theme = Theme::get();
+    auto node = CCNodeRGBA::create();
+    node->setCascadeOpacityEnabled(true);
+    auto right = rowWidth - theme.pauseTextPadding;
+    auto middle = rowHeight / 2;
+    auto needed = level->m_requiredCoins;
+    if (needed > 0 && GameStatsManager::sharedState()->getStat("8") < needed)
+    {
+      if (auto lock = CCSprite::createWithSpriteFrameName("GJ_lock_001.png"))
+      {
+        auto own = lock->getContentSize();
+        if (own.height > 0)
+          lock->setScale(LOCK_SIZE / own.height);
+        lock->setColor(theme.levelsTextColor);
+        lock->setPosition({right - LOCK_SIZE / 2, middle});
+        node->addChild(lock);
+        return node;
+      }
+    }
+    auto percent = std::clamp(level->m_normalPercent.value(), 0, 100);
+    auto color = percent >= 100 ? theme.levelsCardAccentColor : theme.levelsTextColor;
+    if (auto text = ms::createText(fmt::format("{}%", percent), 0.26f, color, theme.titleFont, ms::Shadow{}).node)
+    {
+      text->setPosition({right - text->getContentWidth(), middle - 2.82f * 0.26f});
+      node->addChild(text);
+    }
+    return node;
+  }
 } // namespace
 
 // The official levels as MiSide's save loading screen: "CHOOSE A LEVEL" over a scrolling list of every official level
@@ -161,10 +202,15 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
     f.m_card = MSLevelCard::create([this] { this->play(); });
     if (f.m_card)
       this->addChild(f.m_card, MENU_Z);
-    f.m_list = MSLevelList::create(names, [this](int index) {
-      if (m_fields->m_card)
-        m_fields->m_card->show(m_fields->m_levels[index]);
-    });
+    f.m_list = MSLevelList::create(
+      names,
+      [this](int index) {
+        auto& fields = *m_fields.self();
+        if (fields.m_card)
+          fields.m_card->show(fields.m_levels[index]);
+        Mod::get()->setSavedValue<int>(SAVED_LEVEL, fields.m_levels[index]->m_levelID.value());
+      },
+      ACCESSORY_ROOM);
     if (f.m_list)
     {
       // The row under the mouse shows on the card at once; off the rows, the chosen one comes back
@@ -176,6 +222,9 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
       });
       // A click opens the level, as PLAY does
       f.m_list->setOnActivate([this](int) { this->play(); });
+      f.m_list->setOnScroll([](int offset) { Mod::get()->setSavedValue<int>(SAVED_OFFSET, offset); });
+      for (size_t i = 0; i < f.m_levels.size(); i++)
+        f.m_list->setAccessory(static_cast<int>(i), accessory(f.m_levels[i], theme.levelsRowWidth, theme.levelsRowHeight));
       this->addChild(f.m_list, MENU_Z);
     }
 
@@ -238,9 +287,25 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
 
     this->addChild(Lifetime::create());
     f.m_styled = true;
-    // The page GD opened on (the last level played), else the first
+    // The level GD opened on when one was just played (its page), else the one chosen last time, else the first;
+    // the list scrolled as it was left, then the choice brought into view
     if (f.m_list)
-      f.m_list->choose(page >= 0 && page < static_cast<int>(f.m_levels.size()) ? page : 0);
+    {
+      auto index = 0;
+      auto saved = Mod::get()->getSavedValue<int>(SAVED_LEVEL, 0);
+      auto savedIndex = -1;
+      for (size_t i = 0; i < f.m_levels.size(); i++)
+      {
+        if (f.m_levels[i]->m_levelID.value() == saved)
+          savedIndex = static_cast<int>(i);
+      }
+      if (page > 0 && page < static_cast<int>(f.m_levels.size()))
+        index = page;
+      else if (savedIndex >= 0)
+        index = savedIndex;
+      f.m_list->setOffset(Mod::get()->getSavedValue<int>(SAVED_OFFSET, 0));
+      f.m_list->choose(index);
+    }
   }
 
   // ! --- Actions --- !

@@ -41,6 +41,8 @@ public:
     bool textShadow = true;
     // A text wider than the row (padding on both sides) is made smaller to fit
     bool fitText = false;
+    // Room kept free on the row's right (for an accessory), counted when the text is fitted
+    float reserveRight = 0;
     // The soft glow around the lit row, and the shine through its letters
     bool glow = true;
     bool shine = true;
@@ -74,6 +76,8 @@ public:
   void fadeTo(float time, GLubyte opacity);
   // Back to rest at once: not lit or pressed, its shine stopped, its look the style's (a screen of the menu changed)
   void resetLook();
+  // A node of the caller's on the row (a lock, a number), placed in the row's own space: it fades with the row
+  void setAccessory(cocos2d::CCNode* node);
 
   // Exit: it leans away from the mouse around this place (its middle, in the column's space)
   void setDodgeHome(cocos2d::CCPoint home);
@@ -120,6 +124,7 @@ protected:
   cocos2d::CCNode* m_text = nullptr;
   cocos2d::CCNode* m_label = nullptr;
   cocos2d::CCNode* m_accent = nullptr;
+  cocos2d::CCNode* m_accessory = nullptr;
   // The shine: its core over the label, its glow under it (drawn only during a pass), and this item's own pass
   MSShine* m_shine = nullptr;
   MSShine* m_shineGlow = nullptr;

@@ -24,10 +24,11 @@ namespace
   }
 } // namespace
 
-MSLevelList* MSLevelList::create(std::vector<std::string> const& names, std::function<void(int)> chosen)
+MSLevelList* MSLevelList::create(std::vector<std::string> const& names, std::function<void(int)> chosen,
+                                 float reserveRight)
 {
   auto list = new MSLevelList();
-  if (list->init(names, std::move(chosen)))
+  if (list->init(names, std::move(chosen), reserveRight))
   {
     list->autorelease();
     return list;
@@ -36,7 +37,7 @@ MSLevelList* MSLevelList::create(std::vector<std::string> const& names, std::fun
   return nullptr;
 }
 
-bool MSLevelList::init(std::vector<std::string> const& names, std::function<void(int)> chosen)
+bool MSLevelList::init(std::vector<std::string> const& names, std::function<void(int)> chosen, float reserveRight)
 {
   if (!CCMenu::init())
     return false;
@@ -45,6 +46,7 @@ bool MSLevelList::init(std::vector<std::string> const& names, std::function<void
   this->setPosition({0, 0});
   this->setContentSize({0, 0});
   auto style = MSMenuItem::Style::levels();
+  style.reserveRight = reserveRight;
   for (size_t i = 0; i < names.size(); i++)
   {
     auto index = static_cast<int>(i);
@@ -96,6 +98,18 @@ int MSLevelList::visible() const
 }
 
 int MSLevelList::chosen() const { return m_chosen; }
+
+int MSLevelList::offset() const { return m_offset; }
+
+void MSLevelList::setOffset(int offset) { this->scrollTo(offset, false); }
+
+void MSLevelList::setAccessory(int index, CCNode* node)
+{
+  if (index >= 0 && index < static_cast<int>(m_rows.size()))
+    m_rows[index]->setAccessory(node);
+}
+
+void MSLevelList::setOnScroll(std::function<void(int)> scrolled) { m_onScroll = std::move(scrolled); }
 
 bool MSLevelList::canUse() { return m_shown && this->isVisible() && !ms::coveredBy(this); }
 
@@ -169,6 +183,8 @@ void MSLevelList::scrollTo(int offset, bool animate)
   for (auto row : m_rows)
     row->setHighlighted(false);
   this->layout(animate);
+  if (m_onScroll)
+    m_onScroll(m_offset);
 }
 
 void MSLevelList::choose(int index, bool sound)

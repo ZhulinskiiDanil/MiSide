@@ -406,6 +406,51 @@ namespace
     theme.achievementsExpandDuration = 0.18f;
     theme.achievementsScrollSmoothing = 0.08f;
 
+    // ! --- The mod's screens --- !
+    // The achievements' layout; BACK and the button next to it share the row's 145.3 pt
+    theme.screenTitleLeft = 59.7f;
+    theme.screenTitleCapTop = 307.2f;
+    theme.screenLeft = 61.2f;
+    theme.screenTop = 294.4f;
+    theme.screenBottom = 30;
+    theme.screenWidth = 137.1f;
+    theme.screenScrollLeft = 202;
+    theme.screenScrollWidth = 4.5f;
+    theme.screenBackTop = 26.4f;
+    theme.screenBackWidth = 70;
+    theme.screenButtonWidth = 71.3f;
+
+    // ! --- The statistics --- !
+    theme.statsEnabled = true;
+    theme.statsRowHeight = 15;
+    theme.statsRowGap = 2;
+    theme.statsGroupHeight = 14;
+    theme.statsGroupGap = 5;
+    theme.statsRowColor = ccc3(0x6a, 0x2a, 0x84);
+    theme.statsRowOpacity = 185;
+    theme.statsLabelColor = ccc3(0xf4, 0xc9, 0xea);
+    theme.statsLabelScale = 0.42f;
+    theme.statsValueColor = ccc3(0xff, 0xff, 0xff);
+    theme.statsValueScale = 0.3f;
+    theme.statsGroupColor = ccc3(0xff, 0x9e, 0xd8);
+    theme.statsGroupScale = 0.26f;
+    theme.statsOriginalWidth = 71.3f;
+
+    // ! --- The level complete card --- !
+    theme.resultsEnabled = true;
+    theme.resultsLeft = 46;
+    theme.resultsWidth = 176;
+    theme.resultsPadding = 8;
+    theme.resultsGap = 5;
+    theme.resultsButtonGap = 3;
+    theme.resultsCardColor = ccc3(0x1c, 0x0a, 0x22);
+    theme.resultsCardOpacity = 228;
+    theme.resultsFrameColor = ccc3(0xc2, 0x40, 0x8f);
+    theme.resultsNameColor = ccc3(0xf4, 0xc9, 0xea);
+    theme.resultsNameScale = 0.5f;
+    theme.resultsTextColor = ccc3(0xc9, 0xa3, 0xcf);
+    theme.resultsTextScale = 0.36f;
+
     // ! --- Decoration over the backdrop --- !
     // Faint: a pink line on the dark, never a row of bright marks
     theme.patternSprite = "pattern-tile.png"_spr;
@@ -848,6 +893,44 @@ namespace
     field("achievements-back-width", theme.achievementsBackWidth);
     field("achievements-expand-duration", theme.achievementsExpandDuration);
     field("achievements-scroll-smoothing", theme.achievementsScrollSmoothing);
+    field("screen-title-left", theme.screenTitleLeft);
+    field("screen-title-cap-top", theme.screenTitleCapTop);
+    field("screen-left", theme.screenLeft);
+    field("screen-top", theme.screenTop);
+    field("screen-bottom", theme.screenBottom);
+    field("screen-width", theme.screenWidth);
+    field("screen-scroll-left", theme.screenScrollLeft);
+    field("screen-scroll-width", theme.screenScrollWidth);
+    field("screen-back-top", theme.screenBackTop);
+    field("screen-back-width", theme.screenBackWidth);
+    field("screen-button-width", theme.screenButtonWidth);
+    field("stats-enabled", theme.statsEnabled);
+    field("stats-row-height", theme.statsRowHeight);
+    field("stats-row-gap", theme.statsRowGap);
+    field("stats-group-height", theme.statsGroupHeight);
+    field("stats-group-gap", theme.statsGroupGap);
+    field("stats-row-color", theme.statsRowColor);
+    field("stats-row-opacity", theme.statsRowOpacity);
+    field("stats-label-color", theme.statsLabelColor);
+    field("stats-label-scale", theme.statsLabelScale);
+    field("stats-value-color", theme.statsValueColor);
+    field("stats-value-scale", theme.statsValueScale);
+    field("stats-group-color", theme.statsGroupColor);
+    field("stats-group-scale", theme.statsGroupScale);
+    field("stats-original-width", theme.statsOriginalWidth);
+    field("results-enabled", theme.resultsEnabled);
+    field("results-left", theme.resultsLeft);
+    field("results-width", theme.resultsWidth);
+    field("results-padding", theme.resultsPadding);
+    field("results-gap", theme.resultsGap);
+    field("results-button-gap", theme.resultsButtonGap);
+    field("results-card-color", theme.resultsCardColor);
+    field("results-card-opacity", theme.resultsCardOpacity);
+    field("results-frame-color", theme.resultsFrameColor);
+    field("results-name-color", theme.resultsNameColor);
+    field("results-name-scale", theme.resultsNameScale);
+    field("results-text-color", theme.resultsTextColor);
+    field("results-text-scale", theme.resultsTextScale);
     field("pattern-sprite", theme.patternSprite);
     field("pattern-color", theme.patternColor);
     field("pattern-opacity", theme.patternOpacity);

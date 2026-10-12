@@ -296,7 +296,8 @@ class $modify(MSPauseLayer, PauseLayer)
     if (auto target = available("full-restart-button"))
       more->addRow(en ? "FULL RESTART" : "ПОЛНЫЙ ПЕРЕЗАПУСК", press(target));
     more->addRow(en ? "VANILLA PAUSE" : "ИСХОДНАЯ ПАУЗА", [this] { this->showVanilla(true); });
-    more->addRow(en ? "BACK" : "НАЗАД", [this] { this->showMore(false); }, theme.moreCloseSound);
+    // Back apart under them, as Quit is under the pause's rows
+    more->setExit(en ? "BACK" : "НАЗАД", [this] { this->showMore(false); }, theme.moreCloseSound);
     more->setID("pause-more"_spr);
     this->addChild(more, MENU_Z);
     more->finish(this->moreLeft(), theme.pauseFirstRowTop + fromTop);
