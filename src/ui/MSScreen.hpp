@@ -39,8 +39,10 @@ protected:
   MSMenuItem* addBottomButton(std::string const& text, float width, std::function<void()> action);
   // A key the screen uses (Esc and B are taken before); true when used
   virtual bool onKey(cocos2d::enumKeyCodes key);
-  // Into the darkening, then gone, the menu showing again as it comes off; `after` runs once it's gone
+  // Into the darkening, then gone, the menu showing again as it comes off; `after` runs once it's gone, else closed()
   void close(std::function<void()> after = nullptr);
+  // Once it's gone after a close with nothing to run
+  virtual void closed();
   bool isClosing() const;
   void hideMenu(bool hidden);
 

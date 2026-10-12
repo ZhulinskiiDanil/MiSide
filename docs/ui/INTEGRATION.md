@@ -21,3 +21,21 @@ layer as it is. The right of the card is free for the later 3D reaction (no API 
 build: whether `coin-N-sprite` exists only for the coins collected (the card counts them so), the card's place on
 4:3 and 21:9, and that the Win sound plays once.
 
+## UI-03 Appearance settings
+
+Works with the current mod.json settings only (`menu-language`, `show-title`, `show-intro`, `confirm-level-exit`,
+`parallax-strength`, `vanilla-menu`) and GD's own volumes; no new storage. New sources come in through the glob.
+
+Request (mod.json, integration zone): settings the page would show if they existed, each mapped onto an existing
+Theme value so the theme stays the one source of defaults:
+
+| Key | Type, default, range | Theme value it would drive | Where it's read |
+| --- | --- | --- | --- |
+| `show-particles` | bool, true | `particle-count` (0 when off) | `src/ui/MSParticles.cpp` init |
+| `transition-speed` | float, 1.0, 0.5–2.0 | divides `fade-duration`, `fade-back-duration`, `pause-duration`, `hover-duration` | `Theme::reload()` after the theme file |
+| `ui-sound-volume` | int, 100, 0–100 | `sound-volume` (/100) | `ms::playSound` |
+
+When they're registered, the UI lane adds the rows to `src/settings.cpp` (an EFFECTS group) and applies them in
+`Theme::reload()`; until then they stay theme.json keys. To check in the combined build: the column entry fits above
+EXIT, and `MenuLayer::scene(false)` through `CCTransitionFade` after a change keeps the menu music playing.
+

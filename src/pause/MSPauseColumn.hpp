@@ -10,8 +10,9 @@
 
 // The pause menu's list as MiSide has it: see-through rows one under the other, Quit apart under them. A row runs
 // its action; a slider row holds a dark track with a pink fill and a knob with the value on it, dragged with the
-// mouse or moved with Left/Right. The mouse lights the row under it, the arrow keys (and a controller) the next one;
-// Enter, Space or A runs it. Hidden, it takes nothing
+// mouse or moved with Left/Right; a choice row shows its value on its right and goes to the next one on a click
+// (Left/Right go either way). A group's name can stand in a row's place. The mouse lights the row under it, the arrow
+// keys (and a controller) the next one; Enter, Space or A runs it. Hidden, it takes nothing
 class MSPauseColumn : public cocos2d::CCMenu
 {
 public:
@@ -22,6 +23,16 @@ public:
     std::function<void(float)> set;
     // 0..1 a reset button sets; below 0: no button
     float reset = -1;
+    // The value on the knob; none: 0..100
+    std::function<std::string(float)> format;
+  };
+
+  struct Choice
+  {
+    // Shown on the row's right, read every frame
+    std::function<std::string()> value;
+    // To the next value (1) or the one before (-1)
+    std::function<void(int)> change;
   };
 
   static MSPauseColumn* create();
@@ -29,6 +40,9 @@ public:
   // sound: in place of the click (empty: the click)
   void addRow(std::string const& text, std::function<void()> action, std::string const& sound = "");
   void addSlider(std::string const& text, Slider slider);
+  void addChoice(std::string const& text, Choice choice);
+  // A group's name in the next row's place: not a row, nothing to choose
+  void addHeader(std::string const& text);
   // Apart, under the others
   void setExit(std::string const& text, std::function<void()> action);
   // Places the rows from this top edge down, `left` their left edge
@@ -59,6 +73,15 @@ protected:
     float shown = -1;
   };
 
+  struct ChoiceRow
+  {
+    MSMenuItem* item = nullptr;
+    Choice choice;
+    cocos2d::CCNodeRGBA* control = nullptr;
+    cocos2d::CCLabelBMFont* value = nullptr;
+    std::string shown;
+  };
+
   bool init() override;
   MSMenuItem* makeItem(std::string const& text, std::function<void()> action, std::string const& sound = "");
   void layoutSlider(SliderRow& row, float value);
@@ -66,6 +89,8 @@ protected:
   cocos2d::CCRect trackRect(SliderRow const& row) const;
   cocos2d::CCRect resetRect(SliderRow const& row) const;
   SliderRow* sliderFor(MSMenuItem* item);
+  ChoiceRow* choiceFor(MSMenuItem* item);
+  void showChoice(ChoiceRow& row);
   void dragTo(SliderRow& row, cocos2d::CCPoint local);
   void highlight(int index, bool shine);
   bool canUse();
@@ -73,8 +98,12 @@ protected:
   // The rows then Quit: the keys' order
   std::vector<MSMenuItem*> m_items;
   std::vector<MSMenuItem*> m_rows;
+  // The rows and the groups' names, in their places' order
+  std::vector<cocos2d::CCNode*> m_layout;
+  std::vector<cocos2d::CCNode*> m_headers;
   MSMenuItem* m_exit = nullptr;
   std::vector<SliderRow> m_sliders;
+  std::vector<ChoiceRow> m_choices;
   int m_shown = -1;
   bool m_isShown = true;
   cocos2d::CCPoint m_lastMouse;

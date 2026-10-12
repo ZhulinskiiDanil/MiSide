@@ -212,5 +212,9 @@ void MSScreen::close(std::function<void()> after)
       this->removeFromParentAndCleanup(true);
       if (then)
         then();
+      else
+        this->closed();
     })));
 }
+
+void MSScreen::closed() {}

@@ -1,4 +1,5 @@
 #include "Theme.hpp"
+#include "settings/MSSettings.hpp"
 #include "ui/MSBackground.hpp"
 #include "ui/MSConfirm.hpp"
 #include "ui/MSLayoutGuard.hpp"
@@ -240,6 +241,13 @@ class $modify(MSMenuLayer, MenuLayer)
         column->setExit(text, button);
       else
         column->addEntry(text, button);
+      // The mod's appearance settings right after GD's: no vanilla button, a hidden one of its own, pressed through
+      // the column's darkening as the others are
+      if (std::string_view(entry.button) == "settings-button")
+      {
+        auto appearance = CCMenuItemExt::createSpriteExtra(CCNode::create(), [](auto) { ms::settings::open(); });
+        column->addEntry(english ? "APPEARANCE" : "ОФОРМЛЕНИЕ", appearance);
+      }
       // The column has it now. An invisible button can't be clicked or laid out, but activate() still runs it
       hide(button);
       if (auto menu = button->getParent(); std::find(menus.begin(), menus.end(), menu) == menus.end())
