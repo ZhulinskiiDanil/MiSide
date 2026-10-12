@@ -32,3 +32,15 @@ Install one combined package in coordination with the user, then check the menu,
 exit hover/confirmation/cancel, Mita clicks, achievements/statistics/settings/results,
 fullscreen changes, pause blur, and third-party mod access. Check RU/EN and window
 aspect ratios. Compilation and standalone tests do not establish runtime UI compatibility.
+
+## Return from achievements: rendering fix
+
+User reported a mostly black screen after Main menu -> Achievements -> Back;
+moving the Windows game window restored drawing. MSMita::release3D called
+ccGLInvalidateStateCache, which also calls kmGLFreeAll in cocos2d-x 2.x and
+invalidates the scene projection stacks. Replaced the global reset with
+ccGLBindTexture2D(0) before renderer destruction, keeping the cocos texture cache
+consistent without touching matrices. Context-loss disposal still abandons stale handles.
+
+Reference: https://github.com/cocos2d/cocos2d-x/blob/cocos2d-x-2.2.3/cocos2dx/shaders/ccGLStateCache.cpp
+The rebuilt package still needs the reported navigation sequence checked in GD.

@@ -674,9 +674,13 @@ void MSMita::release3D()
   m_renderTexture = nullptr;
   if (m_renderer)
   {
-    if (m_contextGeneration != ms::programGeneration()) m_renderer->abandonContext();
+    if (m_contextGeneration != ms::programGeneration())
+      m_renderer->abandonContext();
+    else
+      // Only the output texture enters cocos' cache. Unbind it before raw GL deletion;
+      // ccGLInvalidateStateCache also frees the scene's matrix stacks.
+      ccGLBindTexture2D(0);
     m_renderer.reset();
-    ccGLInvalidateStateCache();
   }
   m_renderHeight = 0;
   m_outlineFor = nullptr;
