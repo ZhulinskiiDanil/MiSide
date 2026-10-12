@@ -272,6 +272,16 @@ protected:
       if (!entry && (ms::options::runs(item, DROP_DOWN_EXIT) || ms::options::runs(item, DROP_DOWN_BACK) ||
                      ms::options::runs(item, POPUP_CLOSE)))
         continue;
+      // Another mod's button in a window that isn't shown: its code expects the window on screen (one crashed the
+      // game so, in the self-test). GD WINDOW has it
+      if (!entry && !m_follow)
+      {
+        uintptr_t address = 0;
+        std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
+        auto base = geode::base::get();
+        if (address <= base || address >= base + 0x1000000)
+          continue;
+      }
       Row row;
       row.item = item;
       row.at = middle(item);

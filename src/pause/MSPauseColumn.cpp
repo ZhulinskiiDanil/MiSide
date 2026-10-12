@@ -357,6 +357,53 @@ void MSPauseColumn::pressRow(size_t index)
   m_rows[index]->activate();
 }
 
+bool MSPauseColumn::stepRow(size_t index, int direction)
+{
+  if (index >= m_rows.size())
+    return false;
+  auto item = m_rows[index];
+  if (auto row = this->choiceFor(item))
+  {
+    if (!row->choice.change)
+      return false;
+    row->choice.change(direction);
+    this->showChoice(*row);
+    return true;
+  }
+  if (auto row = this->sliderFor(item))
+  {
+    if (!row->slider.set)
+      return false;
+    auto step = std::clamp(Theme::get().pauseSliderStep, 0.01f, 0.5f) * direction;
+    auto value = std::clamp((row->slider.get ? row->slider.get() : row->shown) + step, 0.f, 1.f);
+    row->slider.set(value);
+    this->layoutSlider(*row, row->slider.get ? row->slider.get() : value);
+    return true;
+  }
+  return false;
+}
+
+std::optional<float> MSPauseColumn::sliderValue(size_t index)
+{
+  if (index >= m_rows.size())
+    return std::nullopt;
+  auto row = this->sliderFor(m_rows[index]);
+  if (!row || !row->slider.get)
+    return std::nullopt;
+  return row->slider.get();
+}
+
+void MSPauseColumn::setSliderValue(size_t index, float value)
+{
+  if (index >= m_rows.size())
+    return;
+  if (auto row = this->sliderFor(m_rows[index]); row && row->slider.set)
+  {
+    row->slider.set(std::clamp(value, 0.f, 1.f));
+    this->layoutSlider(*row, row->slider.get ? row->slider.get() : value);
+  }
+}
+
 bool MSPauseColumn::onEditKey(enumKeyCodes key)
 {
   auto& row = m_fields[m_editing];

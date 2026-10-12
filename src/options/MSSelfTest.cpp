@@ -169,6 +169,51 @@ protected:
       top->keyBackClicked();
   }
 
+  // Every choice and slider of a column moved a step and back (the other way first at the end of a slider's travel):
+  // its value has to change, then come back. The vault (another scene) and what GD puts up meanwhile (closed) aside
+  void exercise(MSPauseColumn* column, std::string const& name, MSOptionsScreen* screen)
+  {
+    static std::unordered_set<std::string> const SKIP = {"ХРАНИЛИЩЕ", "VAULT"};
+    auto texts = column->rowTexts();
+    int moved = 0;
+    std::vector<std::string> wrong;
+    for (size_t i = 0; i < texts.size(); i++)
+    {
+      if (SKIP.contains(texts[i]))
+        continue;
+      auto before = column->rowValues()[i];
+      // Empty: nothing to show; a dash: GD has it hidden for now (borderless in a window)
+      if (before.empty() || before == "—")
+        continue;
+      // A slider at its top goes down first, and is put back exactly (GD rounds a step's way back)
+      auto exact = column->sliderValue(i);
+      auto direction = exact && *exact > 0.9f ? -1 : 1;
+      if (!column->stepRow(i, direction))
+        continue;
+      auto changed = column->rowValues()[i];
+      column->stepRow(i, -direction);
+      if (exact)
+        column->setSliderValue(i, *exact);
+      auto after = column->rowValues()[i];
+      // GD's popups from it (an info the first time, a locked unlocker's words): closed
+      while (screen && topScreen() && topScreen() != screen)
+        topScreen()->keyBackClicked();
+      moved++;
+      if (changed == before || after != before)
+        wrong.push_back(fmt::format("{} ({} -> {} -> {})", texts[i], before, changed, after));
+    }
+    if (wrong.empty())
+      log::info("SELFTEST {} moved: {} values changed and came back", name, moved);
+    else
+    {
+      m_failures++;
+      std::string list;
+      for (auto const& entry : wrong)
+        list += (list.empty() ? "" : " | ") + entry;
+      log::error("SELFTEST FAIL {} moved: {} of {} didn't change or come back: {}", name, wrong.size(), moved, list);
+    }
+  }
+
   // A column of the pause logged, and its row with one of these texts pressed
   void pauseColumn(char const* id, std::string const& name, std::vector<std::string> const& press)
   {
@@ -193,6 +238,12 @@ protected:
     for (size_t i = 0; i < texts.size(); i++)
       rows += fmt::format("{}{}{}", i ? " | " : "", texts[i], values[i].empty() ? "" : " = " + values[i]);
     log::info("SELFTEST {} ({} rows): {}", name, texts.size(), rows);
+    // The pause's own volumes are the level's: only its settings are moved
+    if (name == "PAUSE SETTINGS" && !m_pauseMoved)
+    {
+      m_pauseMoved = true;
+      this->exercise(column, name, nullptr);
+    }
     for (size_t i = 0; i < texts.size(); i++)
     {
       if (std::find(press.begin(), press.end(), texts[i]) != press.end())
@@ -221,6 +272,7 @@ protected:
       for (size_t i = 0; i < texts.size(); i++)
         rows += fmt::format("{}{}{}", i ? " | " : "", texts[i], values[i].empty() ? "" : " = " + values[i]);
       log::info("SELFTEST {} ({} rows): {}", name, texts.size(), rows);
+      this->exercise(column, name, top);
       if (depth >= DEPTH)
         return;
 
@@ -284,6 +336,7 @@ protected:
   float m_wait = 0;
   MSOptionsScreen* m_before = nullptr;
   std::vector<bool> m_opened;
+  bool m_pauseMoved = false;
   int m_screens = 0;
   int m_failures = 0;
 };

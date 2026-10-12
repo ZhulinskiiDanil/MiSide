@@ -343,7 +343,8 @@ namespace
   }
 
   // A group of GD's radio toggles as one choice: the one on is the value, Left/Right turn on the next
-  MSFormScreen::Option profileChoice(std::string const& text, CCArray* array, CCNode* top, bool en)
+  MSFormScreen::Option profileChoice(std::string const& text, CCArray* array, CCNode* top, bool en,
+                                     std::function<int()> status)
   {
     std::vector<Ref<CCMenuItemToggler>> togglers;
     std::vector<std::string> names;
@@ -361,24 +362,27 @@ namespace
     }
     MSFormScreen::Option option;
     option.text = text;
-    option.choice.value = [togglers, names] {
-      for (size_t i = 0; i < togglers.size(); i++)
+    // GD's own number for it (its buttons' look follows only after their callback): the button tagged with it, else
+    // the one at its place
+    auto current = [togglers, status] {
+      auto value = status();
+      for (int i = 0; i < static_cast<int>(togglers.size()); i++)
       {
-        if (togglers[i]->isToggled())
-          return names[i];
+        if (togglers[i]->getTag() == value)
+          return i;
       }
-      return std::string("-");
+      return std::clamp(value, 0, std::max(static_cast<int>(togglers.size()) - 1, 0));
     };
-    option.choice.change = [togglers](int direction) {
+    option.choice.value = [names, current] {
+      if (names.empty())
+        return std::string("-");
+      return names[current()];
+    };
+    option.choice.change = [togglers, current](int direction) {
       auto count = static_cast<int>(togglers.size());
       if (count == 0)
         return;
-      auto now = 0;
-      for (int i = 0; i < count; i++)
-      {
-        if (togglers[i]->isToggled())
-          now = i;
-      }
+      auto now = current();
       auto next = ((now + direction) % count + count) % count;
       togglers[next]->activate();
     };
@@ -403,11 +407,12 @@ class $modify(MSAccountSettingsLayer, GJAccountSettingsLayer)
       auto en = MSScreen::english();
       auto top = keep->m_mainLayer ? keep->m_mainLayer : static_cast<CCNode*>(keep.data());
       std::vector<MSFormScreen::Option> options;
-      options.push_back(profileChoice(en ? "MESSAGES FROM" : "СООБЩЕНИЯ ОТ", keep->m_messageSettings, top, en));
+      options.push_back(profileChoice(en ? "MESSAGES FROM" : "СООБЩЕНИЯ ОТ", keep->m_messageSettings, top, en,
+                                      [keep] { return keep->m_messageStatus; }));
       options.push_back(profileChoice(en ? "FRIEND REQUESTS FROM" : "ЗАЯВКИ В ДРУЗЬЯ ОТ", keep->m_friendRequestSettings,
-                                      top, en));
+                                      top, en, [keep] { return keep->m_friendStatus; }));
       options.push_back(profileChoice(en ? "COMMENT HISTORY TO" : "ИСТОРИЯ КОММЕНТАРИЕВ ДЛЯ", keep->m_commentSettings,
-                                      top, en));
+                                      top, en, [keep] { return keep->m_commentHistoryStatus; }));
       std::vector<MSFormScreen::Field> fields;
       std::vector<MSFormScreen::Action> actions;
       if (auto inputs = keep->m_inputs)

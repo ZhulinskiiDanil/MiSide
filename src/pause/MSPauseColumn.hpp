@@ -5,6 +5,7 @@
 #include <Geode/Geode.hpp>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -84,6 +85,11 @@ public:
   std::vector<std::string> rowTexts() const;
   std::vector<std::string> rowValues();
   void pressRow(size_t index);
+  // A choice or a slider moved a step either way, as Left/Right do; false when the row has nothing to move
+  bool stepRow(size_t index, int direction);
+  // A slider's exact value (0..1), and put back to one
+  std::optional<float> sliderValue(size_t index);
+  void setSliderValue(size_t index, float value);
 
   void update(float dt) override;
   // Over a slider's row, the wheel moves it as Left/Right do; elsewhere it scrolls a long column
