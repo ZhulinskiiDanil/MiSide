@@ -406,6 +406,35 @@ namespace
     theme.achievementsExpandDuration = 0.18f;
     theme.achievementsScrollSmoothing = 0.08f;
 
+    // ! --- The mod's screens --- !
+    // The achievements' layout; BACK and the button next to it share the row's 145.3 pt
+    theme.screenTitleLeft = 59.7f;
+    theme.screenTitleCapTop = 307.2f;
+    theme.screenLeft = 61.2f;
+    theme.screenTop = 294.4f;
+    theme.screenBottom = 30;
+    theme.screenWidth = 137.1f;
+    theme.screenScrollLeft = 202;
+    theme.screenScrollWidth = 4.5f;
+    theme.screenBackTop = 26.4f;
+    theme.screenBackWidth = 70;
+
+    // ! --- The statistics --- !
+    theme.statsEnabled = true;
+    theme.statsRowHeight = 15;
+    theme.statsRowGap = 2;
+    theme.statsGroupHeight = 14;
+    theme.statsGroupGap = 5;
+    theme.statsRowColor = ccc3(0x6a, 0x2a, 0x84);
+    theme.statsRowOpacity = 185;
+    theme.statsLabelColor = ccc3(0xf4, 0xc9, 0xea);
+    theme.statsLabelScale = 0.42f;
+    theme.statsValueColor = ccc3(0xff, 0xff, 0xff);
+    theme.statsValueScale = 0.3f;
+    theme.statsGroupColor = ccc3(0xff, 0x9e, 0xd8);
+    theme.statsGroupScale = 0.26f;
+    theme.statsOriginalWidth = 71.3f;
+
     // ! --- Decoration over the backdrop --- !
     // Faint: a pink line on the dark, never a row of bright marks
     theme.patternSprite = "pattern-tile.png"_spr;
@@ -848,6 +877,30 @@ namespace
     field("achievements-back-width", theme.achievementsBackWidth);
     field("achievements-expand-duration", theme.achievementsExpandDuration);
     field("achievements-scroll-smoothing", theme.achievementsScrollSmoothing);
+    field("screen-title-left", theme.screenTitleLeft);
+    field("screen-title-cap-top", theme.screenTitleCapTop);
+    field("screen-left", theme.screenLeft);
+    field("screen-top", theme.screenTop);
+    field("screen-bottom", theme.screenBottom);
+    field("screen-width", theme.screenWidth);
+    field("screen-scroll-left", theme.screenScrollLeft);
+    field("screen-scroll-width", theme.screenScrollWidth);
+    field("screen-back-top", theme.screenBackTop);
+    field("screen-back-width", theme.screenBackWidth);
+    field("stats-enabled", theme.statsEnabled);
+    field("stats-row-height", theme.statsRowHeight);
+    field("stats-row-gap", theme.statsRowGap);
+    field("stats-group-height", theme.statsGroupHeight);
+    field("stats-group-gap", theme.statsGroupGap);
+    field("stats-row-color", theme.statsRowColor);
+    field("stats-row-opacity", theme.statsRowOpacity);
+    field("stats-label-color", theme.statsLabelColor);
+    field("stats-label-scale", theme.statsLabelScale);
+    field("stats-value-color", theme.statsValueColor);
+    field("stats-value-scale", theme.statsValueScale);
+    field("stats-group-color", theme.statsGroupColor);
+    field("stats-group-scale", theme.statsGroupScale);
+    field("stats-original-width", theme.statsOriginalWidth);
     field("pattern-sprite", theme.patternSprite);
     field("pattern-color", theme.patternColor);
     field("pattern-opacity", theme.patternOpacity);

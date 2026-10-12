@@ -472,6 +472,42 @@ struct Theme
   float achievementsExpandDuration = 0;
   float achievementsScrollSmoothing = 0;
 
+  // ! --- The mod's screens --- !
+  // The statistics' and the other screens over the menu, laid out as the achievements': the title, a column on the
+  // left with its scroll bar, the bottom row of buttons (BACK first). Points of the 569×320 screen, from its top
+  float screenTitleLeft = 0;
+  float screenTitleCapTop = 0;
+  float screenLeft = 0;
+  float screenTop = 0;
+  float screenBottom = 0;
+  float screenWidth = 0;
+  float screenScrollLeft = 0;
+  float screenScrollWidth = 0;
+  float screenBackTop = 0;
+  // BACK; the other buttons in the row have their own widths
+  float screenBackWidth = 0;
+
+  // ! --- The statistics --- !
+  // GD's own numbers in groups: a group's name, then its rows (the name on the left, the number on the right)
+  bool statsEnabled = false;
+  float statsRowHeight = 0;
+  float statsRowGap = 0;
+  float statsGroupHeight = 0;
+  // Over every group but the first
+  float statsGroupGap = 0;
+  cocos2d::ccColor3B statsRowColor;
+  GLubyte statsRowOpacity = 0;
+  cocos2d::ccColor3B statsLabelColor;
+  float statsLabelScale = 0;
+  cocos2d::ccColor3B statsValueColor;
+  // The numbers, in the title font
+  float statsValueScale = 0;
+  cocos2d::ccColor3B statsGroupColor;
+  // The groups' names, in the title font
+  float statsGroupScale = 0;
+  // The button to GD's own statistics, next to BACK
+  float statsOriginalWidth = 0;
+
   // ! --- Decoration over the backdrop --- !
   // A faint repeating pattern of thin outlined hearts, flowers and stars (a white tile, tinted)
   std::string patternSprite;
