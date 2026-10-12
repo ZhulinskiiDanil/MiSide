@@ -262,7 +262,12 @@ void MSMenuColumn::update(float dt)
     m_mouseActive = true;
   auto usable = !m_busy && !m_confirming && this->isOnTop();
   auto local = this->convertToNodeSpace(mouse);
-  this->notifyExitHover(usable && m_mouseActive && m_exit && m_exit->boundingBox().containsPoint(local));
+  // The keys' row while they're in use (until the mouse moves): Mita follows it as she follows the mouse
+  MSMenuItem* keyed = nullptr;
+  if (usable && !m_mouseActive && m_shown >= 0 && m_shown < static_cast<int>(m_items.size()))
+    keyed = m_items[m_shown];
+  this->notifyExitHover(usable && m_exit &&
+                        (m_mouseActive ? m_exit->boundingBox().containsPoint(local) : keyed == m_exit));
 
   // Quit leans away from the mouse, every frame (it springs back with no mouse to lean from)
   if (m_exit)
@@ -271,12 +276,17 @@ void MSMenuColumn::update(float dt)
   if (m_onGazeTarget)
   {
     std::optional<CCPoint> target;
-    if (usable)
+    auto middle = [](MSMenuItem* item) {
+      auto size = item->getContentSize();
+      return item->convertToWorldSpace({size.width / 2, size.height / 2});
+    };
+    if (keyed)
+      target = middle(keyed);
+    else if (usable)
       for (auto item : m_items)
         if (item->isVisible() && item->isEnabled() && item->boundingBox().containsPoint(local))
         {
-          auto size = item->getContentSize();
-          target = item->convertToWorldSpace({size.width / 2, size.height / 2});
+          target = middle(item);
           break;
         }
     m_onGazeTarget(target);
