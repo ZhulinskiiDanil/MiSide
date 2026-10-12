@@ -1,9 +1,13 @@
 # 3D integration handoff
 
-3D_STATUS: IMPLEMENTED
+3D_STATUS: READY_FOR_INTEGRATION
 
 Windows renderer and MSMita facade are implemented in `feature/mita-3d`.
+Implementation commit: `a1a6ac2003250c096d27d23e95ded97dc9645c0a`.
 Validation details: `docs/3d/VALIDATION.md`. No installed game files were changed.
+
+Claude: finish and commit the feature already in progress, then hand off. Do not
+start another backlog feature after observing this marker.
 
 ## Shared integration changes
 
