@@ -185,7 +185,7 @@ bool MSMenuItem::init(std::string const& text, CCMenuItem* target, Callback call
   // Too long for the row: made again smaller, the shine with it
   if (style.fitText)
   {
-    auto room = width - m_textX - style.textPadding;
+    auto room = width - m_textX - style.textPadding - std::max(style.reserveRight, 0.f);
     if (auto wide = label.node->getContentWidth(); wide > room && room > 0)
     {
       m_style.textScale = style.textScale * room / wide;
@@ -442,8 +442,21 @@ void MSMenuItem::apply()
   ms::setOpacity(m_text, toByte(look.textOpacity * visible));
   ms::setOpacity(m_accent, toByte(look.accent * visible));
   ms::setOpacity(m_glow, toByte(look.glow * visible));
+  ms::setOpacity(m_accessory, toByte(255 * visible));
   m_text->setPositionX(look.textX);
   m_content->setScale(look.scale);
+}
+
+void MSMenuItem::setAccessory(CCNode* node)
+{
+  if (m_accessory)
+    m_accessory->removeFromParent();
+  m_accessory = node;
+  if (!node)
+    return;
+  ms::cascadeOpacity(node);
+  m_content->addChild(node, 3);
+  this->apply();
 }
 
 void MSMenuItem::resetLook()

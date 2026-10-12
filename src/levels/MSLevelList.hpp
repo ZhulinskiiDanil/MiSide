@@ -15,7 +15,9 @@
 class MSLevelList : public cocos2d::CCMenu
 {
 public:
-  static MSLevelList* create(std::vector<std::string> const& names, std::function<void(int)> chosen);
+  // reserveRight: room kept on each row's right for its accessory
+  static MSLevelList* create(std::vector<std::string> const& names, std::function<void(int)> chosen,
+                             float reserveRight = 0);
   // The row under the mouse, as soon as it comes on (-1: off the rows)
   void setOnHover(std::function<void(int)> hover);
   // A row clicked (after it's chosen)
@@ -24,6 +26,13 @@ public:
   // Chooses it and scrolls it into view
   void choose(int index, bool sound = false);
   int chosen() const;
+  // The first row in view: kept between visits
+  int offset() const;
+  void setOffset(int offset);
+  // A small node on a row's right (its lock or progress), in the row's space; it fades with the row
+  void setAccessory(int index, cocos2d::CCNode* node);
+  // Each time the rows scroll
+  void setOnScroll(std::function<void(int)> scrolled);
   // Fades out (taking nothing from the first frame) or in
   void setShown(bool shown);
   // Up/Down and their controller keys. True when used
@@ -37,7 +46,7 @@ public:
   void ccTouchCancelled(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
 
 protected:
-  bool init(std::vector<std::string> const& names, std::function<void(int)> chosen);
+  bool init(std::vector<std::string> const& names, std::function<void(int)> chosen, float reserveRight);
   void scrollTo(int offset, bool animate);
   void layout(bool animate);
   int visible() const;
@@ -47,6 +56,7 @@ protected:
   std::function<void(int)> m_onChosen;
   std::function<void(int)> m_onHover;
   std::function<void(int)> m_onActivate;
+  std::function<void(int)> m_onScroll;
   std::vector<MSMenuItem*> m_rows;
   cocos2d::CCNode* m_track = nullptr;
   cocos2d::CCNode* m_thumb = nullptr;

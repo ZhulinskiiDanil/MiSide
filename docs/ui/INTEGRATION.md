@@ -39,3 +39,10 @@ When they're registered, the UI lane adds the rows to `src/settings.cpp` (an EFF
 `Theme::reload()`; until then they stay theme.json keys. To check in the combined build: the column entry fits above
 EXIT, and `MenuLayer::scene(false)` through `CCTransitionFade` after a change keeps the menu music playing.
 
+## UI-04 Official levels polish
+
+No shared change. The choice and scroll are kept in the mod's saved values (`levels-chosen-level`, `levels-offset`
+in saved.json), not settings. `LevelPreview.*` and its API untouched. To check in the combined build: the row
+accessory's place on long names (Theory of Everything 2, Geometrical Dominator) and that a locked demon shows the
+lock while the floppy says how many coins are needed.
+
