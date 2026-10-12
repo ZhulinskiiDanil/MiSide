@@ -1,3 +1,14 @@
+# v1.1.0
+
+* Android support (64-bit and 32-bit): Mita is the 2D animation there; GRAPHICS and KEYS stay desktop-only, as in GD
+* Long texts wrap instead of running off their panels (how to play, achievements, credits, hints)
+* Statistics and credits: the rows sit in their column again
+* The mouse wheel scrolls the official levels again, and the pause's volume sliders
+* Enter in the main menu opens the item chosen with the arrow keys, not always PLAY
+* Mita looks at the item chosen with the arrow keys, and reacts to EXIT chosen so
+* Mita swats after 4 quick clicks on her face instead of 6
+* Typed numbers that aren't numbers no longer reset the music offset or a UI editor's value
+
 # v1.0.0
 
 * First release: MiSide's interface for the loading screen, the main menu with an animated 3D Mita, the official levels, the pause, level complete, achievements, statistics, appearance and credits

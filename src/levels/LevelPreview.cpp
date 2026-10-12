@@ -76,7 +76,7 @@ namespace
     auto image = new CCImage();
     auto saved = image->initWithImageData(shrunk.data(), static_cast<int>(shrunk.size()), CCImage::kFmtRawData,
                                           outWidth, outHeight, 8) &&
-                 image->saveToFile(path.string().c_str(), false);
+                 image->saveToFile(string::pathToString(path).c_str(), false);
     image->release();
     return saved;
   }
@@ -195,7 +195,7 @@ namespace preview
     if (std::filesystem::exists(path, error))
     {
       auto image = new CCImage();
-      if (image->initWithImageFile(path.string().c_str()))
+      if (image->initWithImageFile(string::pathToString(path).c_str()))
       {
         auto texture = new CCTexture2D();
         if (texture->initWithImage(image))

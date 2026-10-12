@@ -179,7 +179,7 @@ private:
     int height = 0;
     int channels = 0;
     // Straight alpha, as the file has it
-    std::unique_ptr<stbi_uc, void (*)(void*)> data(stbi_load(path.string().c_str(), &width, &height, &channels, 4),
+    std::unique_ptr<stbi_uc, void (*)(void*)> data(stbi_load(string::pathToString(path).c_str(), &width, &height, &channels, 4),
                                                    stbi_image_free);
     if (!data || width <= 0 || height <= 0 || static_cast<unsigned>(width) > m_slotWidth ||
         static_cast<unsigned>(height) > m_slotHeight)
@@ -467,7 +467,12 @@ bool MSMita::init()
     return false;
   m_modelPath = Mod::get()->getResourcesDir() / "mita.glb";
   std::error_code error;
+#ifdef GEODE_IS_WINDOWS
   m_use3D = std::filesystem::is_regular_file(m_modelPath, error);
+#else
+  // The 3D renderer is desktop OpenGL's: the atlases here
+  m_use3D = false;
+#endif
   if (m_use3D)
   {
     m_canvas = CCSize(960, 1080);

@@ -201,7 +201,7 @@ namespace
     void showFrame(int index)
     {
       m_shown = index;
-      auto path = (Mod::get()->getResourcesDir() / fmt::format("intro-{:04}.jpg", index + 1)).string();
+      auto path = string::pathToString(Mod::get()->getResourcesDir() / fmt::format("intro-{:04}.jpg", index + 1));
       auto image = new CCImage();
       if (!image->initWithImageFile(path.c_str()))
       {
@@ -251,7 +251,7 @@ namespace
       auto path = Mod::get()->getResourcesDir() / "intro.ogg";
       if (!system || !std::filesystem::exists(path, error))
         return;
-      if (system->createSound(path.string().c_str(), FMOD_CREATESTREAM, nullptr, &m_sound) != FMOD_OK ||
+      if (system->createSound(string::pathToString(path).c_str(), FMOD_CREATESTREAM, nullptr, &m_sound) != FMOD_OK ||
           system->playSound(m_sound, nullptr, true, &m_channel) != FMOD_OK)
       {
         this->stopSound();

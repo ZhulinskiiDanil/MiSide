@@ -147,7 +147,7 @@ void main()
     for (int y = 0; y < height; y++)
       std::copy_n(pixels.data() + (height - 1 - y) * row, row, flipped.data() + y * row);
     auto image = new CCImage();
-    auto path = (Mod::get()->getConfigDir() / name).string();
+    auto path = string::pathToString(Mod::get()->getConfigDir() / name);
     if (image->initWithImageData(flipped.data(), static_cast<int>(flipped.size()), CCImage::kFmtRawData, width, height, 8) &&
         image->saveToFile(path.c_str(), false))
       log::info("Pause blur: saved {}", path);

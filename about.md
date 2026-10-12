@@ -15,6 +15,11 @@ Geometry Dash's own screens dressed as **MiSide**'s interface, with an animated 
 
 Everything else (the editor, the icon kit, online browsers, other mods' windows) is GD's as it was.
 
+## Platforms
+
+- **Windows**: everything, with the real-time 3D Mita
+- **Android**: everything but the 3D: Mita is a 2D animation there. GRAPHICS and KEYS aren't there, as in GD on phones
+
 ## Controls
 
 Mouse, keyboard (arrows, Enter, Esc, Left/Right for sliders) and a controller (A / B).

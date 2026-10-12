@@ -35,12 +35,12 @@ namespace music
     std::error_code error;
     std::filesystem::path path(name);
     if (path.is_absolute())
-      return std::filesystem::exists(path, error) ? path.string() : std::string();
+      return std::filesystem::exists(path, error) ? string::pathToString(path) : std::string();
     for (auto const& dir : {Mod::get()->getConfigDir(), Mod::get()->getResourcesDir()})
     {
       auto candidate = dir / path;
       if (std::filesystem::exists(candidate, error))
-        return candidate.string();
+        return string::pathToString(candidate);
     }
     logOnce(fmt::format("{} not found (a path, or a name in the mod's config folder or resources)", name));
     return {};

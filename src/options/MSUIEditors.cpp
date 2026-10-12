@@ -360,7 +360,8 @@ protected:
         MSPauseColumn::Field field;
         field.get = [editor, tag] { return fmt::format("{}", editor->getValue(tag)); };
         field.set = [editor, tag](std::string const& typed) {
-          editor->updateValue(tag, static_cast<float>(std::atof(typed.c_str())));
+          // Not a number: it stays as it was
+          editor->updateValue(tag, numFromString<float>(typed).unwrapOr(editor->getValue(tag)));
         };
         field.allowed = "0123456789.-";
         m_column->addField(text, std::move(field));

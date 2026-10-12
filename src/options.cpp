@@ -184,7 +184,9 @@ protected:
     offset.get = [] { return std::to_string(FMODAudioEngine::get()->m_musicOffset); };
     // As GD reads it when its window closes: a whole number
     offset.set = [](std::string const& text) {
-      FMODAudioEngine::get()->m_musicOffset = std::atoi(text.c_str());
+      auto engine = FMODAudioEngine::get();
+      // Not a number: it stays as it was
+      engine->m_musicOffset = numFromString<int>(text).unwrapOr(engine->m_musicOffset);
     };
     offset.step = [step = static_cast<int>(std::max(theme.optionsOffsetStep, 1.f))](int direction) {
       FMODAudioEngine::get()->m_musicOffset += step * direction;
