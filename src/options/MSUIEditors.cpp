@@ -18,10 +18,6 @@ namespace
   constexpr float WATCH_TIME = 0.25f;
   // A label right before a control, about level with it, is its name
   constexpr float LABEL_RISE = 14;
-  // GD's functions (GeometryDash.exe 2.2081): the editors' Reset and Save/Load (their OK is BACK here)
-  constexpr uintptr_t UI_RESET = 0x2a30d0;
-  constexpr uintptr_t UI_SAVE_LOAD = 0x2a2cb0;
-  constexpr uintptr_t UIP_RESET = 0x2a5f20;
 
   struct Pair
   {
@@ -397,12 +393,14 @@ protected:
       if (typeinfo_cast<CCMenuItemToggler*>(item) || !shown(item, top))
         continue;
       Ref<CCMenuItem> button = item;
-      if (ms::options::runs(item, UI_RESET) || ms::options::runs(item, UIP_RESET))
+      // GD's Reset and Save/Load (the editors' OK is BACK here)
+      if (ms::options::runs(item, ms::options::gd(&UIOptionsLayer::onReset)) ||
+          ms::options::runs(item, ms::options::gd(&UIPOptionsLayer::onReset)))
       {
         m_column->addRow(en ? "RESET" : "СБРОСИТЬ", [this, button] { this->press(m_editor, [button] { button->activate(); }); });
         m_column->setInfo(en ? "Puts the buttons back where GD has them." : "Возвращает кнопки на места по умолчанию.");
       }
-      else if (ms::options::runs(item, UI_SAVE_LOAD))
+      else if (ms::options::runs(item, ms::options::gd(&UIOptionsLayer::onSaveLoad)))
       {
         m_column->addRow(en ? "SAVE / LOAD" : "СОХРАНИТЬ / ЗАГРУЗИТЬ",
                          [this, button] { this->press(m_editor, [button] { button->activate(); }); });

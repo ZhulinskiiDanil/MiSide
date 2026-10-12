@@ -392,7 +392,10 @@ class $modify(MSMenuLayer, MenuLayer)
     m_fields->m_quitting = true;
     log::info("Quitting from the confirmation: saving, then ending as GD's popup does");
     auto application = CCApplication::sharedApplication();
+#ifdef GEODE_IS_WINDOWS
+    // Windows' GD only: its flag that the game is ending
     application->setShutdownCalled(true);
+#endif
     application->trySaveGame(true);
     auto end = CCSequence::createWithTwoActions(CCDelayTime::create(QUIT_DELAY),
                                                 CCCallFunc::create(this, callfunc_selector(MenuLayer::endGame)));

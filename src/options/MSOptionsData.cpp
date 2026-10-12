@@ -13,6 +13,10 @@
 
 #include <unordered_set>
 
+#ifndef GEODE_IS_WINDOWS
+#include <dlfcn.h>
+#endif
+
 using namespace geode::prelude;
 
 namespace
@@ -197,14 +201,40 @@ namespace ms::options
     return all;
   }
 
-  bool runs(CCMenuItem* item, uintptr_t offset)
+  namespace
   {
-    static_assert(sizeof(SEL_MenuHandler) == sizeof(uintptr_t), "GD's callbacks are plain function pointers");
-    if (!item || !item->m_pfnSelector)
+    // The function a button's callback points at: a member pointer starts with it (MSVC's is only that; the
+    // Itanium ABI adds the this adjustment after it)
+    uintptr_t callee(CCMenuItem* item)
+    {
+      static_assert(sizeof(SEL_MenuHandler) >= sizeof(uintptr_t));
+      uintptr_t address = 0;
+      if (item && item->m_pfnSelector)
+        std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
+      return address;
+    }
+  } // namespace
+
+  bool runs(CCMenuItem* item, uintptr_t address)
+  {
+    auto at = callee(item);
+    return at && at == address;
+  }
+
+  bool runsGD(CCMenuItem* item)
+  {
+    auto at = callee(item);
+    if (!at)
       return false;
-    uintptr_t address = 0;
-    std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
-    return address == geode::base::get() + offset;
+#ifdef GEODE_IS_WINDOWS
+    // GeometryDash.exe's code is in its first 16 MB
+    auto base = geode::base::get();
+    return at > base && at < base + 0x1000000;
+#else
+    // In GD's own library (a virtual function's slot number is in none)
+    Dl_info info{};
+    return dladdr(reinterpret_cast<void*>(at), &info) && info.dli_fbase == reinterpret_cast<void*>(geode::base::get());
+#endif
   }
 
   namespace

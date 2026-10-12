@@ -13,8 +13,11 @@ project(miside-menu VERSION 0.1.0)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE third_party/cgltf third_party/glm
-    "$ENV{GEODE_SDK}/loader/include/Geode/cocos/platform/third_party/win32/OGLES")
+target_include_directories(${PROJECT_NAME} PRIVATE third_party/cgltf third_party/glm third_party/stb)
+if (WIN32)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "$ENV{GEODE_SDK}/loader/include/Geode/cocos/platform/third_party/win32/OGLES")
+endif()
 
 # The menu items are written in Russian in the sources
 if (MSVC)
@@ -31,5 +34,7 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 setup_geode_mod(${PROJECT_NAME})
 
-# Mita's atlases are decoded off the main thread with Windows' PNG decoder (WIC)
-target_link_libraries(${PROJECT_NAME} windowscodecs ole32)
+# Mita's atlases are decoded off the main thread with Windows' PNG decoder (WIC) there
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME} windowscodecs ole32)
+endif()

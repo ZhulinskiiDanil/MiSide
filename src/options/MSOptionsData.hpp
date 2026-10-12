@@ -39,9 +39,16 @@ namespace ms::options
   // The toggle buttons in the layer, in its tree's order
   std::vector<CCMenuItemToggler*> togglers(cocos2d::CCNode* layer);
 
-  // A button GD made runs this function of GD's: its offset in GeometryDash.exe, as Geode's bindings for GD 2.2081
-  // have it (Geode's own hooks are made from the same numbers)
-  bool runs(cocos2d::CCMenuItem* item, uintptr_t offset);
+  // Where GD's own (non-virtual) function is on this platform, found as Geode's hooks find it
+  template <class Method>
+  uintptr_t gd(Method method)
+  {
+    return static_cast<uintptr_t>(geode::addresser::getNonVirtual(method));
+  }
+  // A button GD made runs the function at this address (from gd())
+  bool runs(cocos2d::CCMenuItem* item, uintptr_t address);
+  // The button runs a function in GD's own code, not a mod's
+  bool runsGD(cocos2d::CCMenuItem* item);
 
   // What a GD text node says: a label's string, a text area's whole text as GD set it (its markup taken out), else
   // the labels in it top to bottom; empty for anything else

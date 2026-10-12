@@ -1,3 +1,6 @@
+// Desktop OpenGL 3.0 through GLEW and Windows' WIC: Windows only for now. Elsewhere the renderer can't be made,
+// and MSMita shows the atlases instead
+#ifdef _WIN32
 #define NOMINMAX
 #include <Windows.h>
 #include <GL/glew.h>
@@ -211,3 +214,19 @@ bool Renderer::hit(float u, float v) const {
     return pixel[3] >= 128;
 }
 }
+#else
+#include "Renderer.hpp"
+#include <stdexcept>
+
+namespace mita3d {
+struct Renderer::Data {};
+Renderer::Renderer(std::filesystem::path const&) {
+    throw std::runtime_error("3D Mita isn't on this platform yet (desktop OpenGL 3.0 only)");
+}
+Renderer::~Renderer() = default;
+void Renderer::abandonContext() {}
+unsigned Renderer::texture() const { return 0; }
+void Renderer::render(int, int, double, float, glm::vec2, glm::vec2, float) {}
+bool Renderer::hit(float, float) const { return false; }
+}
+#endif

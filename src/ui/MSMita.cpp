@@ -6,20 +6,30 @@
 
 #include <Geode/utils/file.hpp>
 
+#ifdef GEODE_IS_WINDOWS
 #include <Windows.h>
 #include <wincodec.h>
 #include <wrl/client.h>
+#else
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include <stb_image.h>
+#endif
 
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
+#include <cstring>
 #include <mutex>
 #include <optional>
 #include <set>
 #include <thread>
 
 using namespace geode::prelude;
+#ifdef GEODE_IS_WINDOWS
 using Microsoft::WRL::ComPtr;
+#endif
 
 // ! --- Decoding on a worker thread --- !
 
@@ -66,7 +76,7 @@ namespace
 } // namespace
 
 // One worker thread decoding the pages asked for one after another, nearest first, with Windows' own PNG decoder
-// (WIC): no cocos object, cache or file utility is touched off the main thread. It stops while two finished pages
+// (WIC), elsewhere stb_image: no cocos object, cache or file utility is touched off the main thread. It stops while two finished pages
 // wait to be taken, so the CPU holds at most three pages' pixels (two finished, one being decoded: about 24 MiB).
 // The thread owns this state with a shared_ptr and never sees the node: once stopped, it drops what it decoded and
 // ends by itself
@@ -139,31 +149,59 @@ public:
   }
 
 private:
-  MitaDecodedPage decode(IWICImagingFactory* factory, std::filesystem::path const& path, int atlas) const
+  // The file's straight-alpha RGBA in page.pixels, its rows as long as the slot's (the rest left transparent), and
+  // its size; false when it can't be read or is bigger than a slot
+  bool readPixels(std::filesystem::path const& path, MitaDecodedPage& page) const
   {
-    MitaDecodedPage page;
-    page.atlas = atlas;
-    auto began = std::chrono::steady_clock::now();
+    auto stride = m_slotWidth * 4;
+#ifdef GEODE_IS_WINDOWS
     ComPtr<IWICBitmapDecoder> decoder;
     ComPtr<IWICBitmapFrameDecode> frame;
     ComPtr<IWICBitmapSource> rgba;
-    if (!factory ||
-        FAILED(factory->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand,
-                                                  &decoder)) ||
+    if (!m_factory ||
+        FAILED(m_factory->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ,
+                                                    WICDecodeMetadataCacheOnDemand, &decoder)) ||
         FAILED(decoder->GetFrame(0, &frame)) ||
         // Straight alpha, as the file has it
         FAILED(WICConvertBitmapSource(GUID_WICPixelFormat32bppRGBA, frame.Get(), &rgba)) ||
         FAILED(rgba->GetSize(&page.width, &page.height)) || page.width == 0 || page.height == 0 ||
         page.width > m_slotWidth || page.height > m_slotHeight)
-      return page;
-    // Rows as long as the slot's: straight into place, the rest left transparent
-    auto stride = m_slotWidth * 4;
+      return false;
     page.pixels.assign(static_cast<size_t>(stride) * m_slotHeight, 0);
     if (FAILED(rgba->CopyPixels(nullptr, stride, static_cast<UINT>(page.pixels.size()), page.pixels.data())))
     {
       page.pixels.clear();
-      return page;
+      return false;
     }
+    return true;
+#else
+    int width = 0;
+    int height = 0;
+    int channels = 0;
+    // Straight alpha, as the file has it
+    std::unique_ptr<stbi_uc, void (*)(void*)> data(stbi_load(path.string().c_str(), &width, &height, &channels, 4),
+                                                   stbi_image_free);
+    if (!data || width <= 0 || height <= 0 || static_cast<unsigned>(width) > m_slotWidth ||
+        static_cast<unsigned>(height) > m_slotHeight)
+      return false;
+    page.width = static_cast<unsigned>(width);
+    page.height = static_cast<unsigned>(height);
+    page.pixels.assign(static_cast<size_t>(stride) * m_slotHeight, 0);
+    for (unsigned y = 0; y < page.height; y++)
+      std::memcpy(page.pixels.data() + static_cast<size_t>(y) * stride,
+                  data.get() + static_cast<size_t>(y) * page.width * 4, page.width * 4);
+    return true;
+#endif
+  }
+
+  MitaDecodedPage decode(std::filesystem::path const& path, int atlas) const
+  {
+    MitaDecodedPage page;
+    page.atlas = atlas;
+    auto began = std::chrono::steady_clock::now();
+    if (!this->readPixels(path, page))
+      return page;
+    auto stride = m_slotWidth * 4;
     // The mask, made here off the main thread
     page.maskWidth = (page.width + MASK_STEP - 1) / MASK_STEP;
     page.maskHeight = (page.height + MASK_STEP - 1) / MASK_STEP;
@@ -188,10 +226,11 @@ private:
 
   void run()
   {
+#ifdef GEODE_IS_WINDOWS
     auto com = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_factory));
+#endif
     {
-      ComPtr<IWICImagingFactory> factory;
-      CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
       while (true)
       {
         int atlas = -1;
@@ -204,7 +243,7 @@ private:
           m_wanted.erase(m_wanted.begin());
           m_decoding = atlas;
         }
-        auto page = decode(factory.Get(), m_pngs[atlas], atlas);
+        auto page = decode(m_pngs[atlas], atlas);
         std::lock_guard lock(m_mutex);
         m_decoding = -1;
         if (m_stopped)
@@ -212,8 +251,11 @@ private:
         m_ready.push_back(std::move(page));
       }
     }
+#ifdef GEODE_IS_WINDOWS
+    m_factory.Reset();
     if (SUCCEEDED(com))
       CoUninitialize();
+#endif
   }
 
   bool isReady(int atlas) const
@@ -223,6 +265,10 @@ private:
 
   std::mutex m_mutex;
   std::condition_variable m_wake;
+#ifdef GEODE_IS_WINDOWS
+  // Made and released on the worker thread
+  ComPtr<IWICImagingFactory> m_factory;
+#endif
   std::vector<std::filesystem::path> m_pngs;
   unsigned m_slotWidth = 0;
   unsigned m_slotHeight = 0;

@@ -54,7 +54,8 @@ namespace
   // whether it's left out (closing the window: BACK does that) or does something else here
   struct Known
   {
-    uintptr_t offset = 0;
+    // GD's function the button runs, where it is on this platform
+    uintptr_t address = 0;
     char const* en = nullptr;
     char const* ru = nullptr;
     char const* infoEn = "";
@@ -63,11 +64,21 @@ namespace
     std::function<void()> action;
   };
 
-  // GD's windows: GJDropDownLayer::exitLayer (and its back arrow's), FLAlertLayer-style closes (UploadPopup::onClose,
-  // as GD's popups share it)
-  constexpr uintptr_t DROP_DOWN_EXIT = 0x257320;
-  constexpr uintptr_t DROP_DOWN_BACK = 0x257638;
-  constexpr uintptr_t POPUP_CLOSE = 0x84670;
+  // GD's own way out of a window: GJDropDownLayer::exitLayer (and its back arrow's), or an FLAlertLayer-style close
+  // (UploadPopup::onClose, as GD's popups share it)
+  bool closes(CCMenuItem* item)
+  {
+    if (ms::options::runs(item, ms::options::gd(&UploadPopup::onClose)))
+      return true;
+#ifdef GEODE_IS_WINDOWS
+    // exitLayer is virtual: GD's buttons call it straight or through a thunk of MSVC's in GeometryDash.exe 2.2081
+    auto base = geode::base::get();
+    return ms::options::runs(item, base + 0x257320) || ms::options::runs(item, base + 0x257638);
+#else
+    // A virtual function's member pointer is its vtable slot: the same in GD's code as here
+    return item && item->m_pfnSelector == menu_selector(GJDropDownLayer::exitLayer);
+#endif
+  }
 
   // The text on a button: its ButtonSprite's, else the first label in it
   std::string buttonText(CCMenuItem* item)
@@ -233,7 +244,7 @@ protected:
   {
     for (size_t i = 0; i < m_known.size(); i++)
     {
-      if (ms::options::runs(item, m_known[i].offset))
+      if (ms::options::runs(item, m_known[i].address))
       {
         order = static_cast<int>(i);
         return &m_known[i];
@@ -269,19 +280,12 @@ protected:
       auto entry = this->known(item, order);
       if (entry && entry->skip)
         continue;
-      if (!entry && (ms::options::runs(item, DROP_DOWN_EXIT) || ms::options::runs(item, DROP_DOWN_BACK) ||
-                     ms::options::runs(item, POPUP_CLOSE)))
+      if (!entry && closes(item))
         continue;
       // Another mod's button in a window that isn't shown: its code expects the window on screen (one crashed the
       // game so, in the self-test). GD WINDOW has it
-      if (!entry && !m_follow)
-      {
-        uintptr_t address = 0;
-        std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
-        auto base = geode::base::get();
-        if (address <= base || address >= base + 0x1000000)
-          continue;
-      }
+      if (!entry && !m_follow && !ms::options::runsGD(item))
+        continue;
       Row row;
       row.item = item;
       row.at = middle(item);
@@ -344,11 +348,7 @@ protected:
       }
       if (row.text.empty())
       {
-        uintptr_t address = 0;
-        std::memcpy(&address, &item->m_pfnSelector, sizeof(address));
-        auto base = geode::base::get();
-        auto gd = address > base && address < base + 0x1000000;
-        row.text = gd ? (en ? "BUTTON" : "КНОПКА") : (en ? "MOD'S BUTTON" : "КНОПКА МОДА");
+        row.text = ms::options::runsGD(item) ? (en ? "BUTTON" : "КНОПКА") : (en ? "MOD'S BUTTON" : "КНОПКА МОДА");
       }
       if (ms::options::selfTesting() && !entry)
       {
@@ -357,7 +357,7 @@ protected:
         auto base = geode::base::get();
         auto at = row.at;
         log::info("SELFTEST row \"{}\": {} {} at {:.0f},{:.0f}", row.text, typeid(*item).name(),
-                  address > base && address < base + 0x1000000 ? fmt::format("GD+{:#x}", address - base) : "not GD's",
+                  ms::options::runsGD(item) ? fmt::format("GD+{:#x}", address - base) : "not GD's",
                   at.x, at.y);
       }
       rows.push_back(std::move(row));
@@ -779,14 +779,14 @@ namespace ms::options
     if (typeinfo_cast<UploadActionPopup*>(popup))
     {
       title = en ? "REQUEST" : "ЗАПРОС";
-      known = {{0x295930, "CLOSE", "ЗАКРЫТЬ", "", ""}};
+      known = {{ms::options::gd(&UploadActionPopup::onClose), "CLOSE", "ЗАКРЫТЬ", "", ""}};
     }
     else if (typeinfo_cast<UISaveLoadLayer*>(popup))
       title = en ? "SAVE / LOAD UI" : "СОХРАНИТЬ / ЗАГРУЗИТЬ";
     else if (typeinfo_cast<UpdateAccountSettingsPopup*>(popup))
     {
       title = en ? "PROFILE SETTINGS" : "НАСТРОЙКИ ПРОФИЛЯ";
-      known = {{0x2950f0, "CLOSE", "ЗАКРЫТЬ", "", ""}};
+      known = {{ms::options::gd(&UpdateAccountSettingsPopup::onClose), "CLOSE", "ЗАКРЫТЬ", "", ""}};
     }
     else
       return;
@@ -812,15 +812,15 @@ namespace ms::options
   {
     auto window = SongInfoLayer::create(songID);
     std::vector<Known> known = {
-      {0x494440, "DOWNLOAD SOUNDTRACK", "СКАЧАТЬ САУНДТРЕК", "Downloads the song to play it in the editor's levels.",
+      {ms::options::gd(&SongInfoLayer::onDownload), "DOWNLOAD SOUNDTRACK", "СКАЧАТЬ САУНДТРЕК", "Downloads the song to play it in the editor's levels.",
        "Скачивает песню, чтобы использовать её в уровнях редактора."},
-      {0x4942b0, "MENU MUSIC", "МУЗЫКА В МЕНЮ", "Plays this song in GD's menu.", "Эта песня играет в меню GD."},
-      {0x494380, "PRACTICE MUSIC", "МУЗЫКА В ПРАКТИКЕ", "Plays this song in practice mode.",
+      {ms::options::gd(&SongInfoLayer::onMenuMusic), "MENU MUSIC", "МУЗЫКА В МЕНЮ", "Plays this song in GD's menu.", "Эта песня играет в меню GD."},
+      {ms::options::gd(&SongInfoLayer::onPracticeMusic), "PRACTICE MUSIC", "МУЗЫКА В ПРАКТИКЕ", "Plays this song in practice mode.",
        "Эта песня играет в режиме практики."},
-      {0x494500, "BPM", "BPM", "GD's beat guide for this song.", "Метки ритма GD для этой песни."},
-      {0x494470, nullptr, nullptr, "The artist's page.", "Страница автора."},
-      {0x4944a0, nullptr, nullptr, "The artist's YouTube.", "YouTube автора."},
-      {0x4944d0, nullptr, nullptr, "The artist's page.", "Страница автора."},
+      {ms::options::gd(&SongInfoLayer::onBPM), "BPM", "BPM", "GD's beat guide for this song.", "Метки ритма GD для этой песни."},
+      {ms::options::gd(&SongInfoLayer::onNG), nullptr, nullptr, "The artist's page.", "Страница автора."},
+      {ms::options::gd(&SongInfoLayer::onYT), nullptr, nullptr, "The artist's YouTube.", "YouTube автора."},
+      {ms::options::gd(&SongInfoLayer::onFB), nullptr, nullptr, "The artist's page.", "Страница автора."},
     };
     std::string title = LevelTools::getAudioTitle(songID);
     if (auto screen = MSWindowScreen::create(ms::options::upper(title), window, std::move(known),
@@ -857,15 +857,15 @@ namespace ms::options
       Ref<CustomSongCell> keepCell = cell;
       open = [keepCell, title = text] {
         std::vector<Known> known = {
-          {0xcaec0, "PLAY / STOP", "ИГРАТЬ / СТОП", "Listens to the song.", "Послушать песню."},
-          {0xc9c10, "INFO", "О ПЕСНЕ", "The song's page.", "Страница песни."},
-          {0xcae60, "USE", "ВЫБРАТЬ", "", ""},
-          {0xcabc0, "DOWNLOAD", "СКАЧАТЬ", "", ""},
-          {0xcaaa0, "CANCEL DOWNLOAD", "ОТМЕНИТЬ ЗАГРУЗКУ", "", ""},
-          {0xcab30, "REFRESH INFO", "ОБНОВИТЬ ДАННЫЕ", "", ""},
-          {0xca220, "MORE", "ЕЩЁ", "", ""},
-          {0xc9f00, "DELETE", "УДАЛИТЬ", "Deletes the song from this device.", "Удаляет песню с устройства."},
-          {0xb48e0, "DELETE", "УДАЛИТЬ", "Deletes the song from this device.", "Удаляет песню с устройства."},
+          {ms::options::gd(&CustomSongWidget::onPlayback), "PLAY / STOP", "ИГРАТЬ / СТОП", "Listens to the song.", "Послушать песню."},
+          {ms::options::gd(&CustomSongWidget::onInfo), "INFO", "О ПЕСНЕ", "The song's page.", "Страница песни."},
+          {ms::options::gd(&CustomSongWidget::onSelect), "USE", "ВЫБРАТЬ", "", ""},
+          {ms::options::gd(&CustomSongWidget::onDownload), "DOWNLOAD", "СКАЧАТЬ", "", ""},
+          {ms::options::gd(&CustomSongWidget::onCancelDownload), "CANCEL DOWNLOAD", "ОТМЕНИТЬ ЗАГРУЗКУ", "", ""},
+          {ms::options::gd(&CustomSongWidget::onGetSongInfo), "REFRESH INFO", "ОБНОВИТЬ ДАННЫЕ", "", ""},
+          {ms::options::gd(&CustomSongWidget::onMore), "MORE", "ЕЩЁ", "", ""},
+          {ms::options::gd(&CustomSongWidget::onDelete), "DELETE", "УДАЛИТЬ", "Deletes the song from this device.", "Удаляет песню с устройства."},
+          {ms::options::gd(&CustomSongCell::onDelete), "DELETE", "УДАЛИТЬ", "Deletes the song from this device.", "Удаляет песню с устройства."},
         };
         if (auto screen = MSWindowScreen::create(ms::options::upper(title), keepCell, std::move(known), nullptr, false))
           screen->show();
@@ -873,9 +873,9 @@ namespace ms::options
       return true;
     };
     std::vector<Known> known = {
-      {0x2b7a10, "PREVIOUS PAGE", "ПРЕДЫДУЩАЯ СТРАНИЦА", "", ""},
-      {0x2b7a00, "NEXT PAGE", "СЛЕДУЮЩАЯ СТРАНИЦА", "", ""},
-      {0x2b7a20, "DELETE ALL", "УДАЛИТЬ ВСЕ", "Deletes every downloaded custom song.", "Удаляет все скачанные песни."},
+      {ms::options::gd(&GJSongBrowser::onPrevPage), "PREVIOUS PAGE", "ПРЕДЫДУЩАЯ СТРАНИЦА", "", ""},
+      {ms::options::gd(&GJSongBrowser::onNextPage), "NEXT PAGE", "СЛЕДУЮЩАЯ СТРАНИЦА", "", ""},
+      {ms::options::gd(&GJSongBrowser::onDeleteAll), "DELETE ALL", "УДАЛИТЬ ВСЕ", "Deletes every downloaded custom song.", "Удаляет все скачанные песни."},
     };
     if (auto screen = MSWindowScreen::create(en ? "SAVED SONGS" : "СОХРАНЁННЫЕ ПЕСНИ", GJSongBrowser::create(),
                                              std::move(known), [] { dropDown(GJSongBrowser::create()); }, true, song))
@@ -885,21 +885,21 @@ namespace ms::options
   void openSupport()
   {
     std::vector<Known> known = {
-      {0x4ca0f0, "LINKS", "ССЫЛКИ", "GD's FAQ, the editor guide and the rating system.",
+      {ms::options::gd(&SupportLayer::onLinks), "LINKS", "ССЫЛКИ", "GD's FAQ, the editor guide and the rating system.",
        "Вопросы и ответы GD, руководство по редактору, система оценок."},
-      {0x4c9ff0, "CONTACT", "СВЯЗАТЬСЯ", "How to write to RobTop Games' support.", "Как написать в поддержку RobTop Games."},
-      {0x29e5e0, "PRIVACY POLICY", "КОНФИДЕНЦИАЛЬНОСТЬ", "RobTop Games' privacy policy.",
+      {ms::options::gd(&SupportLayer::onEmail), "CONTACT", "СВЯЗАТЬСЯ", "How to write to RobTop Games' support.", "Как написать в поддержку RobTop Games."},
+      {ms::options::gd(&TOSPopup::onPrivacy), "PRIVACY POLICY", "КОНФИДЕНЦИАЛЬНОСТЬ", "RobTop Games' privacy policy.",
        "Политика конфиденциальности RobTop Games."},
-      {0x29e600, "TERMS OF USE", "УСЛОВИЯ ИСПОЛЬЗОВАНИЯ", "RobTop Games' terms of use.",
+      {ms::options::gd(&TOSPopup::onTOS), "TERMS OF USE", "УСЛОВИЯ ИСПОЛЬЗОВАНИЯ", "RobTop Games' terms of use.",
        "Условия использования RobTop Games."},
-      {0x4c9380, "SOUND EFFECTS", "ЗВУКОВЫЕ ЭФФЕКТЫ", "Who made GD's sound effects.", "Кто сделал звуковые эффекты GD."},
-      {0x4c9d60, "LOW DETAIL MODE", "НИЗКАЯ ДЕТАЛИЗАЦИЯ ВЕЗДЕ",
+      {ms::options::gd(&SupportLayer::onSFX), "SOUND EFFECTS", "ЗВУКОВЫЕ ЭФФЕКТЫ", "Who made GD's sound effects.", "Кто сделал звуковые эффекты GD."},
+      {ms::options::gd(&SupportLayer::onLowDetail), "LOW DETAIL MODE", "НИЗКАЯ ДЕТАЛИЗАЦИЯ ВЕЗДЕ",
        "Turns off a lot of visual effects for speed.", "Отключает многие визуальные эффекты ради скорости."},
-      {0x4c9880, "REQUEST ACCESS", "ЗАПРОСИТЬ ДОСТУП", "Asks for moderator access (for the ones GD invited).",
+      {ms::options::gd(&SupportLayer::onRequestAccess), "REQUEST ACCESS", "ЗАПРОСИТЬ ДОСТУП", "Asks for moderator access (for the ones GD invited).",
        "Запрос прав модератора (для тех, кого GD пригласила)."},
-      {0x4c9970, "GET REWARD", "ПОЛУЧИТЬ НАГРАДУ", "A reward GD has for you.", "Награда, которую GD для вас приготовила."},
-      {0x335680, "ROBTOP GAMES", "ROBTOP GAMES", "RobTop Games' site.", "Сайт RobTop Games."},
-      {0x4c9860, "COCOS2D-X", "COCOS2D-X", "The engine GD is made with.", "Движок, на котором сделана GD."},
+      {ms::options::gd(&SupportLayer::onGetReward), "GET REWARD", "ПОЛУЧИТЬ НАГРАДУ", "A reward GD has for you.", "Награда, которую GD для вас приготовила."},
+      {ms::options::gd(&SupportLayer::onRobTop), "ROBTOP GAMES", "ROBTOP GAMES", "RobTop Games' site.", "Сайт RobTop Games."},
+      {ms::options::gd(&SupportLayer::onCocos2d), "COCOS2D-X", "COCOS2D-X", "The engine GD is made with.", "Движок, на котором сделана GD."},
     };
     auto en = MSScreen::english();
     if (auto screen = MSWindowScreen::create(en ? "SUPPORT" : "ПОДДЕРЖКА", SupportLayer::create(), std::move(known),
@@ -910,10 +910,10 @@ namespace ms::options
   void openAccountHelp()
   {
     std::vector<Known> known = {
-      {0x7fa20, "REFRESH LOGIN", "ОБНОВИТЬ ВХОД", "Signs in again with your account.", "Заново входит в ваш аккаунт."},
-      {0x7fa60, "ACCOUNT MANAGEMENT", "УПРАВЛЕНИЕ АККАУНТОМ", "GD's account page in the browser.",
+      {ms::options::gd(&AccountHelpLayer::onReLogin), "REFRESH LOGIN", "ОБНОВИТЬ ВХОД", "Signs in again with your account.", "Заново входит в ваш аккаунт."},
+      {ms::options::gd(&AccountHelpLayer::onAccountManagement), "ACCOUNT MANAGEMENT", "УПРАВЛЕНИЕ АККАУНТОМ", "GD's account page in the browser.",
        "Страница аккаунта GD в браузере."},
-      {0x7fb70, "UNLINK ACCOUNT", "ОТВЯЗАТЬ АККАУНТ", "Unlinks this game from your account.",
+      {ms::options::gd(&AccountHelpLayer::onUnlink), "UNLINK ACCOUNT", "ОТВЯЗАТЬ АККАУНТ", "Unlinks this game from your account.",
        "Отвязывает игру от вашего аккаунта."},
     };
     auto en = MSScreen::english();
@@ -925,14 +925,14 @@ namespace ms::options
   void openAccount()
   {
     std::vector<Known> known = {
-      {0x7de60, "LOG IN", "ВОЙТИ", "Signs in with an account (GD's form).", "Вход в аккаунт (форма GD)."},
-      {0x7dea0, "REGISTER", "ЗАРЕГИСТРИРОВАТЬСЯ", "Makes an account (GD's form).", "Создание аккаунта (форма GD)."},
-      {0x7e020, "SAVE", "СОХРАНИТЬ", "Saves your data on the cloud.", "Сохраняет ваши данные в облаке."},
-      {0x7e3b0, "LOAD", "ЗАГРУЗИТЬ", "Loads your data from the cloud, merged with what's here.",
+      {ms::options::gd(&AccountLayer::onLogin), "LOG IN", "ВОЙТИ", "Signs in with an account (GD's form).", "Вход в аккаунт (форма GD)."},
+      {ms::options::gd(&AccountLayer::onRegister), "REGISTER", "ЗАРЕГИСТРИРОВАТЬСЯ", "Makes an account (GD's form).", "Создание аккаунта (форма GD)."},
+      {ms::options::gd(&AccountLayer::onBackup), "SAVE", "СОХРАНИТЬ", "Saves your data on the cloud.", "Сохраняет ваши данные в облаке."},
+      {ms::options::gd(&AccountLayer::onSync), "LOAD", "ЗАГРУЗИТЬ", "Loads your data from the cloud, merged with what's here.",
        "Загружает данные из облака и объединяет их с текущими."},
-      {0x7e630, "HELP", "ПОМОЩЬ", "GD's account help page.", "Страница помощи по аккаунту GD."},
+      {ms::options::gd(&AccountLayer::onHelp), "HELP", "ПОМОЩЬ", "GD's account help page.", "Страница помощи по аккаунту GD."},
       // GD's More hides the window first, then drops its own down: here, the mod's screen of it
-      {0x7e750, "MORE", "ЕЩЁ", "Refresh the login, unlink, manage the account.",
+      {ms::options::gd(&AccountLayer::onMore), "MORE", "ЕЩЁ", "Refresh the login, unlink, manage the account.",
        "Обновить вход, отвязать, управление аккаунтом.", false, [] { openAccountHelp(); }},
     };
     auto en = MSScreen::english();

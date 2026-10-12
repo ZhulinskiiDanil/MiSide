@@ -123,7 +123,12 @@ namespace
     glGenRenderbuffers(1, &color);
     glGenRenderbuffers(1, &depth);
     glBindRenderbuffer(GL_RENDERBUFFER, color);
+#ifdef GL_RGBA8
     glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
+#else
+    // OpenGL ES 2 (Android): the same format by its extension's name
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8_OES, width, height);
+#endif
     glBindRenderbuffer(GL_RENDERBUFFER, depth);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);

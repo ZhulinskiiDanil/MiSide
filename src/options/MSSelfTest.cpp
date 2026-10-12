@@ -156,7 +156,9 @@ protected:
     m_steps.push_back([this] { log::info("SELFTEST DONE: {} screens, {} failures", m_screens, m_failures); });
     m_steps.push_back([this] {
       auto application = CCApplication::sharedApplication();
+#ifdef GEODE_IS_WINDOWS
       application->setShutdownCalled(true);
+#endif
       application->trySaveGame(true);
       if (m_menu)
         m_menu->endGame();

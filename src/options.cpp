@@ -208,11 +208,14 @@ protected:
   // The key bindings, and the parental control's toggles in place of its window
   void addOther(bool en)
   {
+#ifdef GEODE_IS_WINDOWS
+    // The keys' window is GD's on desktop only
     m_column->addRow(en ? "KEYS" : "КЛАВИШИ", [] {
       if (auto screen = MSKeysScreen::create())
         screen->show();
     });
     m_column->setInfo(en ? "GD's keys in the game and the editor." : "Клавиши GD в игре и в редакторе.");
+#endif
     auto parental = this->drive(ParentalOptionsLayer::create());
     auto const& toggles = ms::options::toggles(parental);
     if (toggles.empty())
@@ -449,12 +452,15 @@ protected:
       });
       m_column->setInfo(this->groupInfo(m_groups[i], en));
     }
+#ifdef GEODE_IS_WINDOWS
+    // The window's settings (full screen, resolution, frame rate) are GD's on desktop only
     m_column->addRow(en ? "GRAPHICS" : "ГРАФИКА", [] {
       if (auto screen = MSGraphicsScreen::create())
         screen->show();
     });
     m_column->setInfo(en ? "Full screen, resolution, textures, vertical sync and the frame rate."
                          : "Полный экран, разрешение, текстуры, вертикальная синхронизация и частота кадров.");
+#endif
 
     m_column->addHeader(en ? "MORE" : "ЕЩЁ");
     m_column->addRow(en ? "ACCOUNT" : "АККАУНТ", [] { ms::options::openAccount(); });
