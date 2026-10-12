@@ -261,6 +261,10 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addChild(column, COLUMN_Z);
     column->finish();
     m_fields->m_column = column;
+    column->setOnGazeTarget([this](std::optional<CCPoint> target) {
+      if (m_fields->m_mita)
+        m_fields->m_mita->setMenuGazeTarget(target);
+    });
     column->setOnExitHover([this](bool on) {
       if (m_fields->m_mita)
         m_fields->m_mita->setExitHovered(on);

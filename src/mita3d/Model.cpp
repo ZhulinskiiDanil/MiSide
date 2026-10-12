@@ -191,9 +191,9 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze) {
         auto parent = node.parent ? m->world[node.parent - raw->nodes] : glm::mat4(1);
         auto world = parent * local;
         float yaw = 0, pitch = 0, roll = 0;
-        if (static_cast<int>(i) == m->head) { yaw = -0.075f + gaze.x * 0.04f; pitch = gaze.y * 0.025f; roll = sway; }
+        if (static_cast<int>(i) == m->head) { yaw = gaze.x * 0.06f; pitch = -gaze.y * 0.035f; roll = sway; }
         if (static_cast<int>(i) == m->leftEye || static_cast<int>(i) == m->rightEye) {
-            yaw = -0.035f + gaze.x * 0.045f; pitch = gaze.y * 0.03f;
+            yaw = gaze.x * 0.24f; pitch = -gaze.y * 0.18f;
         }
         if (yaw || pitch || roll) {
             auto pivot = glm::vec3(world[3]);

@@ -268,6 +268,19 @@ void MSMenuColumn::update(float dt)
   if (m_exit)
     m_exit->stepDodge(dt, usable && m_mouseActive ? &local : nullptr);
 
+  if (m_onGazeTarget)
+  {
+    std::optional<CCPoint> target;
+    if (usable)
+      for (auto item : m_items)
+        if (item->isVisible() && item->isEnabled() && item->boundingBox().containsPoint(local))
+        {
+          auto size = item->getContentSize();
+          target = item->convertToWorldSpace({size.width / 2, size.height / 2});
+          break;
+        }
+    m_onGazeTarget(target);
+  }
   if (!moved || !usable)
     return;
   auto under = -1;

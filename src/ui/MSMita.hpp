@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class MitaPageLoader;
@@ -20,9 +21,10 @@ public:
   // Null when the theme turns her off or her files are missing or broken (logged once)
   static MSMita* create();
   ~MSMita() override;
-  // Independent reasons: leaving hover must not cancel an open confirmation.
+  // Hover uses basis; confirmation overrides it with smile 14 and a forward gaze.
   void setExitHovered(bool value) { m_exitHovered = value; }
   void setExitConfirmation(bool value) { m_exitConfirmation = value; }
+  void setMenuGazeTarget(std::optional<cocos2d::CCPoint> target) { m_menuGazeTarget = target; }
   bool is3D() const { return m_renderer != nullptr; }
 
   // Never claims a touch: it only sparks
@@ -108,6 +110,7 @@ protected:
   bool m_exitConfirmation = false;
   float m_expression = 0;
   cocos2d::CCPoint m_gaze;
+  std::optional<cocos2d::CCPoint> m_menuGazeTarget;
   float m_renderWait = 0;
   unsigned m_contextGeneration = 0;
   int m_renderHeight = 0;

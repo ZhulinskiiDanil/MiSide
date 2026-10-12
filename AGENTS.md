@@ -1,4 +1,12 @@
-# MiSide: parallel development
+# MiSide development
+
+## Current workflow
+
+Parallel work has been merged. The user requested further work directly in
+`D:/Dev/MiSide` on `main`. The ownership zones and zone guard below are historical
+for the retained feature worktrees. On main, use `git diff --check` and relevant
+build/tests. Use build-main with GEODE_DONT_INSTALL_MODS=ON; do not auto-install.
+
 
 Read `docs/PARALLEL_WORK.md` and the ignored local `.workspace-zone.json` before editing.
 The user approved Windows-first real-time 3D Mita and continued interface development.

@@ -6,6 +6,7 @@
 #include <Geode/Geode.hpp>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,7 @@ public:
   // While an item's transition runs, nothing else is chosen
   void setBusy(bool busy);
   void setOnExitHover(std::function<void(bool)> callback);
+  void setOnGazeTarget(std::function<void(std::optional<cocos2d::CCPoint>)> callback) { m_onGazeTarget = std::move(callback); }
   bool isBusy() const { return m_busy; }
   // From MenuLayer::keyDown. True when the key was used
   bool onKey(cocos2d::enumKeyCodes key);
@@ -60,6 +62,7 @@ protected:
   void notifyExitHover(bool hovered);
   std::function<void(bool)> m_onExitHover;
   bool m_exitHovered = false;
+  std::function<void(std::optional<cocos2d::CCPoint>)> m_onGazeTarget;
   Choose m_choose;
   // The rows, then Quit: the arrow keys' order
   std::vector<MSMenuItem*> m_items;

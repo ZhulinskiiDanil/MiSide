@@ -698,13 +698,18 @@ void MSMita::update3D(float dt)
   }
   dt = std::clamp(dt, 0.f, 0.1f);
   m_elapsed += dt;
-  m_expression += ((m_exitHovered || m_exitConfirmation ? 1.f : 0.f) - m_expression) * (1 - std::exp(-dt / 0.18f));
+  m_expression += ((m_exitHovered && !m_exitConfirmation ? 1.f : 0.f) - m_expression) * (1 - std::exp(-dt / 0.18f));
   auto win = CCDirector::get()->getWinSize();
-  auto mouse = getMousePos();
-  CCPoint aim;
-  if (Theme::get().mitaParallaxEnabled && !ms::coveredBy(this) && win.width > 0 && win.height > 0)
-    aim = CCPoint(std::clamp(2 * mouse.x / win.width - 1, -1.f, 1.f), std::clamp(2 * mouse.y / win.height - 1, -1.f, 1.f));
-  m_gaze = m_gaze + (aim - m_gaze) * (1 - std::exp(-dt / 0.3f));
+  CCPoint aim(0, 0);
+  if (!m_exitConfirmation && m_menuGazeTarget && m_sprite && !ms::coveredBy(this) && win.width > 0 && win.height > 0)
+  {
+    auto size = m_sprite->getContentSize();
+    auto eyes = m_sprite->convertToWorldSpace({size.width * 0.5f, size.height * 0.59f});
+    auto delta = *m_menuGazeTarget - eyes;
+    aim = CCPoint(std::clamp(delta.x / (win.width * 0.6f), -1.f, 1.f),
+                  std::clamp(delta.y / (win.height * 0.6f), -1.f, 1.f));
+  }
+  m_gaze = m_gaze + (aim - m_gaze) * (1 - std::exp(-dt / 0.16f));
   auto frame = CCEGLView::sharedOpenGLView()->getFrameSize();
   int height = std::clamp(static_cast<int>(frame.height), 540, 1440);
   int width = height * 8 / 9;
