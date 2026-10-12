@@ -124,12 +124,12 @@ namespace
     theme.rowGlowOpacity = 110;
     theme.rowGlowSpread = 7;
     theme.exitDodgeEnabled = true;
-    theme.exitDodgeRadius = 55;
-    theme.exitDodgeMax = 11;
-    theme.exitDodgeVertical = 0.35f;
+    theme.exitDodgeRadius = 80;
+    theme.exitDodgeMax = 22;
+    theme.exitDodgeVertical = 0.5f;
     theme.exitDodgeStretch = 0.04f;
     theme.exitDodgeTilt = 3;
-    theme.exitDodgeStiffness = 170;
+    theme.exitDodgeStiffness = 220;
     theme.exitDodgeDamping = 0.55f;
 
     // ! --- The menu --- !
