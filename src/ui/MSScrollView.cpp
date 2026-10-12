@@ -136,8 +136,8 @@ void MSScrollView::scrollBy(float amount) { m_target = std::clamp(m_target + amo
 
 void MSScrollView::place()
 {
-  // The content's top at the view's top, moved up by the scroll
-  m_content->setPosition({0, m_view.size.height + m_scroll});
+  // The content's top left corner at the view's, moved up by the scroll
+  m_content->setPosition({m_view.origin.x, m_view.size.height + m_scroll});
   auto view = m_view.size.height;
   auto share = m_height > 0 ? std::min(1.f, view / m_height) : 1.f;
   auto thumb = std::max(view * share, MIN_THUMB);

@@ -580,7 +580,7 @@ bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
       auto now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
       std::erase_if(m_faceClicks, [now](double at) { return now - at > 1.2; });
       m_faceClicks.push_back(now);
-      if (m_faceClicks.size() >= 6)
+      if (m_faceClicks.size() >= 4)
       {
         m_faceClicks.clear();
         m_swatTime = 0;

@@ -159,9 +159,10 @@ class $modify(MSMenuLayer, MenuLayer)
         m_fields->m_closedOnFrame = CCDirector::get()->getTotalFrames();
       return;
     }
-    if (auto column = m_fields->m_column)
-      column->onKey(key);
-    // Always passed on: the mods hooking keyDown after this one get every key
+    // Passed on, so the mods hooking keyDown after this one get the keys; but not an Enter the column pressed an
+    // item with: GD's own Enter plays, and its transition would win over the item's
+    if (auto column = m_fields->m_column; column && column->onKey(key) && key == KEY_Enter)
+      return;
     MenuLayer::keyDown(key, timestamp);
   }
 

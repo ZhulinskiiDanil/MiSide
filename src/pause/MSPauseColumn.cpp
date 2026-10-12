@@ -693,6 +693,9 @@ void MSPauseColumn::setShown(bool shown, bool animate)
     return;
   this->commitEdit();
   m_isShown = shown;
+  // GD gives the wheel only to the last mouse delegate: a hidden column takes itself out, so the wheel reaches
+  // what's under it (the levels' list, the pause's sliders), and a column shown again comes back on top
+  this->setMouseEnabled(shown);
   auto time = animate ? std::max(Theme::get().pauseDuration, 0.f) : 0.f;
   m_dragging = nullptr;
   m_resetting = nullptr;
