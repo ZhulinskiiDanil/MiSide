@@ -66,3 +66,6 @@ build-*/
 TASK.md
 # So does the goal it was started with
 goal.txt
+
+# Local parallel-worktree identity (never committed)
+/.workspace-zone.json

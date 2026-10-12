@@ -1,0 +1,10 @@
+{
+  "3d": {
+    "allow": ["src/mita3d/*", "src/ui/MSMita.cpp", "src/ui/MSMita.hpp", "src/ui/MitaPlan.hpp", "src/pause/MSPauseBackdrop.*", "src/levels/LevelPreview.*", "resources/mita3d/*", "resources/mita/*", "resources/mita-closeup/*", "third_party/*", "tools/mita3d/*", "tests/mita3d/*", "tests/mita_plan_test.cpp", "CMakeLists.txt", "LICENSES.md", "ASSETS.md", "docs/3d/*"],
+    "deny": []
+  },
+  "ui": {
+    "allow": ["src/main.cpp", "src/achievements.cpp", "src/achievements/*", "src/levels.cpp", "src/levels/*", "src/pause.cpp", "src/pause/*", "src/statistics.cpp", "src/statistics/*", "src/results.cpp", "src/results/*", "src/settings.cpp", "src/settings/*", "src/credits.cpp", "src/credits/*", "src/ui/*", "src/Theme.*", "src/Sounds.*", "src/Music.*", "src/loading.cpp", "resources/ui/*", "tests/ui/*", "tests/dodge_spring_test.cpp", "tests/shine_pass_test.cpp", "tools/ui/*", "docs/ui/*", "README.md", "README.ru.md"],
+    "deny": ["src/ui/MSMita.*", "src/ui/MitaPlan.hpp", "src/pause/MSPauseBackdrop.*", "src/levels/LevelPreview.*"]
+  }
+}
