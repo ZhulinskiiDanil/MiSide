@@ -6,6 +6,7 @@
 #include <Geode/modify/CCShaderCache.hpp>
 
 #include <chrono>
+#include <sstream>
 #include <typeinfo>
 #include <unordered_map>
 
@@ -37,6 +38,96 @@ namespace ms
       log::warn("Font {} not found, the menu uses the system font {}", file, theme.fallbackFont);
     }
     return CCLabelTTF::create(text.c_str(), theme.fallbackFont.c_str(), theme.fallbackFontSize);
+  }
+
+  namespace
+  {
+    // How wide the text is in the font, unscaled
+    float widthOf(std::string const& text, std::string const& font)
+    {
+      if (text.empty())
+        return 0;
+      auto label = CCLabelBMFont::create(text.c_str(), font.c_str());
+      return label ? label->getContentSize().width : 0;
+    }
+
+    // The word's letters, each whole (UTF-8 takes several bytes for one)
+    std::vector<std::string> letters(std::string const& word)
+    {
+      std::vector<std::string> out;
+      for (size_t i = 0; i < word.size();)
+      {
+        auto lead = static_cast<unsigned char>(word[i]);
+        size_t length = lead < 0x80 ? 1 : lead < 0xE0 ? 2 : lead < 0xF0 ? 3 : 4;
+        length = std::min(length, word.size() - i);
+        out.push_back(word.substr(i, length));
+        i += length;
+      }
+      return out;
+    }
+
+    // The text's lines, each as wide as the limit at most: its own line breaks kept, the rest at spaces
+    std::string wrapLines(std::string const& text, std::string const& font, float limit)
+    {
+      std::string out;
+      std::stringstream paragraphs(text);
+      std::string paragraph;
+      auto first = true;
+      while (std::getline(paragraphs, paragraph))
+      {
+        if (!first)
+          out += '\n';
+        first = false;
+        std::string line;
+        auto put = [&](std::string const& piece, std::string const& gap) {
+          auto longer = line.empty() ? piece : line + gap + piece;
+          if (line.empty() || widthOf(longer, font) <= limit)
+            line = longer;
+          else
+          {
+            out += line + '\n';
+            line = piece;
+          }
+        };
+        std::stringstream words(paragraph);
+        std::string word;
+        while (words >> word)
+        {
+          if (widthOf(word, font) <= limit)
+          {
+            put(word, " ");
+            continue;
+          }
+          // Too wide for any line: it starts a line of its own and breaks where the line is full
+          if (!line.empty())
+          {
+            out += line + '\n';
+            line.clear();
+          }
+          for (auto const& letter : letters(word))
+            put(letter, "");
+        }
+        out += line;
+      }
+      return out;
+    }
+  } // namespace
+
+  CCNode* createWrapped(std::string const& text, float scale, ccColor3B color, float width)
+  {
+    auto const& theme = Theme::get();
+    scale = std::max(scale, 0.05f);
+    CCNode* node = nullptr;
+    if (resourceExists(theme.font))
+      node = CCLabelBMFont::create(wrapLines(text, theme.font, width / scale).c_str(), theme.font.c_str());
+    if (!node)
+      node = createLabel(text);
+    if (!node)
+      return nullptr;
+    node->setScale(scale);
+    node->setAnchorPoint({0, 1});
+    setColor(node, color);
+    return node;
   }
 
   void cascadeOpacity(CCNode* node)

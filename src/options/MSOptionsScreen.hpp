@@ -59,8 +59,6 @@ protected:
 
 namespace ms::options
 {
-  // A text wrapped to the width in the mod's font, its top left corner at its position; null when it can't be made
-  cocos2d::CCNode* wrapped(std::string const& text, float scale, cocos2d::ccColor3B color, float width);
   // While a settings screen (or the pause's settings) is open, GD's plain popups show as the mod's screens
   bool restyling();
   void holdRestyling(bool hold);

@@ -14,6 +14,10 @@ namespace ms
   // The theme's font (or `font`), or the system font when it's missing (it has Cyrillic too)
   cocos2d::CCNode* createLabel(std::string const& text, std::string const& font = "");
 
+  // A text in the theme's font broken into lines at its spaces (a word wider than the width at its letters), none
+  // wider than the width once scaled; its top left corner at its position. GD's labels don't wrap on their own
+  cocos2d::CCNode* createWrapped(std::string const& text, float scale, cocos2d::ccColor3B color, float width);
+
   struct Text
   {
     // The label with its shadow under it. Its opacity fades both; anchored at the left middle

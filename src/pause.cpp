@@ -605,17 +605,10 @@ class $modify(MSPauseLayer, PauseLayer)
     auto left = theme.pauseLeft + theme.optionsRowWidth + SETTINGS_INFO_GAP;
     auto width = std::max(winSize.width - theme.pauseBarRightMargin - left, 40.f);
     auto scale = std::max(theme.optionsInfoScale, 0.1f);
-    CCNode* node = nullptr;
-    if (ms::resourceExists(theme.font))
-      node = CCLabelBMFont::create(text.c_str(), theme.font.c_str(), width / scale, kCCTextAlignmentLeft);
-    if (!node)
-      node = ms::createLabel(text);
+    auto node = ms::createWrapped(text, scale, theme.optionsInfoColor, width);
     if (!node)
       return;
-    node->setScale(scale);
-    node->setAnchorPoint({0, 1});
     node->setPosition({left, theme.pauseFirstRowTop + winSize.height - 320});
-    ms::setColor(node, theme.optionsInfoColor);
     this->addChild(node, MENU_Z);
     f.m_settingsInfo = node;
   }

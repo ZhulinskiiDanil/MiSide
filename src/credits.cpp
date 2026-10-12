@@ -65,22 +65,6 @@ namespace
     return ENTRIES;
   }
 
-  // Wrapped to the width, its top left corner at the origin
-  CCNode* wrapped(std::string const& text, float scale, ccColor3B color, float width)
-  {
-    auto const& theme = Theme::get();
-    CCNode* node = nullptr;
-    if (ms::resourceExists(theme.font))
-      node = CCLabelBMFont::create(text.c_str(), theme.font.c_str(), width / scale, kCCTextAlignmentLeft);
-    if (!node)
-      node = ms::createLabel(text);
-    if (!node)
-      return nullptr;
-    node->setScale(scale);
-    node->setAnchorPoint({0, 1});
-    ms::setColor(node, color);
-    return node;
-  }
 } // namespace
 
 // CREDITS over a scrolling column: each group's name, then its lines wrapped to the column; BACK under it
@@ -133,7 +117,7 @@ protected:
       y -= theme.statsGroupHeight;
       for (auto line : en ? entry.linesEn : entry.linesRu)
       {
-        if (auto text = wrapped(line, theme.achievementsTextScale, theme.achievementsTextColor, width - 4))
+        if (auto text = ms::createWrapped(line, theme.achievementsTextScale, theme.achievementsTextColor, width - 4))
         {
           text->setPosition({2, y});
           content->addChild(text);

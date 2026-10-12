@@ -22,23 +22,6 @@ namespace
 
 namespace ms::options
 {
-  CCNode* wrapped(std::string const& text, float scale, ccColor3B color, float width)
-  {
-    auto const& theme = Theme::get();
-    scale = std::max(scale, 0.05f);
-    CCNode* node = nullptr;
-    if (ms::resourceExists(theme.font))
-      node = CCLabelBMFont::create(text.c_str(), theme.font.c_str(), width / scale, kCCTextAlignmentLeft);
-    if (!node)
-      node = ms::createLabel(text);
-    if (!node)
-      return nullptr;
-    node->setScale(scale);
-    node->setAnchorPoint({0, 1});
-    ms::setColor(node, color);
-    return node;
-  }
-
   bool restyling() { return s_restyling > 0; }
 
   namespace
@@ -90,7 +73,7 @@ void MSOptionsScreen::addText(std::string const& text)
   auto const& theme = Theme::get();
   if (text.empty())
     return;
-  auto node = ms::options::wrapped(text, theme.achievementsTextScale, theme.achievementsTextColor,
+  auto node = ms::createWrapped(text, theme.achievementsTextScale, theme.achievementsTextColor,
                                    theme.optionsRowWidth - 4);
   if (!node)
     return;
@@ -142,7 +125,7 @@ void MSOptionsScreen::showInfo(std::string const& text)
   auto room = std::max(top - (theme.screenBackTop + fromTop()) - 2, 4.f);
   for (auto scale = std::max(theme.optionsInfoScale, INFO_SMALLEST);; scale *= INFO_SHRINK)
   {
-    auto node = ms::options::wrapped(text, scale, theme.optionsInfoColor, theme.optionsRowWidth - 4);
+    auto node = ms::createWrapped(text, scale, theme.optionsInfoColor, theme.optionsRowWidth - 4);
     if (!node)
       return;
     if (node->getScaledContentSize().height > room && scale * INFO_SHRINK >= INFO_SMALLEST)
