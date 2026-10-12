@@ -80,3 +80,23 @@ rotation; body/neck translation and procedural sway remain animated. Independent
 eye rotation is smaller than the head turn. Confirmation retains smile 14 with
 forward gaze. Top/bottom/confirmation renders were inspected, and the model and
 GL checks passed. Main builds now go to build/ at the user request.
+
+## Current gaze and hand reaction (2026-10-12)
+
+Supersedes the older gaze notes above: idle smiles with target_14 and looks left;
+exit hover and confirmation both use basis and face the player. Eyes track quickly,
+head tracks more slowly, and both retain the last menu target for 0.65 seconds.
+The torso turns toward the menu. Eye discs move directly because the author's eye
+bones do not have vertex weights in the bundled model.
+
+The default 3D pose now has lowered arms. Six face clicks in a rolling 1.2-second
+window trigger a 2.8-second right-hand swat, with a smooth gaze toward the player.
+The gesture cannot restart midway; a 3-second cooldown follows it. Ordinary spark
+and sound behavior remains. Only clicks inside the face ellipse count.
+
+The gesture is procedural: upper arm/elbow aiming, open fingers, wrist sweeps and
+progressive forearm twist. It blends into the current idle phase and returns to it;
+no model asset or authored clip was replaced. The standalone checks cover gesture
+endpoints at four idle phases, consecutive-frame continuity, finite geometry,
+unchanged left arm/face, GL state restoration and render-target lifecycle. Rendered
+pose sequences were inspected. Actual GD interaction remains user verification.

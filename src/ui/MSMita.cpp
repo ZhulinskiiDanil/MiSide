@@ -567,6 +567,25 @@ bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
   this->spark(world);
   // MiSide's own click on her, with the sparks, as loud as GD's effects
   ms::playSound(theme.mitaSparkSound);
+  if (m_renderer && m_sprite && m_swatTime < 0 && m_swatCooldown <= 0)
+  {
+    auto local = m_sprite->convertToNodeSpace(world);
+    auto size = m_sprite->getContentSize();
+    // A face-sized ellipse inside the silhouette, excluding the torso and hair above her forehead.
+    float x = (local.x / size.width - 0.53f) / 0.22f;
+    float y = (local.y / size.height - 0.49f) / 0.18f;
+    if (x * x + y * y <= 1)
+    {
+      auto now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+      std::erase_if(m_faceClicks, [now](double at) { return now - at > 1.2; });
+      m_faceClicks.push_back(now);
+      if (m_faceClicks.size() >= 6)
+      {
+        m_faceClicks.clear();
+        m_swatTime = 0;
+      }
+    }
+  }
   return false;
 }
 
@@ -698,6 +717,17 @@ void MSMita::update3D(float dt)
   }
   dt = std::clamp(dt, 0.f, 0.1f);
   m_elapsed += dt;
+  if (m_swatTime >= 0)
+  {
+    m_swatTime += dt;
+    if (m_swatTime >= mita3d::SwatDuration)
+    {
+      m_swatTime = -1;
+      m_swatCooldown = 3.f;
+    }
+  }
+  else
+    m_swatCooldown = std::max(0.f, m_swatCooldown - dt);
   bool exiting = m_exitHovered || m_exitConfirmation;
   m_expression += ((exiting ? 1.f : 0.f) - m_expression) * (1 - std::exp(-dt / 0.18f));
   auto win = CCDirector::get()->getWinSize();
@@ -718,6 +748,15 @@ void MSMita::update3D(float dt)
     m_gazeHold = exiting ? 0.f : std::max(0.f, m_gazeHold - dt);
   }
   auto heldAim = m_gazeHold > 0 ? m_lastGazeAim : aim;
+  if (m_swatTime >= 0)
+  {
+    auto smooth = [](float value) {
+      auto t = std::clamp(value, 0.f, 1.f);
+      return t * t * (3 - 2 * t);
+    };
+    auto towardViewer = smooth(m_swatTime / 0.35f) * smooth((mita3d::SwatDuration - m_swatTime) / 0.5f);
+    heldAim = heldAim * (1 - towardViewer);
+  }
   m_gaze = m_gaze + (heldAim - m_gaze) * (1 - std::exp(-dt / 0.025f));
   m_headGaze = m_headGaze + (heldAim - m_headGaze) * (1 - std::exp(-dt / 0.38f));
   auto frame = CCEGLView::sharedOpenGLView()->getFrameSize();
@@ -726,7 +765,7 @@ void MSMita::update3D(float dt)
   m_renderWait += dt;
   if (m_sprite && height == m_renderHeight && m_renderWait < 1.f / 60.f) return;
   m_renderWait = std::fmod(m_renderWait, 1.f / 60.f);
-  m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y}, {m_headGaze.x, m_headGaze.y});
+  m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y}, {m_headGaze.x, m_headGaze.y}, m_swatTime);
   if (!m_sprite || height != m_renderHeight)
   {
     auto texture = new RenderTexture(m_renderer->texture(), width, height);

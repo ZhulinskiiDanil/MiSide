@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace mita3d {
+inline constexpr float SwatDuration = 2.8f;
 struct Vertex { glm::vec3 position; glm::vec2 uv; };
 struct Mesh {
     std::vector<Vertex> vertices;
@@ -21,7 +22,7 @@ public:
     ~Model();
     Model(Model const&) = delete;
     Model& operator=(Model const&) = delete;
-    void pose(double seconds, float exitWeight, glm::vec2 gaze = {}, glm::vec2 headGaze = {});
+    void pose(double seconds, float exitWeight, glm::vec2 gaze = {}, glm::vec2 headGaze = {}, float swatTime = -1.f);
     std::vector<Mesh> meshes;
     std::vector<Image> images;
 private:

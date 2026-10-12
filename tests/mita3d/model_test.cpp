@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -30,6 +31,62 @@ int main(int argc, char** argv) {
                 if (!std::isfinite(v.position.x) || !std::isfinite(v.position.y) || !std::isfinite(v.position.z) || glm::length(v.position) > 0.05f)
                     throw std::runtime_error("Invalid skinned position");
         }
-        std::cout << "PASS: expressions, reversible pose, frame-independent animation, finite rig; changed face vertices " << changed << '\n';
+        for (double idleTime : {0., 0.83, 4.39, 12.99}) {
+            auto pose = [&](float swatTime) { model.pose(idleTime, 0.3f, {-0.7f, 0.5f}, {-0.4f, 0.2f}, swatTime); };
+            pose(-1);
+            auto idle = model.meshes;
+            auto displacement = [&] {
+                float maximum = 0;
+                for (size_t mesh = 0; mesh < idle.size(); ++mesh)
+                    for (size_t v = 0; v < idle[mesh].vertices.size(); ++v)
+                        maximum = std::max(maximum, glm::length(idle[mesh].vertices[v].position - model.meshes[mesh].vertices[v].position));
+                return maximum;
+            };
+            for (float endpoint : {0.f, mita3d::SwatDuration}) {
+                pose(endpoint);
+                if (displacement() > 1e-8f) throw std::runtime_error("Swat endpoints do not match the current idle pose");
+            }
+            for (float nearEndpoint : {0.001f, mita3d::SwatDuration - 0.001f}) {
+                pose(nearEndpoint);
+                if (displacement() > 1e-6f) throw std::runtime_error("Swat jumps at an animation boundary");
+            }
+            size_t movedBody = 0, leftArmChecked = 0;
+            float largestMotion = 0;
+            for (int frame = 1; frame < 28; ++frame) {
+                pose(mita3d::SwatDuration * frame / 28);
+                for (size_t mesh = 0; mesh < idle.size(); ++mesh) {
+                    for (size_t v = 0; v < idle[mesh].vertices.size(); ++v) {
+                        auto before = idle[mesh].vertices[v].position;
+                        auto after = model.meshes[mesh].vertices[v].position;
+                        if (!std::isfinite(after.x) || !std::isfinite(after.y) || !std::isfinite(after.z) || glm::length(after) > 0.05f)
+                            throw std::runtime_error("Swat creates invalid skinned geometry");
+                        float motion = glm::length(after - before);
+                        if (mesh == 0 && motion > 1e-8f) throw std::runtime_error("Arm reaction unexpectedly deforms the face");
+                        // Her left upper arm is on viewer-right in this asset's centimetre-scaled world space.
+                        if (before.x > 0.0015f && before.y > 0.010f && before.y < 0.014f) {
+                            ++leftArmChecked;
+                            if (motion > 1e-8f) throw std::runtime_error("Right-hand reaction moves the left arm");
+                        }
+                        if (mesh != 0 && motion > 1e-5f) ++movedBody;
+                        largestMotion = std::max(largestMotion, motion);
+                    }
+                }
+            }
+            if (leftArmChecked < 50) throw std::runtime_error("Left-arm regression region misses the model");
+            if (movedBody < 50 || largestMotion < 0.0005f) throw std::runtime_error("Swat does not raise the hand");
+            pose(0);
+            auto previous = model.meshes;
+            for (int frame = 1; frame <= 840; ++frame) {
+                pose(mita3d::SwatDuration * frame / 840);
+                for (size_t mesh = 0; mesh < previous.size(); ++mesh)
+                    for (size_t v = 0; v < previous[mesh].vertices.size(); ++v)
+                        if (glm::length(previous[mesh].vertices[v].position - model.meshes[mesh].vertices[v].position) > 0.00016f)
+                            throw std::runtime_error("Swat rotation jump at " + std::to_string(idleTime) + ":" + std::to_string(frame) + " mesh " + std::to_string(mesh) + " vertex " + std::to_string(v) + " distance " + std::to_string(glm::length(previous[mesh].vertices[v].position - model.meshes[mesh].vertices[v].position)));
+                previous = model.meshes;
+            }
+            pose(-1);
+            if (displacement() > 1e-8f) throw std::runtime_error("Swat leaves accumulated deformation after returning to idle");
+        }
+        std::cout << "PASS: expressions, reversible pose, frame-independent animation, finite rig, continuous right-hand swat; changed face vertices " << changed << '\n';
     } catch (std::exception const& e) { std::cerr << e.what() << '\n'; return 1; }
 }

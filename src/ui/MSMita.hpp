@@ -21,7 +21,7 @@ public:
   // Null when the theme turns her off or her files are missing or broken (logged once)
   static MSMita* create();
   ~MSMita() override;
-  // Hover uses basis; confirmation overrides it with smile 14 and a forward gaze.
+  // Hover and confirmation both use basis and a forward gaze.
   void setExitHovered(bool value) { m_exitHovered = value; }
   void setExitConfirmation(bool value) { m_exitConfirmation = value; }
   void setMenuGazeTarget(std::optional<cocos2d::CCPoint> target) { m_menuGazeTarget = target; }
@@ -113,6 +113,9 @@ protected:
   cocos2d::CCPoint m_headGaze{-0.45f, 0.05f};
   cocos2d::CCPoint m_lastGazeAim;
   float m_gazeHold = 0;
+  std::vector<double> m_faceClicks;
+  float m_swatTime = -1;
+  float m_swatCooldown = 0;
   std::optional<cocos2d::CCPoint> m_menuGazeTarget;
   float m_renderWait = 0;
   unsigned m_contextGeneration = 0;
