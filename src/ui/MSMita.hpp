@@ -109,8 +109,8 @@ protected:
   bool m_exitHovered = false;
   bool m_exitConfirmation = false;
   float m_expression = 0;
-  cocos2d::CCPoint m_gaze;
-  cocos2d::CCPoint m_headGaze;
+  cocos2d::CCPoint m_gaze{-0.45f, 0.05f};
+  cocos2d::CCPoint m_headGaze{-0.45f, 0.05f};
   cocos2d::CCPoint m_lastGazeAim;
   float m_gazeHold = 0;
   std::optional<cocos2d::CCPoint> m_menuGazeTarget;

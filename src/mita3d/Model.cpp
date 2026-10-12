@@ -207,7 +207,7 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
             // The neck position and the rest of the body keep the author's animation.
             for (int axis = 0; axis < 3; ++axis)
                 world[axis] = glm::vec4(m->headRestOrientation[axis] * glm::length(glm::vec3(world[axis])), 0);
-            yaw = headGaze.x * 0.23f; pitch = -headGaze.y * 0.075f; roll = sway;
+            yaw = headGaze.x * 0.27f; pitch = -headGaze.y * 0.09f; roll = sway;
         }
         if (yaw || pitch || roll) {
             auto pivot = glm::vec3(world[3]);
