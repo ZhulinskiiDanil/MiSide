@@ -15,6 +15,10 @@ namespace
   // The 9-slice plate's corners are 5.3 pt: a thinner piece is made this much bigger and scaled down, so its
   // corners stay round
   constexpr float SMALL_PANEL = 2;
+  // The scroll bar's gap from the rows' right end
+  constexpr float BAR_GAP = 4;
+  // A field's cursor blinks this often
+  constexpr float BLINK_TIME = 0.5f;
 
   CCNode* panel(ccColor3B color, CCSize size)
   {
@@ -24,6 +28,17 @@ namespace
     node->setContentSize(size * SMALL_PANEL);
     node->setScale(1 / SMALL_PANEL);
     ms::cascadeOpacity(node);
+    return node;
+  }
+
+  // The scroll bar's pieces hang from their top middle
+  CCNode* bar(ccColor3B color, float width, float height)
+  {
+    auto node = ms::createPanel(Theme::get().rowSprite, color, 255);
+    node->setAnchorPoint({0.5f, 1});
+    node->ignoreAnchorPointForPosition(false);
+    node->setContentSize(CCSize{width, height} * SMALL_PANEL);
+    node->setScale(1 / SMALL_PANEL);
     return node;
   }
 
@@ -39,6 +54,20 @@ namespace
   bool isRight(enumKeyCodes key)
   {
     return key == KEY_Right || key == CONTROLLER_Right || key == CONTROLLER_LTHUMBSTICK_RIGHT;
+  }
+
+  // The character a key types into a field; 0: none
+  char typed(enumKeyCodes key)
+  {
+    if (key >= KEY_Zero && key <= KEY_Nine)
+      return static_cast<char>('0' + (key - KEY_Zero));
+    if (key >= KEY_NumPad0 && key <= KEY_NumPad9)
+      return static_cast<char>('0' + (key - KEY_NumPad0));
+    if (key == KEY_OEMMinus || key == KEY_Subtract)
+      return '-';
+    if (key == KEY_OEMPeriod || key == KEY_Decimal)
+      return '.';
+    return 0;
   }
 } // namespace
 
@@ -61,6 +90,7 @@ bool MSPauseColumn::init()
   // Everything is placed in the layer's own points
   this->setPosition({0, 0});
   this->setContentSize({0, 0});
+  m_rowWidth = Theme::get().pauseRowWidth;
   m_lastMouse = getMousePos();
   // The wheel over a slider
   this->setMouseEnabled(true);
@@ -68,10 +98,19 @@ bool MSPauseColumn::init()
   return true;
 }
 
+void MSPauseColumn::setRowWidth(float width) { m_rowWidth = std::max(width, 40.f); }
+
+void MSPauseColumn::setViewHeight(float height) { m_viewHeight = std::max(height, 0.f); }
+
+float MSPauseColumn::sliderLeft() const
+{
+  auto const& theme = Theme::get();
+  return theme.pauseSliderLeft + (m_rowWidth - theme.pauseRowWidth);
+}
+
 MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action, std::string const& sound,
                                     float reserveRight)
 {
-  auto const& theme = Theme::get();
   auto style = MSMenuItem::Style::pause();
   if (reserveRight > 0)
   {
@@ -86,10 +125,31 @@ MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void(
       ms::playSound(sound.empty() ? Theme::get().clickSound : sound);
       action();
     },
-    theme.pauseRowWidth, style);
+    m_rowWidth, style);
   if (item)
     this->addChild(item);
   return item;
+}
+
+CCLabelBMFont* MSPauseColumn::addValue(MSMenuItem* item, CCNodeRGBA*& control)
+{
+  auto const& theme = Theme::get();
+  control = CCNodeRGBA::create();
+  control->setCascadeOpacityEnabled(true);
+  control->setAnchorPoint({0, 0});
+  CCLabelBMFont* value = nullptr;
+  if (auto label = typeinfo_cast<CCLabelBMFont*>(ms::createLabel("-", theme.titleFont)))
+  {
+    label->setScale(theme.pauseSliderValueScale);
+    label->setColor(theme.pauseSliderValueColor);
+    // On the row's right, inside its padding
+    label->setAnchorPoint({1, 0.5f});
+    label->setPosition({m_rowWidth - theme.pauseTextPadding, theme.pauseRowHeight / 2});
+    control->addChild(label);
+    value = label;
+  }
+  item->addChild(control, 5);
+  return value;
 }
 
 void MSPauseColumn::addRow(std::string const& text, std::function<void()> action, std::string const& sound)
@@ -103,7 +163,6 @@ void MSPauseColumn::addRow(std::string const& text, std::function<void()> action
 
 void MSPauseColumn::addChoice(std::string const& text, Choice choice)
 {
-  auto const& theme = Theme::get();
   // Its index in m_choices once it's added: the vector may move, the index doesn't
   auto index = m_choices.size();
   auto item = this->makeItem(
@@ -114,29 +173,40 @@ void MSPauseColumn::addChoice(std::string const& text, Choice choice)
         row.choice.change(1);
       this->showChoice(row);
     },
-    "", theme.pauseRowWidth * CHOICE_ROOM);
+    "", m_rowWidth * CHOICE_ROOM);
   if (!item)
     return;
   ChoiceRow row;
   row.item = item;
   row.choice = std::move(choice);
-  auto control = CCNodeRGBA::create();
-  control->setCascadeOpacityEnabled(true);
-  control->setAnchorPoint({0, 0});
-  if (auto label = typeinfo_cast<CCLabelBMFont*>(ms::createLabel("-", theme.titleFont)))
-  {
-    label->setScale(theme.pauseSliderValueScale);
-    label->setColor(theme.pauseSliderValueColor);
-    // On the row's right, inside its padding
-    label->setAnchorPoint({1, 0.5f});
-    label->setPosition({theme.pauseRowWidth - theme.pauseTextPadding, theme.pauseRowHeight / 2});
-    control->addChild(label);
-    row.value = label;
-  }
-  item->addChild(control, 5);
-  row.control = control;
+  row.value = this->addValue(item, row.control);
   m_choices.push_back(std::move(row));
   this->showChoice(m_choices.back());
+  m_rows.push_back(item);
+  m_layout.push_back(item);
+}
+
+void MSPauseColumn::addField(std::string const& text, Field field)
+{
+  auto index = m_fields.size();
+  auto item = this->makeItem(
+    text,
+    [this, index] {
+      // A click (or Enter) starts typing, another one ends it
+      if (m_editing == static_cast<int>(index))
+        this->commitEdit();
+      else
+        this->beginEdit(index);
+    },
+    "", m_rowWidth * CHOICE_ROOM);
+  if (!item)
+    return;
+  FieldRow row;
+  row.item = item;
+  row.field = std::move(field);
+  row.value = this->addValue(item, row.control);
+  m_fields.push_back(std::move(row));
+  this->showField(m_fields.back());
   m_rows.push_back(item);
   m_layout.push_back(item);
 }
@@ -152,9 +222,27 @@ void MSPauseColumn::addHeader(std::string const& text)
   m_layout.push_back(header.node);
 }
 
+void MSPauseColumn::setInfo(std::string info)
+{
+  if (!m_rows.empty())
+    m_infos[m_rows.back()] = std::move(info);
+}
+
+void MSPauseColumn::setOnInfo(std::function<void(std::string const&)> callback) { m_onInfo = std::move(callback); }
+
 MSPauseColumn::ChoiceRow* MSPauseColumn::choiceFor(MSMenuItem* item)
 {
   for (auto& row : m_choices)
+  {
+    if (row.item == item)
+      return &row;
+  }
+  return nullptr;
+}
+
+MSPauseColumn::FieldRow* MSPauseColumn::fieldFor(MSMenuItem* item)
+{
+  for (auto& row : m_fields)
   {
     if (row.item == item)
       return &row;
@@ -173,11 +261,104 @@ void MSPauseColumn::showChoice(ChoiceRow& row)
   row.value->setString(text.c_str());
 }
 
+void MSPauseColumn::showField(FieldRow& row)
+{
+  if (!row.value)
+    return;
+  std::string text;
+  auto editing = m_editing >= 0 && &m_fields[m_editing] == &row;
+  if (editing)
+  {
+    // The typed text, a cursor blinking after it; the value it replaces is shown dimmed until the first key
+    auto cursor = std::fmod(m_blink, BLINK_TIME * 2) < BLINK_TIME ? "_" : " ";
+    text = m_editText + cursor;
+  }
+  else if (row.field.get)
+    text = row.field.get();
+  row.value->setOpacity(editing && m_editFresh ? 160 : 255);
+  if (text == row.shown)
+    return;
+  row.shown = text;
+  row.value->setString(text.c_str());
+}
+
+void MSPauseColumn::beginEdit(size_t index)
+{
+  this->commitEdit();
+  if (index >= m_fields.size())
+    return;
+  auto& row = m_fields[index];
+  m_editing = static_cast<int>(index);
+  m_editText = row.field.get ? row.field.get() : "";
+  m_editFresh = true;
+  m_blink = 0;
+  this->showField(row);
+}
+
+void MSPauseColumn::commitEdit()
+{
+  if (m_editing < 0 || m_editing >= static_cast<int>(m_fields.size()))
+  {
+    m_editing = -1;
+    return;
+  }
+  auto& row = m_fields[m_editing];
+  m_editing = -1;
+  // Nothing typed: the value stays
+  if (!m_editFresh && !m_editText.empty() && row.field.set)
+    row.field.set(m_editText);
+  this->showField(row);
+}
+
+bool MSPauseColumn::cancelEdit()
+{
+  if (m_editing < 0)
+    return false;
+  auto index = m_editing;
+  m_editing = -1;
+  if (index < static_cast<int>(m_fields.size()))
+    this->showField(m_fields[index]);
+  return true;
+}
+
+bool MSPauseColumn::onEditKey(enumKeyCodes key)
+{
+  auto& row = m_fields[m_editing];
+  if (key == KEY_Enter || key == CONTROLLER_A)
+  {
+    ms::playSound(Theme::get().clickSound);
+    this->commitEdit();
+    return true;
+  }
+  if (key == KEY_Backspace || key == KEY_Delete)
+  {
+    if (m_editFresh)
+      m_editText.clear();
+    else if (!m_editText.empty())
+      m_editText.pop_back();
+    m_editFresh = false;
+    this->showField(row);
+    return true;
+  }
+  auto c = typed(key);
+  if (c == 0)
+    return false;
+  if (row.field.allowed.find(c) == std::string::npos)
+    return true;
+  if (m_editFresh)
+    m_editText.clear();
+  m_editFresh = false;
+  if (m_editText.size() < row.field.maxLength)
+    m_editText.push_back(c);
+  this->showField(row);
+  return true;
+}
+
 void MSPauseColumn::addSlider(std::string const& text, Slider slider)
 {
   auto const& theme = Theme::get();
   // Choosing the row itself does nothing: its track is dragged, Left/Right move it. Its label ends before the track
-  auto reserve = theme.pauseRowWidth - theme.pauseTextPadding - theme.pauseSliderLeft + TRACK_GAP;
+  auto reserve = m_rowWidth - theme.pauseTextPadding - this->sliderLeft() + TRACK_GAP;
   auto item = this->makeItem(text, nullptr, "", reserve);
   if (!item)
     return;
@@ -190,11 +371,12 @@ void MSPauseColumn::addSlider(std::string const& text, Slider slider)
   control->setAnchorPoint({0, 0});
   CCSize track{theme.pauseSliderWidth, theme.pauseSliderHeight};
   auto middle = theme.pauseRowHeight / 2;
+  auto left = this->sliderLeft();
   auto groove = panel(theme.pauseSliderTrackColor, track);
-  groove->setPosition({theme.pauseSliderLeft, middle});
+  groove->setPosition({left, middle});
   control->addChild(groove);
   row.fill = panel(theme.pauseSliderFillColor, track);
-  row.fill->setPosition({theme.pauseSliderLeft, middle});
+  row.fill->setPosition({left, middle});
   control->addChild(row.fill);
   row.knob = panel(theme.pauseSliderKnobColor, {theme.pauseSliderKnobWidth, theme.pauseSliderHeight});
   control->addChild(row.knob);
@@ -214,7 +396,7 @@ void MSPauseColumn::addSlider(std::string const& text, Slider slider)
     reset->setCascadeOpacityEnabled(true);
     reset->setContentSize({size, size});
     reset->setAnchorPoint({0.5f, 0.5f});
-    reset->setPosition({theme.pauseSliderLeft + theme.pauseSliderWidth + 1.5f + size / 2, middle});
+    reset->setPosition({left + theme.pauseSliderWidth + 1.5f + size / 2, middle});
     if (auto circle = ms::createStretched(theme.avatarSprite, {size, size}, theme.pauseResetColor, 255))
     {
       circle->setAnchorPoint({0.5f, 0.5f});
@@ -256,26 +438,110 @@ void MSPauseColumn::finish(float left, float firstTop)
   auto const& theme = Theme::get();
   auto height = theme.pauseRowHeight;
   m_items = m_rows;
-  // A group's name sits in its place by the rows' text, a little lower than a row's middle
-  for (size_t i = 0; i < m_layout.size(); i++)
-  {
-    auto middle = firstTop - theme.pauseRowPitch * i - height / 2;
-    auto node = m_layout[i];
-    if (std::find(m_headers.begin(), m_headers.end(), node) != m_headers.end())
-      node->setPosition({left + 2, middle - height * 0.15f});
-    else
-      node->setPosition({left, middle});
-  }
+  m_left = left;
+  m_firstTop = firstTop;
+  auto slots = static_cast<int>(m_layout.size());
+  m_visibleSlots = slots;
+  if (m_viewHeight > 0 && theme.pauseRowPitch > 0)
+    m_visibleSlots = std::clamp(static_cast<int>(std::floor((m_viewHeight - height) / theme.pauseRowPitch)) + 1, 1,
+                                std::max(slots, 1));
+  auto scrolls = m_visibleSlots < slots;
   if (m_exit)
   {
-    // Under the last row by the usual gap and the theme's own
-    auto lastBottom = firstTop - theme.pauseRowPitch * (static_cast<float>(m_layout.size()) - 1) - height;
+    // Under the last row (the view's, when it scrolls) by the usual gap and the theme's own
+    auto shown = scrolls ? m_visibleSlots : slots;
+    auto lastBottom = firstTop - theme.pauseRowPitch * (static_cast<float>(shown) - 1) - height;
     auto top = lastBottom - (theme.pauseRowPitch - height) - theme.pauseExitGap;
     m_exit->setPosition({left, top - height / 2});
     m_items.push_back(m_exit);
   }
+  if (scrolls)
+  {
+    // A dark track the view's height, a white thumb as tall as the share in view
+    auto viewHeight = theme.pauseRowPitch * (m_visibleSlots - 1) + height;
+    auto x = left + m_rowWidth + BAR_GAP + theme.screenScrollWidth / 2;
+    m_track = bar(theme.achievementsScrollTrackColor, theme.screenScrollWidth, viewHeight);
+    m_track->setPosition({x, firstTop});
+    this->addChild(m_track, -1);
+    auto share = static_cast<float>(m_visibleSlots) / slots;
+    m_thumb = bar(theme.achievementsScrollThumbColor, theme.screenScrollWidth, std::max(viewHeight * share, 8.f));
+    m_thumb->setPosition({x, firstTop});
+    this->addChild(m_thumb, -1);
+  }
+  this->placeRows();
   for (auto& row : m_sliders)
     this->layoutSlider(row, row.slider.get ? row.slider.get() : 0);
+}
+
+// ! --- Scrolling --- !
+
+bool MSPauseColumn::inView(CCNode* node) const
+{
+  auto it = std::find(m_layout.begin(), m_layout.end(), node);
+  if (it == m_layout.end())
+    return true;
+  auto slot = static_cast<int>(it - m_layout.begin()) - m_offset;
+  return slot >= 0 && slot < m_visibleSlots;
+}
+
+void MSPauseColumn::placeRows()
+{
+  auto const& theme = Theme::get();
+  auto height = theme.pauseRowHeight;
+  for (size_t i = 0; i < m_layout.size(); i++)
+  {
+    auto node = m_layout[i];
+    auto slot = static_cast<int>(i) - m_offset;
+    auto middle = m_firstTop - theme.pauseRowPitch * slot - height / 2;
+    // A group's name sits in its place by the rows' text, a little lower than a row's middle
+    if (std::find(m_headers.begin(), m_headers.end(), node) != m_headers.end())
+      node->setPosition({m_left + 2, middle - height * 0.15f});
+    else
+      node->setPosition({m_left, middle});
+    auto shown = slot >= 0 && slot < m_visibleSlots;
+    node->setVisible(shown);
+    if (auto item = typeinfo_cast<MSMenuItem*>(node))
+      item->setEnabled(shown && m_isShown);
+  }
+  if (m_thumb && m_track)
+  {
+    auto slots = static_cast<int>(m_layout.size());
+    auto travel = std::max(m_track->getScaledContentSize().height - m_thumb->getScaledContentSize().height, 0.f);
+    auto progress = slots > m_visibleSlots ? static_cast<float>(m_offset) / (slots - m_visibleSlots) : 0.f;
+    m_thumb->setPositionY(m_firstTop - travel * progress);
+  }
+}
+
+void MSPauseColumn::scrollTo(int offset)
+{
+  auto most = std::max(0, static_cast<int>(m_layout.size()) - m_visibleSlots);
+  offset = std::clamp(offset, 0, most);
+  if (offset == m_offset)
+    return;
+  m_offset = offset;
+  this->placeRows();
+  // The mouse is over another row now
+  m_lastMouse = CCPoint{-1, -1};
+  if (m_shown >= 0 && m_shown < static_cast<int>(m_items.size()) && !this->inView(m_items[m_shown]))
+    this->highlight(-1, false);
+}
+
+void MSPauseColumn::reveal(int index)
+{
+  if (index < 0 || index >= static_cast<int>(m_items.size()))
+    return;
+  auto it = std::find(m_layout.begin(), m_layout.end(), m_items[index]);
+  if (it == m_layout.end())
+    return;
+  auto slot = static_cast<int>(it - m_layout.begin());
+  if (slot < m_offset)
+  {
+    // Its group's name right over it comes into view with it
+    auto header = slot > 0 && std::find(m_headers.begin(), m_headers.end(), m_layout[slot - 1]) != m_headers.end();
+    this->scrollTo(header ? slot - 1 : slot);
+  }
+  else if (slot >= m_offset + m_visibleSlots)
+    this->scrollTo(slot - m_visibleSlots + 1);
 }
 
 void MSPauseColumn::layoutSlider(SliderRow& row, float value)
@@ -285,11 +551,12 @@ void MSPauseColumn::layoutSlider(SliderRow& row, float value)
   row.shown = value;
   auto knobWidth = std::min(theme.pauseSliderKnobWidth, theme.pauseSliderWidth);
   auto travel = theme.pauseSliderWidth - knobWidth;
-  auto knobLeft = theme.pauseSliderLeft + travel * value;
+  auto left = this->sliderLeft();
+  auto knobLeft = left + travel * value;
   auto middle = theme.pauseRowHeight / 2;
   row.knob->setPosition({knobLeft, middle});
   // The fill to the knob's right edge
-  row.fill->setContentSize(CCSize{knobLeft + knobWidth - theme.pauseSliderLeft, theme.pauseSliderHeight} * SMALL_PANEL);
+  row.fill->setContentSize(CCSize{knobLeft + knobWidth - left, theme.pauseSliderHeight} * SMALL_PANEL);
   if (row.value)
   {
     auto text = row.slider.format ? row.slider.format(value) : fmt::format("{}", static_cast<int>(std::round(value * 100)));
@@ -303,7 +570,7 @@ CCRect MSPauseColumn::trackRect(SliderRow const& row) const
   auto const& theme = Theme::get();
   auto origin = row.item->getPosition() - CCPoint{0, theme.pauseRowHeight / 2};
   // The whole row's height, easier to catch
-  return {origin.x + theme.pauseSliderLeft - 2, origin.y, theme.pauseSliderWidth + 4, theme.pauseRowHeight};
+  return {origin.x + this->sliderLeft() - 2, origin.y, theme.pauseSliderWidth + 4, theme.pauseRowHeight};
 }
 
 CCRect MSPauseColumn::resetRect(SliderRow const& row) const
@@ -331,7 +598,7 @@ void MSPauseColumn::dragTo(SliderRow& row, CCPoint local)
   auto origin = row.item->getPositionX();
   auto knobWidth = std::min(theme.pauseSliderKnobWidth, theme.pauseSliderWidth);
   auto travel = std::max(theme.pauseSliderWidth - knobWidth, 1.f);
-  auto value = std::clamp((local.x - origin - theme.pauseSliderLeft - knobWidth / 2) / travel, 0.f, 1.f);
+  auto value = std::clamp((local.x - origin - this->sliderLeft() - knobWidth / 2) / travel, 0.f, 1.f);
   if (row.slider.set)
     row.slider.set(value);
   this->layoutSlider(row, row.slider.get ? row.slider.get() : value);
@@ -341,27 +608,35 @@ void MSPauseColumn::setShown(bool shown, bool animate)
 {
   if (shown == m_isShown)
     return;
+  this->commitEdit();
   m_isShown = shown;
   auto time = animate ? std::max(Theme::get().pauseDuration, 0.f) : 0.f;
   m_dragging = nullptr;
   m_resetting = nullptr;
   if (!shown)
     m_restore = m_shown;
-  m_shown = -1;
+  this->highlight(-1, false);
   this->stopActionByTag(HIDE_ACTION);
   for (auto item : m_items)
   {
     // Nothing is chosen from the first frame of fading out; each one back at rest, its shine stopped
-    item->setEnabled(shown);
+    item->setEnabled(shown && this->inView(item));
     item->resetLook();
     item->fadeTo(time, shown ? 255 : 0);
   }
-  // The sliders' and choices' controls and the groups' names fade with the rows
+  // The sliders', choices' and fields' controls, the groups' names and the scroll bar fade with the rows
   std::vector<CCNode*> extras(m_headers.begin(), m_headers.end());
   for (auto& row : m_sliders)
     extras.push_back(row.control);
   for (auto& row : m_choices)
     extras.push_back(row.control);
+  for (auto& row : m_fields)
+    extras.push_back(row.control);
+  for (auto node : {m_track, m_thumb})
+  {
+    if (node)
+      extras.push_back(node);
+  }
   for (auto node : extras)
   {
     node->stopActionByTag(CONTROL_ACTION);
@@ -380,7 +655,10 @@ void MSPauseColumn::setShown(bool shown, bool animate)
     m_lastMouse = CCPoint{-1, -1};
     // Where the keys (or the mouse) were when it hid
     if (m_restore >= 0 && m_restore < static_cast<int>(m_items.size()))
+    {
+      this->reveal(m_restore);
       this->highlight(m_restore, false);
+    }
     m_restore = -1;
     return;
   }
@@ -402,21 +680,38 @@ void MSPauseColumn::highlight(int index, bool shine)
 {
   if (index == m_shown)
     return;
+  // Another row chosen: the field typed in is done
+  if (m_editing >= 0 && (index < 0 || index >= static_cast<int>(m_items.size()) ||
+                         m_items[index] != m_fields[m_editing].item))
+    this->commitEdit();
   if (m_shown >= 0 && m_shown < static_cast<int>(m_items.size()))
     m_items[m_shown]->setHighlighted(false);
   m_shown = index;
   if (m_shown >= 0)
     m_items[m_shown]->setHighlighted(true, shine);
+  if (m_onInfo)
+  {
+    std::string info;
+    if (m_shown >= 0)
+    {
+      if (auto it = m_infos.find(m_items[m_shown]); it != m_infos.end())
+        info = it->second;
+    }
+    m_onInfo(info);
+  }
 }
 
 bool MSPauseColumn::onKey(enumKeyCodes key)
 {
   if (m_items.empty() || !this->canUse())
     return false;
+  if (m_editing >= 0 && this->onEditKey(key))
+    return true;
   auto count = static_cast<int>(m_items.size());
   if (isUp(key) || isDown(key))
   {
     auto next = m_shown < 0 ? (isUp(key) ? count - 1 : 0) : (m_shown + (isUp(key) ? count - 1 : 1)) % count;
+    this->reveal(next);
     this->highlight(next, true);
     ms::playSound(Theme::get().hoverSound);
     return true;
@@ -433,6 +728,15 @@ bool MSPauseColumn::onKey(enumKeyCodes key)
       ms::playSound(Theme::get().clickSound);
       choice->choice.change(isLeft(key) ? -1 : 1);
       this->showChoice(*choice);
+      return true;
+    }
+    if (auto field = this->fieldFor(item))
+    {
+      if (!field->field.step || m_editing >= 0)
+        return false;
+      ms::playSound(Theme::get().clickSound);
+      field->field.step(isLeft(key) ? -1 : 1);
+      this->showField(*field);
       return true;
     }
     auto row = this->sliderFor(item);
@@ -454,9 +758,12 @@ bool MSPauseColumn::onKey(enumKeyCodes key)
 
 void MSPauseColumn::update(float dt)
 {
-  // A change made elsewhere (GD's settings over the pause) shows on the sliders and the choices
+  m_blink += dt;
+  // A change made elsewhere (GD's settings over the pause) shows on the sliders, the choices and the fields
   for (auto& row : m_choices)
     this->showChoice(row);
+  for (auto& row : m_fields)
+    this->showField(row);
   for (auto& row : m_sliders)
   {
     if (!row.slider.get || row.item == nullptr || (m_dragging == &row))
@@ -473,7 +780,7 @@ void MSPauseColumn::update(float dt)
   auto local = this->convertToNodeSpace(mouse);
   for (int i = 0; i < static_cast<int>(m_items.size()); i++)
   {
-    if (m_items[i]->boundingBox().containsPoint(local))
+    if (m_items[i]->isVisible() && m_items[i]->boundingBox().containsPoint(local))
     {
       if (i != m_shown)
       {
@@ -501,6 +808,9 @@ void MSPauseColumn::scrollWheel(float y, float)
     this->layoutSlider(row, row.slider.get ? row.slider.get() : value);
     return;
   }
+  // One row a notch, the wheel's way
+  if (m_visibleSlots < static_cast<int>(m_layout.size()))
+    this->scrollTo(m_offset + (y > 0 ? 1 : -1));
 }
 
 bool MSPauseColumn::ccTouchBegan(CCTouch* touch, CCEvent* event)

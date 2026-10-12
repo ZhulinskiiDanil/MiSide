@@ -1,4 +1,5 @@
 #include "Theme.hpp"
+#include "options/MSOptions.hpp"
 #include "settings/MSSettings.hpp"
 #include "ui/MSBackground.hpp"
 #include "ui/MSConfirm.hpp"
@@ -115,6 +116,9 @@ class $modify(MSMenuLayer, MenuLayer)
     // GD may send Esc both as a key and as back: the press that opened it doesn't close it
     unsigned m_openedOnFrame = 0;
     bool m_quitting = false;
+    // GD's settings button (hidden, the column presses it), and whether GD's own window is asked for
+    Ref<CCMenuItem> m_settingsButton;
+    bool m_vanillaOptions = false;
   };
 
   bool init()
@@ -246,6 +250,7 @@ class $modify(MSMenuLayer, MenuLayer)
       // the column's darkening as the others are
       if (std::string_view(entry.button) == "settings-button")
       {
+        m_fields->m_settingsButton = button;
         auto appearance = CCMenuItemExt::createSpriteExtra(CCNode::create(), [](auto) { ms::settings::open(); });
         column->addEntry(english ? "APPEARANCE" : "ОФОРМЛЕНИЕ", appearance);
       }
@@ -306,6 +311,29 @@ class $modify(MSMenuLayer, MenuLayer)
     }
     column->setBusy(true);
     transition->play([target] { target->activate(); }, [column] { column->setBusy(false); });
+  }
+
+  // ! --- GD's settings --- !
+
+  // However GD opens its settings (the settings button through onOptions, a key, the graphics opened again after GD
+  // applied them), the mod's screens open in their place; GD WINDOW on them asks for GD's own window
+  void openOptions(bool videoOptions)
+  {
+    if (!m_fields->m_column || m_fields->m_vanillaOptions)
+      return MenuLayer::openOptions(videoOptions);
+    Ref<MSMenuLayer> self = this;
+    ms::options::open([self] { self->openVanillaOptions(); }, videoOptions);
+  }
+
+  // GD's own settings window, through the settings button as a click would (the mods' hooks on onOptions run too)
+  void openVanillaOptions()
+  {
+    m_fields->m_vanillaOptions = true;
+    if (auto button = m_fields->m_settingsButton)
+      button->activate();
+    else
+      this->onOptions(nullptr);
+    m_fields->m_vanillaOptions = false;
   }
 
   // ! --- Quitting --- !

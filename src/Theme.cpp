@@ -420,6 +420,14 @@ namespace
     theme.screenBackWidth = 70;
     theme.screenButtonWidth = 71.3f;
 
+    // ! --- GD's settings --- !
+    theme.optionsRowWidth = 200;
+    theme.optionsViewBottom = 78;
+    theme.optionsInfoTop = 72;
+    theme.optionsInfoScale = 0.32f;
+    theme.optionsInfoColor = ccc3(0xf2, 0xd2, 0xf2);
+    theme.optionsOffsetStep = 5;
+
     // ! --- The statistics --- !
     theme.statsEnabled = true;
     theme.statsRowHeight = 15;
@@ -904,6 +912,12 @@ namespace
     field("screen-back-top", theme.screenBackTop);
     field("screen-back-width", theme.screenBackWidth);
     field("screen-button-width", theme.screenButtonWidth);
+    field("options-row-width", theme.optionsRowWidth);
+    field("options-view-bottom", theme.optionsViewBottom);
+    field("options-info-top", theme.optionsInfoTop);
+    field("options-info-scale", theme.optionsInfoScale);
+    field("options-info-color", theme.optionsInfoColor);
+    field("options-offset-step", theme.optionsOffsetStep);
     field("stats-enabled", theme.statsEnabled);
     field("stats-row-height", theme.statsRowHeight);
     field("stats-row-gap", theme.statsRowGap);

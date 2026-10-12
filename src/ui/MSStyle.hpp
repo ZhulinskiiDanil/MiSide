@@ -39,7 +39,8 @@ namespace ms
   Text createText(std::string const& text, float scale, cocos2d::ccColor3B color, std::string const& font,
                   Shadow const& shadow);
 
-  // Why the node can't be used now: it isn't in the running scene, or a popup (an FLAlertLayer) is over it.
+  // Why the node can't be used now: it isn't in the running scene, or a popup (an FLAlertLayer, or one of GD's
+  // windows that drop down) is over it.
   // Nothing in the way: nullopt. During a scene transition: an empty reason (not worth a log)
   std::optional<std::string> coveredBy(cocos2d::CCNode* node);
 

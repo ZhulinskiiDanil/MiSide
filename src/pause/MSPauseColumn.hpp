@@ -6,13 +6,16 @@
 
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // The pause menu's list as MiSide has it: see-through rows one under the other, Quit apart under them. A row runs
 // its action; a slider row holds a dark track with a pink fill and a knob with the value on it, dragged with the
 // mouse or moved with Left/Right; a choice row shows its value on its right and goes to the next one on a click
-// (Left/Right go either way). A group's name can stand in a row's place. The mouse lights the row under it, the arrow
-// keys (and a controller) the next one; Enter, Space or A runs it. Hidden, it takes nothing
+// (Left/Right go either way); a field row shows a number that's typed in after a click or Enter. A group's name can
+// stand in a row's place. The mouse lights the row under it, the arrow keys (and a controller) the next one; Enter,
+// Space or A runs it. Longer than its view, it scrolls by whole rows, keeping the lit row in view, with a bar on its
+// right. Hidden, it takes nothing
 class MSPauseColumn : public cocos2d::CCMenu
 {
 public:
@@ -35,14 +38,36 @@ public:
     std::function<void(int)> change;
   };
 
+  struct Field
+  {
+    // Shown on the row's right, read every frame while it isn't being typed in
+    std::function<std::string()> get;
+    // The typed text, once it's done: Enter, a click on it, another row chosen
+    std::function<void(std::string const&)> set;
+    // Left/Right: the value a step down (-1) or up (1); none: they do nothing
+    std::function<void(int)> step;
+    // What can be typed
+    std::string allowed = "0123456789";
+    size_t maxLength = 8;
+  };
+
   static MSPauseColumn* create();
 
+  // Before any row: the rows' width (the theme's pause row by default); a slider keeps to the row's right end
+  void setRowWidth(float width);
+  // Before finish(): the rows past this height (from the first one's top) scroll. 0: no limit
+  void setViewHeight(float height);
   // sound: in place of the click (empty: the click)
   void addRow(std::string const& text, std::function<void()> action, std::string const& sound = "");
   void addSlider(std::string const& text, Slider slider);
   void addChoice(std::string const& text, Choice choice);
+  void addField(std::string const& text, Field field);
   // A group's name in the next row's place: not a row, nothing to choose
   void addHeader(std::string const& text);
+  // What the row added last is about, given to the info callback while it's lit
+  void setInfo(std::string info);
+  // Called with the lit row's info as the light moves (empty: none lit, or it has none)
+  void setOnInfo(std::function<void(std::string const&)> callback);
   // Apart, under the others; sound: in place of the click
   void setExit(std::string const& text, std::function<void()> action, std::string const& sound = "");
   // Places the rows from this top edge down, `left` their left edge
@@ -53,9 +78,11 @@ public:
   bool isShown() const;
   // True when the key was used
   bool onKey(cocos2d::enumKeyCodes key);
+  // A field being typed in stops, its text dropped: true when one was (Esc goes no further then)
+  bool cancelEdit();
 
   void update(float dt) override;
-  // Over a slider's row, the wheel moves it as Left/Right do
+  // Over a slider's row, the wheel moves it as Left/Right do; elsewhere it scrolls a long column
   void scrollWheel(float y, float x) override;
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
   void ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
@@ -85,20 +112,45 @@ protected:
     std::string shown;
   };
 
+  struct FieldRow
+  {
+    MSMenuItem* item = nullptr;
+    Field field;
+    cocos2d::CCNodeRGBA* control = nullptr;
+    cocos2d::CCLabelBMFont* value = nullptr;
+    std::string shown;
+  };
+
   bool init() override;
   // reserveRight: room kept for a control on the row's right; the label is made smaller to end before it
   MSMenuItem* makeItem(std::string const& text, std::function<void()> action, std::string const& sound = "",
                        float reserveRight = 0);
+  // A value label on the row's right, inside its padding, in a control node that fades with the row
+  cocos2d::CCLabelBMFont* addValue(MSMenuItem* item, cocos2d::CCNodeRGBA*& control);
+  float sliderLeft() const;
   void layoutSlider(SliderRow& row, float value);
   // The track's span in the column's space
   cocos2d::CCRect trackRect(SliderRow const& row) const;
   cocos2d::CCRect resetRect(SliderRow const& row) const;
   SliderRow* sliderFor(MSMenuItem* item);
   ChoiceRow* choiceFor(MSMenuItem* item);
+  FieldRow* fieldFor(MSMenuItem* item);
   void showChoice(ChoiceRow& row);
+  void showField(FieldRow& row);
   void dragTo(SliderRow& row, cocos2d::CCPoint local);
   void highlight(int index, bool shine);
   bool canUse();
+  // Typing in the field at this index of m_fields; the one typed in before is done
+  void beginEdit(size_t index);
+  void commitEdit();
+  bool onEditKey(cocos2d::enumKeyCodes key);
+  // ! --- Scrolling --- !
+  void placeRows();
+  bool inView(cocos2d::CCNode* node) const;
+  // The first slot shown, clamped; the lit row out of view goes dark
+  void scrollTo(int offset);
+  // The item at this index of m_items in view, with its group's name when it's right over it
+  void reveal(int index);
 
   // The rows then Quit: the keys' order
   std::vector<MSMenuItem*> m_items;
@@ -109,6 +161,10 @@ protected:
   MSMenuItem* m_exit = nullptr;
   std::vector<SliderRow> m_sliders;
   std::vector<ChoiceRow> m_choices;
+  std::vector<FieldRow> m_fields;
+  std::unordered_map<MSMenuItem*, std::string> m_infos;
+  std::function<void(std::string const&)> m_onInfo;
+  float m_rowWidth = 0;
   int m_shown = -1;
   // The row chosen when it hid (a confirmation, More), chosen again when it shows
   int m_restore = -1;
@@ -117,4 +173,17 @@ protected:
   // A slider being dragged, or a reset button pressed
   SliderRow* m_dragging = nullptr;
   SliderRow* m_resetting = nullptr;
+  // The field typed in (an index of m_fields, -1: none), its text, and whether the first key replaces it
+  int m_editing = -1;
+  std::string m_editText;
+  bool m_editFresh = false;
+  float m_blink = 0;
+  // Where finish() put the rows, the view's height in slots and the first slot shown
+  float m_left = 0;
+  float m_firstTop = 0;
+  float m_viewHeight = 0;
+  int m_visibleSlots = 0;
+  int m_offset = 0;
+  cocos2d::CCNode* m_track = nullptr;
+  cocos2d::CCNode* m_thumb = nullptr;
 };

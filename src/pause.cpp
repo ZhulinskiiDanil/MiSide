@@ -1,5 +1,7 @@
 #include "Sounds.hpp"
 #include "Theme.hpp"
+#include "options/MSOptionsData.hpp"
+#include "options/MSOptionsText.hpp"
 #include "pause/MSPauseAmbient.hpp"
 #include "pause/MSPauseBackdrop.hpp"
 #include "pause/MSPauseColumn.hpp"
@@ -27,6 +29,12 @@ namespace
   constexpr float CAP_RAISE = 2.82f;
   // MiSide's confirmation: 5.1 pt from the title's line to the first button
   constexpr float CONFIRM_GAP = 5.1f;
+  // Settings: room under its rows for BACK, and between its rows and the info on their right
+  constexpr float SETTINGS_BOTTOM = 48;
+  constexpr float SETTINGS_INFO_GAP = 14;
+  // GD's practice music sync: the music unlocker, an item of GameStatsManager's
+  constexpr int MUSIC_UNLOCK_TYPE = 12;
+  constexpr int MUSIC_UNLOCK_ID = 17;
 
   // The pause menu's own nodes by Geode's IDs (geode-sdk/NodeIDs, PauseLayer.cpp): replaced, so hidden while the
   // MiSide pause shows. Never removed; anything not named here is left alone
@@ -42,6 +50,8 @@ namespace
                                             "practice-button", "play-button",         "retry-button"};
 
   bool english() { return Mod::get()->getSettingValue<std::string>("menu-language") == "EN"; }
+
+  std::string onOff(bool on, bool en) { return on ? (en ? "ON" : "ВКЛ") : (en ? "OFF" : "ВЫКЛ"); }
 
   std::vector<std::string> split(std::string const& list)
   {
@@ -89,7 +99,9 @@ namespace
 // MiSide's pause: the level blurred and tinted behind, "PAUSE" with a column of see-through rows on the left
 // (Resume, Restart, Practice, the music and effects volumes, Settings, More, and Quit apart), the level's name and
 // numbers in a bar on the right. Every row presses its vanilla button with activate(), so GD's handlers and every
-// mod's hooks on them run as usual. More shows the mods' pause buttons where they are, untouched, and can bring back
+// mod's hooks on them run as usual. Settings shows GD's in-level options in the column's place, each a click on the
+// button of GD's own options window (made for it, never shown), with what the lit one does on the right; GD WINDOW
+// opens that window as GD has it. More shows the mods' pause buttons where they are, untouched, and can bring back
 // the vanilla pause. Quit asks in the column, as the main menu does; the confirmation also works with the MiSide
 // pause off (in place of GD's popup)
 class $modify(MSPauseLayer, PauseLayer)
@@ -98,6 +110,7 @@ class $modify(MSPauseLayer, PauseLayer)
   {
     Main,
     More,
+    Settings,
     Confirm,
     Vanilla,
   };
@@ -113,6 +126,13 @@ class $modify(MSPauseLayer, PauseLayer)
     MSPauseInfo* m_info = nullptr;
     MSPauseColumn* m_column = nullptr;
     MSPauseColumn* m_more = nullptr;
+    // GD's options in the column's place, made again each time they open, from GD's options window made for them
+    MSPauseColumn* m_settings = nullptr;
+    CCNode* m_settingsTitle = nullptr;
+    CCNode* m_settingsInfo = nullptr;
+    std::string m_settingsText;
+    Ref<GameOptionsLayer> m_options;
+    Ref<CCMenuItem> m_optionsButton;
     MSConfirm* m_confirm = nullptr;
     CCMenu* m_back = nullptr;
     // The vanilla nodes hidden, to show again for the vanilla pause
@@ -129,6 +149,12 @@ class $modify(MSPauseLayer, PauseLayer)
     unsigned m_closedOnFrame = 0;
     unsigned m_openedOnFrame = 0;
     bool m_quitting = false;
+
+    ~Fields()
+    {
+      if (m_options)
+        ms::options::dispose(m_options);
+    }
   };
 
   static void onModify(auto& self)
@@ -208,7 +234,10 @@ class $modify(MSPauseLayer, PauseLayer)
     this->addVolume(column, "music-slider", en ? "MUSIC" : "МУЗЫКА", true, theme.pauseMusicReset);
     this->addVolume(column, "sfx-slider", en ? "SFX" : "ЗВУКИ", false, theme.pauseSfxReset);
     if (auto target = available("options-button"))
-      column->addRow(en ? "SETTINGS" : "НАСТРОЙКИ", press(target));
+    {
+      f.m_optionsButton = target;
+      column->addRow(en ? "SETTINGS" : "НАСТРОЙКИ", [this] { this->showSettings(true); }, theme.moreOpenSound);
+    }
     column->addRow(en ? "MORE" : "ДОПОЛНИТЕЛЬНО", [this] { this->showMore(true); }, theme.moreOpenSound);
     if (auto target = available("exit-button"))
       column->setExit(en ? "QUIT THE LEVEL" : "ВЫЙТИ ИЗ УРОВНЯ", press(target));
@@ -264,7 +293,8 @@ class $modify(MSPauseLayer, PauseLayer)
       f.m_title = title.node;
     }
     for (auto [text, field] : {std::pair{en ? "MENU" : "МЕНЮ", &f.m_subtitle},
-                               std::pair{en ? "MORE" : "ДОПОЛНИТЕЛЬНО", &f.m_moreTitle}})
+                               std::pair{en ? "MORE" : "ДОПОЛНИТЕЛЬНО", &f.m_moreTitle},
+                               std::pair{en ? "SETTINGS" : "НАСТРОЙКИ", &f.m_settingsTitle}})
     {
       auto subtitle =
         ms::createText(text, theme.pauseSubtitleScale, theme.pauseSubtitleColor, theme.titleFont, ms::Shadow{});
@@ -275,10 +305,12 @@ class $modify(MSPauseLayer, PauseLayer)
       this->addChild(subtitle.node, MENU_Z);
       *field = subtitle.node;
     }
-    if (f.m_moreTitle)
+    for (auto subtitle : {f.m_moreTitle, f.m_settingsTitle})
     {
-      ms::setOpacity(f.m_moreTitle, 0);
-      f.m_moreTitle->setVisible(false);
+      if (!subtitle)
+        continue;
+      ms::setOpacity(subtitle, 0);
+      subtitle->setVisible(false);
     }
 
     // The level's bar and its numbers
@@ -440,6 +472,176 @@ class $modify(MSPauseLayer, PauseLayer)
       f.m_closedOnFrame = CCDirector::get()->getTotalFrames();
   }
 
+  // ! --- Settings --- !
+
+  // GD's in-level options (its GameOptionsLayer, made for them and never shown) as rows: each toggle a click on its
+  // own button there, the practice music sync and the UI editors as GD's callbacks, GD WINDOW for GD's own window
+  bool buildSettings()
+  {
+    auto& f = *m_fields.self();
+    auto const& theme = Theme::get();
+    auto en = english();
+    auto level = PlayLayer::get();
+    if (!level)
+      return false;
+    if (f.m_settings)
+    {
+      f.m_settings->removeFromParent();
+      f.m_settings = nullptr;
+    }
+    if (f.m_options)
+      ms::options::dispose(f.m_options);
+    f.m_options = GameOptionsLayer::create(level);
+    if (!f.m_options)
+      return false;
+    auto options = f.m_options.data();
+    auto fromTop = CCDirector::get()->getWinSize().height - 320;
+
+    auto column = MSPauseColumn::create();
+    if (!column)
+      return false;
+    column->setRowWidth(theme.optionsRowWidth);
+    column->setViewHeight(std::max(theme.pauseFirstRowTop - SETTINGS_BOTTOM, theme.pauseRowHeight));
+    column->setOnInfo([this](std::string const& info) { this->showSettingsInfo(info); });
+    auto const& toggles = ms::options::toggles(options);
+    for (auto const& toggle : toggles)
+    {
+      if (!toggle.toggler)
+        continue;
+      MSPauseColumn::Choice choice;
+      choice.value = [toggler = toggle.toggler, en] { return onOff(toggler->isToggled(), en); };
+      choice.change = [toggler = toggle.toggler](int) { toggler->activate(); };
+      column->addChoice(ms::options::label(toggle, en), std::move(choice));
+      column->setInfo(ms::options::info(toggle, en));
+    }
+    // GD's own toggles beside addToggle: ignore damage (the same callback as the others), the practice music sync
+    SEL_MenuHandler shared = nullptr;
+    for (auto const& toggle : toggles)
+    {
+      if (toggle.toggler)
+        shared = toggle.toggler->m_pfnSelector;
+    }
+    for (auto toggler : ms::options::togglers(options))
+    {
+      auto known = std::any_of(toggles.begin(), toggles.end(), [&](auto const& t) { return t.toggler == toggler; });
+      if (known)
+        continue;
+      MSPauseColumn::Choice choice;
+      if (shared && toggler->m_pfnSelector == shared)
+      {
+        choice.value = [toggler = Ref(toggler), en] { return onOff(toggler->isToggled(), en); };
+        choice.change = [toggler = Ref(toggler)](int) { toggler->activate(); };
+        column->addChoice(en ? "IGNORE DAMAGE" : "БЕЗ УРОНА", std::move(choice));
+        column->setInfo(en ? "The player can't die (testing a level)." : "Игрок не погибает (для теста уровня).");
+        continue;
+      }
+      choice.value = [en] {
+        auto stats = GameStatsManager::sharedState();
+        auto type = static_cast<UnlockType>(MUSIC_UNLOCK_TYPE);
+        if (!stats->isItemUnlocked(type, MUSIC_UNLOCK_ID))
+          return std::string(en ? "LOCKED" : "ЗАКРЫТО");
+        return onOff(stats->isItemEnabled(type, MUSIC_UNLOCK_ID), en);
+      };
+      // GD's callback: the unlocker's info when it's missing, else the sync flipped for this level too
+      choice.change = [this](int) {
+        if (auto options = m_fields->m_options)
+          options->onPracticeMusicSync(nullptr);
+      };
+      column->addChoice(en ? "PRACTICE MUSIC SYNC" : "МУЗЫКА В ПРАКТИКЕ", std::move(choice));
+      column->setInfo(en ? "The level's music in practice mode, in sync. Needs the Music Unlocker from the shop."
+                         : "В практике играет музыка уровня, в такт. Нужен Music Unlocker из магазина.");
+    }
+    column->addRow(en ? "PLATFORMER UI" : "ИНТЕРФЕЙС ПЛАТФОРМЕРА", [this] {
+      if (auto options = m_fields->m_options)
+        options->onUIOptions(nullptr);
+    });
+    column->setInfo(en ? "Where the platformer's buttons are on the screen." : "Где на экране кнопки платформера.");
+    column->addRow(en ? "PRACTICE UI" : "ИНТЕРФЕЙС ПРАКТИКИ", [this] {
+      if (auto options = m_fields->m_options)
+        options->onUIPOptions(nullptr);
+    });
+    column->setInfo(en ? "Where the practice mode's buttons are on the screen."
+                       : "Где на экране кнопки режима практики.");
+    if (f.m_optionsButton)
+    {
+      column->addRow(en ? "GD WINDOW" : "ОКНО GD", [this] {
+        // GD's own window over the pause; these rows are made again from it next time
+        auto button = m_fields->m_optionsButton;
+        this->showSettings(false);
+        if (button)
+          button->activate();
+      });
+      column->setInfo(en ? "GD's own options window, with what other mods put in it."
+                         : "Исходное окно настроек GD, с тем, что добавили другие моды.");
+    }
+    column->setExit(en ? "BACK" : "НАЗАД", [this] { this->showSettings(false); }, theme.moreCloseSound);
+    column->setID("pause-settings"_spr);
+    this->addChild(column, MENU_Z);
+    column->finish(theme.pauseLeft, theme.pauseFirstRowTop + fromTop);
+    column->setShown(false, false);
+    f.m_settings = column;
+    return true;
+  }
+
+  // What the lit option does, right of the rows where the level's bar is
+  void showSettingsInfo(std::string const& text)
+  {
+    auto& f = *m_fields.self();
+    if (text == f.m_settingsText)
+      return;
+    f.m_settingsText = text;
+    if (f.m_settingsInfo)
+    {
+      f.m_settingsInfo->removeFromParent();
+      f.m_settingsInfo = nullptr;
+    }
+    if (text.empty() || f.m_state != State::Settings)
+      return;
+    auto const& theme = Theme::get();
+    auto winSize = CCDirector::get()->getWinSize();
+    auto left = theme.pauseLeft + theme.optionsRowWidth + SETTINGS_INFO_GAP;
+    auto width = std::max(winSize.width - theme.pauseBarRightMargin - left, 40.f);
+    auto scale = std::max(theme.optionsInfoScale, 0.1f);
+    CCNode* node = nullptr;
+    if (ms::resourceExists(theme.font))
+      node = CCLabelBMFont::create(text.c_str(), theme.font.c_str(), width / scale, kCCTextAlignmentLeft);
+    if (!node)
+      node = ms::createLabel(text);
+    if (!node)
+      return;
+    node->setScale(scale);
+    node->setAnchorPoint({0, 1});
+    node->setPosition({left, theme.pauseFirstRowTop + winSize.height - 320});
+    ms::setColor(node, theme.optionsInfoColor);
+    this->addChild(node, MENU_Z);
+    f.m_settingsInfo = node;
+  }
+
+  void showSettings(bool shown)
+  {
+    auto& f = *m_fields.self();
+    if (!f.m_styled || f.m_state != (shown ? State::Main : State::Settings))
+      return;
+    if (shown && !this->buildSettings())
+    {
+      // Not made: GD's own window, as before
+      if (f.m_optionsButton)
+        f.m_optionsButton->activate();
+      return;
+    }
+    f.m_state = shown ? State::Settings : State::Main;
+    f.m_column->setShown(!shown);
+    f.m_settings->setShown(shown);
+    this->fade(f.m_subtitle, !shown);
+    this->fade(f.m_settingsTitle, shown);
+    this->fade(f.m_info, !shown);
+    if (!shown)
+    {
+      this->showSettingsInfo("");
+      f.m_closedOnFrame = CCDirector::get()->getTotalFrames();
+    }
+  }
+
   // The vanilla pause as it was, for what doesn't work in the MiSide one; back with the small row
   void showVanilla(bool shown)
   {
@@ -530,6 +732,8 @@ class $modify(MSPauseLayer, PauseLayer)
     {
       if (f.m_state == State::More)
         this->showMore(false);
+      if (f.m_state == State::Settings)
+        this->showSettings(false);
       f.m_state = State::Confirm;
       f.m_column->setShown(false);
       this->fade(f.m_subtitle, false);
@@ -624,10 +828,21 @@ class $modify(MSPauseLayer, PauseLayer)
       ms::playSound(Theme::get().moreCloseSound);
       return this->showMore(false);
     }
+    if (f.m_styled && f.m_state == State::Settings && back)
+    {
+      ms::playSound(Theme::get().moreCloseSound);
+      return this->showSettings(false);
+    }
     if (f.m_styled)
     {
-      auto column = f.m_state == State::Main ? f.m_column : f.m_state == State::More ? f.m_more : nullptr;
+      auto column = f.m_state == State::Main       ? f.m_column
+                    : f.m_state == State::More     ? f.m_more
+                    : f.m_state == State::Settings ? f.m_settings
+                                                   : nullptr;
       if (column && column->onKey(key))
+        return;
+      // The settings take every key: GD's own would act on the level under them
+      if (f.m_state == State::Settings)
         return;
     }
     PauseLayer::keyDown(key, timestamp);
@@ -651,6 +866,11 @@ class $modify(MSPauseLayer, PauseLayer)
     {
       ms::playSound(Theme::get().moreCloseSound);
       return this->showMore(false);
+    }
+    if (f.m_styled && f.m_state == State::Settings)
+    {
+      ms::playSound(Theme::get().moreCloseSound);
+      return this->showSettings(false);
     }
     PauseLayer::keyBackClicked();
   }

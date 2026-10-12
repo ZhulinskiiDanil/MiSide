@@ -119,8 +119,9 @@ namespace ms
       return "";
     if (!scene || running != scene)
       return "it isn't in the running scene";
-    // A popup over it: GD's and Geode's popups are all FLAlertLayers. Other layers mods keep in the scene
-    // (overlays, effects) don't count
+    // A popup over it: GD's and Geode's popups are all FLAlertLayers, GD's windows that drop down (the account,
+    // the soundtracks, the settings) GJDropDownLayers. Other layers mods keep in the scene (overlays, effects) don't
+    // count
     auto above = false;
     for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
     {
@@ -129,7 +130,7 @@ namespace ms
         above = true;
         continue;
       }
-      if (above && child->isVisible() && typeinfo_cast<FLAlertLayer*>(child))
+      if (above && child->isVisible() && (typeinfo_cast<FLAlertLayer*>(child) || typeinfo_cast<GJDropDownLayer*>(child)))
         return fmt::format("a popup ({}) is open", typeid(*child).name());
     }
     return std::nullopt;

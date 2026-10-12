@@ -489,6 +489,17 @@ struct Theme
   // The other buttons in the bottom row (CREDITS)
   float screenButtonWidth = 0;
 
+  // ! --- GD's settings --- !
+  // Their screens' column: wider rows than the pause's, scrolling down to the view's bottom; under it, what the lit
+  // row does, wrapped to the rows' width
+  float optionsRowWidth = 0;
+  float optionsViewBottom = 0;
+  float optionsInfoTop = 0;
+  float optionsInfoScale = 0;
+  cocos2d::ccColor3B optionsInfoColor;
+  // Left/Right on the music offset, in milliseconds
+  float optionsOffsetStep = 0;
+
   // ! --- The statistics --- !
   // GD's own numbers in groups: a group's name, then its rows (the name on the left, the number on the right)
   bool statsEnabled = false;
