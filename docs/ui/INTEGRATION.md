@@ -58,3 +58,17 @@ No shared change. `MSMenuItem::Style::confirm()` now fits its text, which also a
 confirmation (YES / NO, short: no visible change expected). To check in the combined build on 4:3, 16:9 and 21:9:
 the column rows' labels against sliders and values, the results card's width, and RESET's confirmation in APPEARANCE.
 
+## UI-07 Documentation and credits
+
+No shared change; LICENSES.md and ASSETS.md (3D lane's attribution files) untouched, the credits only quote them. If
+the 3D lane changes Mita's model or its attribution, `src/credits.cpp`'s MITA group has to follow (one place).
+
+## Summary for the integrator
+
+- No mod.json, CMakeLists.txt or tests/CMakeLists.txt change is needed for UI-01 to UI-07: new sources come in
+  through `GLOB_RECURSE src/*.cpp`, no new resources.
+- Requested only: the three optional settings of UI-03 (`show-particles`, `transition-speed`, `ui-sound-volume`).
+- Every screen of the mod's creates `MSMita::create()` as the achievements do; no other Mita call.
+- Not built and not run in this lane (syntax checked with clang only): the combined build must compile it first,
+  then the checklists added to README / README.ru under each feature.
+

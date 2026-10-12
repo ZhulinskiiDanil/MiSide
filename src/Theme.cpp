@@ -418,6 +418,7 @@ namespace
     theme.screenScrollWidth = 4.5f;
     theme.screenBackTop = 26.4f;
     theme.screenBackWidth = 70;
+    theme.screenButtonWidth = 71.3f;
 
     // ! --- The statistics --- !
     theme.statsEnabled = true;
@@ -902,6 +903,7 @@ namespace
     field("screen-scroll-width", theme.screenScrollWidth);
     field("screen-back-top", theme.screenBackTop);
     field("screen-back-width", theme.screenBackWidth);
+    field("screen-button-width", theme.screenButtonWidth);
     field("stats-enabled", theme.statsEnabled);
     field("stats-row-height", theme.statsRowHeight);
     field("stats-row-gap", theme.statsRowGap);

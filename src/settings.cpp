@@ -1,5 +1,7 @@
 #include "settings/MSSettings.hpp"
 
+#include "credits/MSCredits.hpp"
+
 #include "Theme.hpp"
 #include "pause/MSPauseColumn.hpp"
 #include "ui/MSConfirm.hpp"
@@ -87,6 +89,8 @@ protected:
       return false;
     m_opened = Snapshot::now();
     auto const& theme = Theme::get();
+    // Who made what the mod uses, and its controls, over this screen
+    this->addBottomButton(en ? "CREDITS" : "АВТОРЫ", theme.screenButtonWidth, [] { ms::credits::open(); });
     auto column = MSPauseColumn::create();
     if (!column)
       return false;

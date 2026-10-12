@@ -486,6 +486,8 @@ struct Theme
   float screenBackTop = 0;
   // BACK; the other buttons in the row have their own widths
   float screenBackWidth = 0;
+  // The other buttons in the bottom row (CREDITS)
+  float screenButtonWidth = 0;
 
   // ! --- The statistics --- !
   // GD's own numbers in groups: a group's name, then its rows (the name on the left, the number on the right)
