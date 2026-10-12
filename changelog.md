@@ -1,3 +1,9 @@
+# v1.2.0
+
+* The 3D Mita on Android too (OpenGL ES), with her gaze, expressions and swat
+* EXIT in the main menu on phones, where GD has no quit button
+* The profile card without an account is the avatar alone, with no empty room
+
 # v1.1.1
 
 * The official levels and the pause no longer show GD's own screen under the mod's: the mod now requires Node IDs, which Geode installs with it

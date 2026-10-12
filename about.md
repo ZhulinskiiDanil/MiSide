@@ -17,8 +17,7 @@ Everything else (the editor, the icon kit, online browsers, other mods' windows)
 
 ## Platforms
 
-- **Windows**: everything, with the real-time 3D Mita
-- **Android**: everything but the 3D: Mita is a 2D animation there. GRAPHICS and KEYS aren't there, as in GD on phones
+- **Windows** and **Android**: everything, with the real-time 3D Mita. On Android GRAPHICS and KEYS aren't there, as in GD on phones
 
 ## Controls
 
