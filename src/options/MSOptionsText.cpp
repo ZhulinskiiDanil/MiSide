@@ -156,6 +156,9 @@ namespace
     {"", "Small Warp Buttons", "МАЛЕНЬКИЕ КНОПКИ ДЕФОРМАЦИИ",
      "Кнопки деформации вдвое меньше (после перезапуска редактора)."},
     {"", "Static Trace Arrows", "НЕПОДВИЖНЫЕ СТРЕЛКИ СВЯЗЕЙ", "Отключает стрелки направленных связей в Trace In/Out."},
+    // A level's own options (its page's options button)
+    {"", "Low Detail Mode", "НИЗКАЯ ДЕТАЛИЗАЦИЯ", "Низкая детализация на этом уровне."},
+    {"", "Disable Shake", "БЕЗ ТРЯСКИ", "Без тряски экрана на этом уровне."},
     // The pause's options (by GD's text: their ids aren't game variables)
     {"", "Auto-Retry", "АВТОПОВТОР", "После смерти уровень сразу начинается заново."},
     {"", "Auto-Checkpoints", "АВТОТОЧКИ", "В практике контрольные точки ставятся сами."},

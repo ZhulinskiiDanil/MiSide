@@ -23,4 +23,6 @@ namespace ms::options
   // GD's popups that stay at work while shown (a request's progress, the UI's save slots): the mod's screen over them,
   // following them
   void mirrorPopup(FLAlertLayer* popup);
+  // GD's reward chest with the mod's column over it
+  void rewardOverlay(RewardUnlockLayer* reward);
 } // namespace ms::options

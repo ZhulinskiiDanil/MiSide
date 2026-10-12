@@ -135,7 +135,8 @@ class $modify(MSAlertLayer, FLAlertLayer)
       return;
     FLAlertLayer::show();
     // A request's progress, the UI's save slots: shown, and the mod's screen over them
-    if (ms::options::restyling() && (typeinfo_cast<UploadActionPopup*>(this) || typeinfo_cast<UISaveLoadLayer*>(this)))
+    if (ms::options::restyling() && (typeinfo_cast<UploadActionPopup*>(this) || typeinfo_cast<UISaveLoadLayer*>(this) ||
+                                     typeinfo_cast<UpdateAccountSettingsPopup*>(this)))
       ms::options::mirrorPopup(this);
   }
 
@@ -268,5 +269,7 @@ namespace ms::options
     if (!scene)
       return;
     scene->addChild(node, std::max(scene->getHighestChildZ(), z));
+    if (auto reward = typeinfo_cast<RewardUnlockLayer*>(node))
+      rewardOverlay(reward);
   }
 } // namespace ms::options

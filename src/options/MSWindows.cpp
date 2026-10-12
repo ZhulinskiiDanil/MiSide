@@ -383,6 +383,83 @@ protected:
   float m_watch = 0;
 };
 
+// ! --- A reward --- !
+
+// GD's reward chest (the support's reward): GD's chest and its animation stay in sight, the mod's column over it opens
+// and closes it as GD's buttons do
+class MSRewardOverlay : public MSOptionsScreen
+{
+public:
+  static MSRewardOverlay* create(RewardUnlockLayer* reward)
+  {
+    auto screen = new MSRewardOverlay();
+    if (screen->setup(reward))
+    {
+      screen->autorelease();
+      return screen;
+    }
+    delete screen;
+    return nullptr;
+  }
+
+  void update(float dt) override
+  {
+    MSOptionsScreen::update(dt);
+    if (this->isClosing())
+      return;
+    if (!m_reward->getParent())
+      return this->close();
+    if (this->state() != m_state)
+    {
+      this->resetOptions();
+      this->build();
+    }
+  }
+
+protected:
+  static bool usable(CCMenuItem* item) { return item && item->isVisible() && item->isEnabled(); }
+
+  int state() { return (usable(m_reward->m_rewardBtn) ? 1 : 0) | (usable(m_reward->m_closeBtn) ? 2 : 0); }
+
+  bool setup(RewardUnlockLayer* reward)
+  {
+    if (!reward || !this->initOptions(english() ? "REWARD" : "НАГРАДА", true))
+      return false;
+    m_reward = reward;
+    this->build();
+    return true;
+  }
+
+  void build()
+  {
+    auto en = english();
+    m_state = this->state();
+    if (m_state & 1)
+    {
+      Ref<CCMenuItem> button = m_reward->m_rewardBtn;
+      m_column->addRow(en ? "OPEN" : "ОТКРЫТЬ", [button] { button->activate(); });
+    }
+    if (m_state & 2)
+    {
+      Ref<CCMenuItem> button = m_reward->m_closeBtn;
+      m_column->addRow(en ? "COLLECT" : "ЗАБРАТЬ", [button] { button->activate(); });
+    }
+    if (!m_state)
+      this->addText(en ? "Wait..." : "Подождите...");
+    this->finishOptions();
+  }
+
+  // BACK: GD's close, when GD has it
+  void closed() override
+  {
+    if (m_reward->getParent() && usable(m_reward->m_closeBtn))
+      m_reward->m_closeBtn->activate();
+  }
+
+  Ref<RewardUnlockLayer> m_reward;
+  int m_state = -1;
+};
+
 // ! --- The soundtracks --- !
 
 // GD's official songs (as its soundtracks window lists them): each opens its window
@@ -613,6 +690,12 @@ class $modify(MSLinksDropDown, GJDropDownLayer)
 
 namespace ms::options
 {
+  void rewardOverlay(RewardUnlockLayer* reward)
+  {
+    if (auto screen = MSRewardOverlay::create(reward))
+      screen->show();
+  }
+
   void mirrorPopup(FLAlertLayer* popup)
   {
     auto en = MSScreen::english();
@@ -625,6 +708,11 @@ namespace ms::options
     }
     else if (typeinfo_cast<UISaveLoadLayer*>(popup))
       title = en ? "SAVE / LOAD UI" : "СОХРАНИТЬ / ЗАГРУЗИТЬ";
+    else if (typeinfo_cast<UpdateAccountSettingsPopup*>(popup))
+    {
+      title = en ? "PROFILE SETTINGS" : "НАСТРОЙКИ ПРОФИЛЯ";
+      known = {{0x2950f0, "CLOSE", "ЗАКРЫТЬ", "", ""}};
+    }
     else
       return;
     Ref<FLAlertLayer> keep = popup;

@@ -1,4 +1,5 @@
 #include "MSAlerts.hpp"
+#include "MSOptionsData.hpp"
 #include "MSOptionsScreen.hpp"
 #include "MSOptionsText.hpp"
 
@@ -8,6 +9,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/AccountLoginLayer.hpp>
 #include <Geode/modify/AccountRegisterLayer.hpp>
+#include <Geode/modify/GJAccountSettingsLayer.hpp>
 
 using namespace geode::prelude;
 
@@ -28,22 +30,29 @@ public:
   {
     CCTextInputNode* input = nullptr;
     CCLabelBMFont* caption = nullptr;
-    char const* en = "";
-    char const* ru = "";
+    std::string en;
+    std::string ru;
   };
 
   struct Action
   {
-    char const* en = "";
-    char const* ru = "";
+    std::string en;
+    std::string ru;
     std::function<void()> run;
+    std::string info;
+  };
+
+  struct Option
+  {
+    std::string text;
+    MSPauseColumn::Choice choice;
   };
 
   static MSFormScreen* create(std::string const& title, FLAlertLayer* form, std::vector<Field> fields,
-                              std::vector<Action> actions, LoadingCircle* loading)
+                              std::vector<Action> actions, LoadingCircle* loading, std::vector<Option> options = {})
   {
     auto screen = new MSFormScreen();
-    if (screen->setup(title, form, std::move(fields), std::move(actions), loading))
+    if (screen->setup(title, form, std::move(fields), std::move(actions), loading, std::move(options)))
     {
       screen->autorelease();
       return screen;
@@ -89,7 +98,7 @@ protected:
   };
 
   bool setup(std::string const& title, FLAlertLayer* form, std::vector<Field> fields, std::vector<Action> actions,
-             LoadingCircle* loading)
+             LoadingCircle* loading, std::vector<Option> options)
   {
     auto en = english();
     if (!form || !this->initOptions(title))
@@ -102,7 +111,7 @@ protected:
       if (!field.input)
         continue;
       // The caption: GD's text while it says something, else the mod's
-      if (auto caption = typeinfo_cast<CCLabelBMFont*>(ms::createLabel(en ? field.en : field.ru)))
+      if (auto caption = typeinfo_cast<CCLabelBMFont*>(ms::createLabel(en ? field.en : field.ru, theme.font)))
       {
         caption->setScale(theme.achievementsTextScale);
         caption->setAnchorPoint({0, 1});
@@ -134,8 +143,13 @@ protected:
       m_inputs.emplace_back(input);
       m_top -= height + FIELD_GAP;
     }
+    for (auto& option : options)
+      m_column->addChoice(option.text, std::move(option.choice));
     for (auto const& action : actions)
+    {
       m_column->addRow(en ? action.en : action.ru, action.run);
+      m_column->setInfo(action.info);
+    }
     this->finishOptions();
     // GD's loading circle: a word under the rows
     if (loading)
@@ -163,6 +177,8 @@ protected:
         login->onClose(nullptr);
       else if (auto reg = typeinfo_cast<AccountRegisterLayer*>(m_form.data()))
         reg->onClose(nullptr);
+      else if (auto settings = typeinfo_cast<GJAccountSettingsLayer*>(m_form.data()))
+        settings->onClose(nullptr);
     }
   }
 
@@ -251,6 +267,189 @@ class $modify(MSAccountRegisterLayer, AccountRegisterLayer)
       };
       return MSFormScreen::create(en ? "REGISTER" : "РЕГИСТРАЦИЯ", reg, std::move(fields), std::move(actions),
                                   reg->m_loadingCircle);
+    });
+    return true;
+  }
+};
+
+namespace
+{
+  // GD's profile settings' words
+  struct Pair
+  {
+    char const* en;
+    char const* ru;
+  };
+
+  constexpr Pair PROFILE_WORDS[] = {
+    {"All", "ВСЕ"},           {"Friends", "ДРУЗЬЯ"}, {"None", "НИКТО"}, {"Me", "ТОЛЬКО Я"},
+    {"Off", "ВЫКЛ"},          {"YouTube:", "YOUTUBE"}, {"Twitter:", "TWITTER"}, {"Twitch:", "TWITCH"},
+    {"Discord:", "DISCORD"},  {"Instagram:", "INSTAGRAM"}, {"TikTok:", "TIKTOK"}, {"Custom:", "СВОЁ"},
+  };
+
+  std::string profileWord(std::string const& gd, bool en)
+  {
+    if (!en)
+    {
+      for (auto const& pair : PROFILE_WORDS)
+      {
+        if (gd == pair.en)
+          return pair.ru;
+      }
+    }
+    auto text = gd;
+    if (!text.empty() && text.back() == ':')
+      text.pop_back();
+    return ms::options::upper(text);
+  }
+
+  CCPoint middleOf(CCNode* node) { return node->convertToWorldSpace(node->getContentSize() / 2); }
+
+  void allLabels(CCNode* node, std::vector<CCLabelBMFont*>& out)
+  {
+    if (!node->isVisible())
+      return;
+    if (auto label = typeinfo_cast<CCLabelBMFont*>(node))
+    {
+      out.push_back(label);
+      return;
+    }
+    for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
+      allLabels(child, out);
+  }
+
+  // The label nearest a node on one side, about level with it
+  CCLabelBMFont* labelBeside(CCNode* node, CCNode* top, bool right, float rise = 14)
+  {
+    std::vector<CCLabelBMFont*> labels;
+    allLabels(top, labels);
+    auto at = middleOf(node);
+    CCLabelBMFont* best = nullptr;
+    auto bestDistance = 1e9f;
+    for (auto label : labels)
+    {
+      if (label->hasAncestor(node))
+        continue;
+      auto where = middleOf(label);
+      if (std::abs(where.y - at.y) > rise)
+        continue;
+      auto distance = right ? where.x - at.x : at.x - where.x;
+      if (distance < 0 || distance >= bestDistance)
+        continue;
+      bestDistance = distance;
+      best = label;
+    }
+    return best;
+  }
+
+  // A group of GD's radio toggles as one choice: the one on is the value, Left/Right turn on the next
+  MSFormScreen::Option profileChoice(std::string const& text, CCArray* array, CCNode* top, bool en)
+  {
+    std::vector<Ref<CCMenuItemToggler>> togglers;
+    std::vector<std::string> names;
+    if (array)
+    {
+      for (auto object : CCArrayExt<CCObject*>(array))
+      {
+        if (auto toggler = typeinfo_cast<CCMenuItemToggler*>(object))
+        {
+          togglers.emplace_back(toggler);
+          auto label = labelBeside(toggler, top, true);
+          names.push_back(label ? profileWord(label->getString(), en) : std::to_string(names.size() + 1));
+        }
+      }
+    }
+    MSFormScreen::Option option;
+    option.text = text;
+    option.choice.value = [togglers, names] {
+      for (size_t i = 0; i < togglers.size(); i++)
+      {
+        if (togglers[i]->isToggled())
+          return names[i];
+      }
+      return std::string("-");
+    };
+    option.choice.change = [togglers](int direction) {
+      auto count = static_cast<int>(togglers.size());
+      if (count == 0)
+        return;
+      auto now = 0;
+      for (int i = 0; i < count; i++)
+      {
+        if (togglers[i]->isToggled())
+          now = i;
+      }
+      auto next = ((now + direction) % count + count) % count;
+      togglers[next]->activate();
+    };
+    return option;
+  }
+} // namespace
+
+// GD's profile settings (from the profile page) as the mod's screen: who may message, send friend requests and see
+// the comment history (GD's own choices), the links as GD's own fields with their help, and UPDATE as GD's
+class $modify(MSAccountSettingsLayer, GJAccountSettingsLayer)
+{
+  bool init(int accountID)
+  {
+    if (!GJAccountSettingsLayer::init(accountID))
+      return false;
+    if (Mod::get()->getSettingValue<bool>("vanilla-menu"))
+      return true;
+    Ref<GJAccountSettingsLayer> keep = this;
+    Loader::get()->queueInMainThread([keep] {
+      if (!keep->getParent())
+        return;
+      auto en = MSScreen::english();
+      auto top = keep->m_mainLayer ? keep->m_mainLayer : static_cast<CCNode*>(keep.data());
+      std::vector<MSFormScreen::Option> options;
+      options.push_back(profileChoice(en ? "MESSAGES FROM" : "СООБЩЕНИЯ ОТ", keep->m_messageSettings, top, en));
+      options.push_back(profileChoice(en ? "FRIEND REQUESTS FROM" : "ЗАЯВКИ В ДРУЗЬЯ ОТ", keep->m_friendRequestSettings,
+                                      top, en));
+      options.push_back(profileChoice(en ? "COMMENT HISTORY TO" : "ИСТОРИЯ КОММЕНТАРИЕВ ДЛЯ", keep->m_commentSettings,
+                                      top, en));
+      std::vector<MSFormScreen::Field> fields;
+      std::vector<MSFormScreen::Action> actions;
+      if (auto inputs = keep->m_inputs)
+      {
+        for (auto object : CCArrayExt<CCObject*>(inputs))
+        {
+          auto input = typeinfo_cast<CCTextInputNode*>(object);
+          if (!input)
+            continue;
+          auto caption = labelBeside(input, top, false, 20);
+          std::string gd = caption ? caption->getString() : "";
+          fields.push_back({input, nullptr, profileWord(gd, true), profileWord(gd, false)});
+        }
+      }
+      actions.push_back({"UPDATE", "ОБНОВИТЬ", [keep] { keep->onUpdate(nullptr); },
+                         en ? "Saves these settings to your account." : "Сохраняет эти настройки в аккаунте."});
+      // Each link's help (GD's info buttons): the button right of its field
+      std::vector<CCMenuItem*> items;
+      std::function<void(CCNode*)> collect = [&](CCNode* node) {
+        if (auto item = typeinfo_cast<CCMenuItem*>(node))
+        {
+          items.push_back(item);
+          return;
+        }
+        for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
+          collect(child);
+      };
+      collect(top);
+      for (auto item : items)
+      {
+        if (typeinfo_cast<CCMenuItemToggler*>(item) || !item->isVisible())
+          continue;
+        auto caption = labelBeside(item, top, false, 20);
+        if (!caption || std::string(caption->getString()).find(':') == std::string::npos)
+          continue;
+        Ref<CCMenuItem> button = item;
+        auto word = profileWord(caption->getString(), en);
+        actions.push_back({"HELP: " + word, "СПРАВКА: " + word, [button] { button->activate(); }, ""});
+      }
+      if (auto screen = MSFormScreen::create(en ? "PROFILE SETTINGS" : "НАСТРОЙКИ ПРОФИЛЯ", keep, std::move(fields),
+                                             std::move(actions), nullptr, std::move(options)))
+        screen->show();
     });
     return true;
   }
