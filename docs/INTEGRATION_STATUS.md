@@ -51,3 +51,11 @@ User corrected the chosen expressions: default is target_14, exit hover and
 confirmation use basis (no expression morph). Blink target_1 remains independent;
 the existing smoothed exit weight fades the smile to zero. Supersedes the earlier
 21/6 mapping in the historical hand-off and validation notes.
+
+## User acceptance
+
+On 2026-10-12 the user reported that everything works with the package containing
+92ede09 and requested merging to main. This confirms the reported user workflow;
+it is not a claim that every compatibility, language, or aspect-ratio case above
+was independently exercised. No known blocking issue remains from this hand-off.
+Optional effects settings remain deferred.
