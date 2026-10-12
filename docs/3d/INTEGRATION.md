@@ -1,10 +1,41 @@
-# 3D integration requests
+# 3D integration handoff
 
-Pending design, not implemented by workspace setup:
-- mod.json: register the final 3D resources and any final user settings after their
-  filenames and behavior are known; don't remove 2D resources before replacement works.
-- main.cpp (UI owner): after the character API is ready, connect exit hover and exit
-  confirmation enter/leave to target_06; return to target_21 when both conditions end.
-- Achievements: retain MSMita::create(); verify the shared facade in the combined build.
+3D_STATUS: IMPLEMENTED
 
-For each later request record exact files, API/key, reason and owning commit.
+Windows renderer and MSMita facade are implemented in `feature/mita-3d`.
+Validation details: `docs/3d/VALIDATION.md`. No installed game files were changed.
+
+## Shared integration changes
+
+1. In `mod.json`, append `resources/mita3d/*` to `resources.files`. This includes
+   `mita.glb`, `ATTRIBUTION-MITA3D.txt`, `LICENSE-CGLTF.txt` and `LICENSE-GLM.txt`.
+   Geode's flattened resources must contain `mita.glb` at the resource root.
+   Keep the old atlas resources for the supported fallback. Without this registration,
+   the isolated package still displays 2D; compilation alone does not enable 3D in it.
+2. In the UI owner's `src/main.cpp`, retain the created MSMita instance and connect:
+   - Exit item hover enter/leave: `mita->setExitHovered(true/false)`.
+   - Exit confirmation open/close, including cancel/back: `mita->setExitConfirmation(true/false)`.
+   - Clear stale hover when changing the menu page or opening confirmation.
+   The two reasons are independent. Either true blends to zero-based morph 6; both false
+   blend to morph 21. Transition is smoothed internally. Calls are harmless in 2D fallback.
+3. Achievements and other existing callers keep `MSMita::create()` unchanged. No direct
+   renderer ownership or new character instance is needed inside those screens.
+
+These changes belong to the combined integration branch, not unilateral edits to the
+other agent's worktree. Do not copy entire folders between worktrees or install the
+isolated package over the running mod.
+
+## Existing settings and behavior
+
+Theme character visibility, position/scale, outline, intro fade, spark visuals and
+click sound remain in use. The existing Mita parallax enable flag controls subtle
+cursor gaze in 3D. Atlas FPS/freeze-frame controls only apply to the 2D fallback.
+No new shared settings or general theme/audio systems were added.
+
+Runtime checks OpenGL 3.0; the standalone test used OpenGL 4.6 on the user's RTX 4060.
+First model load is synchronous. Renderer owns its GL objects and renders up to 60 Hz,
+at 540–1440 pixels high with up to 4x MSAA. Fullscreen context loss is handled through
+the existing shared-program generation signal; actual GD fullscreen testing is pending.
+
+Before installation, build the combined branch and perform the in-game checks in
+VALIDATION.md. The status indicates readiness for integration, not completed GD testing.

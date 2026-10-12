@@ -1,0 +1,11 @@
+Mita model by Elite Big Speakerman
+Author: https://sketchfab.com/EvesStudio2008
+Source: https://sketchfab.com/3d-models/mita-5dc5cf2928b14fa3bd4d7c24c0cc7ff7
+License stated in source GLB metadata: Creative Commons Attribution 4.0
+https://creativecommons.org/licenses/by/4.0/
+
+mita.glb is an unmodified copy of the user's downloaded source.
+SHA-256: 93edd0c552e14c1094ea67278776054d6e2dba2b28e903b8d8c3727d42f41e7e
+Runtime presentation changes: close-up camera and scale from the user's Blender
+scene, slower idle playback, head/eye motion and blending morph targets 1, 6, 21.
+The original metadata and embedded textures remain inside the GLB.

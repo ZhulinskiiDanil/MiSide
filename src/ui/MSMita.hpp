@@ -10,23 +10,26 @@
 
 class MitaPageLoader;
 struct MitaDecodedPage;
+namespace mita3d { class Renderer; }
 
-// The animated character on the right of the menu, from the atlases in her manifest. The pages stream: at most
-// three are on the GPU (the one for now and the next two: a page holds 83 ms of her), decoded ahead on a worker
-// thread and uploaded here on the main thread. Her textures and frames belong to this node alone, never to cocos' shared caches. The frame comes from
-// the time that passed, so she plays at the same speed at any frame rate. A click on her (where she's drawn, not
-// her canvas' clear sides) sparks white light there, as in MiSide; the click goes on to whatever is under it
+// Interactive GLB character, with the existing streamed atlases as a fallback.
+// Owns its render resources; clicks spark only on her visible silhouette and pass through.
 class MSMita : public cocos2d::CCNode, public cocos2d::CCTargetedTouchDelegate
 {
 public:
   // Null when the theme turns her off or her files are missing or broken (logged once)
   static MSMita* create();
   ~MSMita() override;
+  // Independent reasons: leaving hover must not cancel an open confirmation.
+  void setExitHovered(bool value) { m_exitHovered = value; }
+  void setExitConfirmation(bool value) { m_exitConfirmation = value; }
+  bool is3D() const { return m_renderer != nullptr; }
 
   // Never claims a touch: it only sparks
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
 
   void update(float dt) override;
+  void visit() override;
   void onEnter() override;
   void onExit() override;
 
@@ -93,6 +96,21 @@ protected:
   // The white light where she was clicked: a flash that breaks into a few soft blobs flying apart, gone in
   // `mita-spark-duration`
   void spark(cocos2d::CCPoint world);
+  bool start3D();
+  void update3D(float dt);
+  void release3D();
+
+  std::filesystem::path m_modelPath;
+  std::unique_ptr<mita3d::Renderer> m_renderer;
+  geode::Ref<cocos2d::CCTexture2D> m_renderTexture;
+  bool m_use3D = false;
+  bool m_exitHovered = false;
+  bool m_exitConfirmation = false;
+  float m_expression = 0;
+  cocos2d::CCPoint m_gaze;
+  float m_renderWait = 0;
+  unsigned m_contextGeneration = 0;
+  int m_renderHeight = 0;
 
   std::vector<Atlas> m_atlases;
   // Every slot's size in pixels: the largest page's
@@ -104,6 +122,7 @@ protected:
   geode::Ref<cocos2d::CCGLProgram> m_outline;
   GLint m_outlineTexel = -1;
   GLint m_outlineColor = -1;
+  GLint m_outlinePremult = -1;
   unsigned m_outlineGeneration = 0;
   cocos2d::CCTexture2D* m_outlineFor = nullptr;
   cocos2d::CCSize m_reference;

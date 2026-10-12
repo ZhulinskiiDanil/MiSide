@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.21)
+project(mita3d_preview LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 23)
+get_filename_component(ROOT ../.. ABSOLUTE)
+add_executable(mita3d-preview preview.cpp ${ROOT}/src/mita3d/Model.cpp ${ROOT}/src/mita3d/Renderer.cpp)
+target_include_directories(mita3d-preview PRIVATE ${ROOT}/src/mita3d ${ROOT}/third_party/cgltf ${ROOT}/third_party/glm
+    "$ENV{GEODE_SDK}/loader/include/Geode/cocos/platform/third_party/win32/OGLES")
+target_link_libraries(mita3d-preview PRIVATE "$ENV{GEODE_SDK}/loader/include/link/win64/glew32.lib" opengl32 windowscodecs ole32 user32 gdi32)
+add_executable(mita3d-model-test model_test.cpp ${ROOT}/src/mita3d/Model.cpp)
+target_include_directories(mita3d-model-test PRIVATE ${ROOT}/src/mita3d ${ROOT}/third_party/cgltf ${ROOT}/third_party/glm)
+enable_testing()
+add_test(NAME mita3d-model COMMAND mita3d-model-test ${ROOT}/resources/mita3d/mita.glb)

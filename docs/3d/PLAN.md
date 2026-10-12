@@ -1,10 +1,12 @@
 # 3D Mita: Windows first
 
 Owner: Codex. Workspace D:/Dev/MiSide-3d, branch feature/mita-3d.
-This file specifies planned work; the renderer has not been implemented by setup.
+Implemented in the 3D branch. See VALIDATION.md for evidence and INTEGRATION.md for
+the remaining shared-file/UI wiring. The standalone renderer is verified; GD runtime
+verification happens after combining the branches.
 
-1. Load existing GLB with cgltf and use GLM for transforms. Pin dependencies and
-   retain their licenses. Verify actual game GL capabilities before selecting shaders.
+1. Load the existing GLB with pinned cgltf and GLM. Runtime checks OpenGL 3.0 before
+   creating FBO/VAO resources; unsupported GPUs keep the existing 2D fallback.
 2. Draw the character with transparent background in an owned color/depth target,
    composite through the current MSMita facade. Restore GL state and reconcile cocos
    state caches. Keep UI positioning/callback expectations and current sparks/sound.

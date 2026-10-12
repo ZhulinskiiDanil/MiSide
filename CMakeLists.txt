@@ -13,6 +13,8 @@ project(miside-menu VERSION 0.1.0)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+target_include_directories(${PROJECT_NAME} PRIVATE third_party/cgltf third_party/glm
+    "$ENV{GEODE_SDK}/loader/include/Geode/cocos/platform/third_party/win32/OGLES")
 
 # The menu items are written in Russian in the sources
 if (MSVC)

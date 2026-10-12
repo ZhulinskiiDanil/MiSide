@@ -2,6 +2,7 @@
 
 #include "../Theme.hpp"
 #include "MSStyle.hpp"
+#include "../mita3d/Renderer.hpp"
 
 #include <Geode/utils/file.hpp>
 
@@ -41,6 +42,23 @@ struct MitaDecodedPage
 
 namespace
 {
+  // Renderer owns the GL texture; this adapter only lets cocos display it.
+  class RenderTexture final : public CCTexture2D
+  {
+  public:
+    RenderTexture(GLuint name, unsigned width, unsigned height)
+    {
+      m_uName = name;
+      m_uPixelsWide = width;
+      m_uPixelsHigh = height;
+      m_tContentSize = CCSize(width, height);
+      m_ePixelFormat = kCCTexture2DPixelFormat_RGBA8888;
+      m_fMaxS = m_fMaxT = 1;
+      m_bHasPremultipliedAlpha = true;
+      m_bHasMipmaps = false;
+    }
+    ~RenderTexture() override { m_uName = 0; }
+  };
   // A click is tested against her alpha in squares this many pixels wide
   constexpr unsigned MASK_STEP = 8;
   // Opaque enough to count as her
@@ -256,6 +274,7 @@ varying vec2 v_texCoord;
 uniform sampler2D CC_Texture0;
 uniform vec2 u_texel;
 uniform vec4 u_outline;
+uniform float u_premult;
 void main()
 {
   vec4 color = texture2D(CC_Texture0, v_texCoord);
@@ -276,7 +295,8 @@ void main()
   }
   float edge = clamp(around - color.a, 0.0, 1.0) * u_outline.a;
   float alpha = color.a + edge * (1.0 - color.a);
-  vec3 rgb = alpha > 0.0 ? (color.rgb * color.a + u_outline.rgb * edge * (1.0 - color.a)) / alpha : vec3(0.0);
+  vec3 rgb = mix(color.rgb * color.a, color.rgb, u_premult) + u_outline.rgb * edge * (1.0 - color.a);
+  if (u_premult < 0.5) rgb = alpha > 0.0 ? rgb / alpha : vec3(0.0);
   gl_FragColor = vec4(rgb, alpha) * v_fragmentColor;
 }
 )";
@@ -308,6 +328,7 @@ MSMita::~MSMita()
 {
   if (m_loader)
     m_loader->stop();
+  this->release3D();
 }
 
 bool MSMita::readManifest()
@@ -396,7 +417,21 @@ bool MSMita::readManifest()
 
 bool MSMita::init()
 {
-  if (!CCNode::init() || !this->readManifest())
+  if (!CCNode::init())
+    return false;
+  m_modelPath = Mod::get()->getResourcesDir() / "mita.glb";
+  std::error_code error;
+  m_use3D = std::filesystem::is_regular_file(m_modelPath, error);
+  if (m_use3D)
+  {
+    m_canvas = CCSize(960, 1080);
+    m_reference = CCSize(569, 320);
+    m_alphaLeft = 80;
+    this->makeOutline();
+    this->setContentSize(CCDirector::get()->getWinSize());
+    return true;
+  }
+  if (!this->readManifest())
     return false;
   auto const& theme = Theme::get();
   if (theme.mitaFps > 0)
@@ -424,6 +459,7 @@ void MSMita::makeOutline()
   m_outlineGeneration = ms::programGeneration();
   m_outlineTexel = program->getUniformLocationForName("u_texel");
   m_outlineColor = program->getUniformLocationForName("u_outline");
+  m_outlinePremult = program->getUniformLocationForName("u_premult");
   m_outline = program;
 }
 
@@ -437,25 +473,32 @@ void MSMita::updateOutline(CCTexture2D* texture)
     m_outlineGeneration = ms::programGeneration();
     m_outlineTexel = m_outline->getUniformLocationForName("u_texel");
     m_outlineColor = m_outline->getUniformLocationForName("u_outline");
+    m_outlinePremult = m_outline->getUniformLocationForName("u_premult");
     m_outlineFor = nullptr;
   }
   if (texture == m_outlineFor)
     return;
-  // Only for straight alpha, which her textures are; anything else gets the usual shader
-  if (texture->hasPremultipliedAlpha())
-  {
-    m_sprite->setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor));
-    return;
-  }
   auto const& theme = Theme::get();
   m_outlineFor = texture;
   m_sprite->setShaderProgram(m_outline);
   m_outline->use();
+  m_outline->setUniformLocationWith1f(m_outlinePremult, texture->hasPremultipliedAlpha() ? 1.f : 0.f);
   m_outline->setUniformLocationWith2f(m_outlineTexel, theme.mitaOutlineWidth / texture->getPixelsWide(),
                                       theme.mitaOutlineWidth / texture->getPixelsHigh());
   auto color = theme.mitaOutlineColor;
   m_outline->setUniformLocationWith4f(m_outlineColor, color.r / 255.f, color.g / 255.f, color.b / 255.f,
                                       theme.mitaOutlineOpacity / 255.f);
+}
+
+void MSMita::visit()
+{
+  // Two screens can show different texture sizes during a transition; uniforms are per draw.
+  if (m_sprite && m_outline)
+  {
+    m_outlineFor = nullptr;
+    this->updateOutline(m_sprite->getTexture());
+  }
+  CCNode::visit();
 }
 
 void MSMita::onEnter()
@@ -478,6 +521,12 @@ void MSMita::onExit()
 
 bool MSMita::isDrawnAt(CCPoint world)
 {
+  if (m_renderer && m_sprite)
+  {
+    auto local = m_sprite->convertToNodeSpace(world);
+    auto size = m_sprite->getContentSize();
+    return size.width > 0 && size.height > 0 && m_renderer->hit(local.x / size.width, local.y / size.height);
+  }
   if (!m_sprite || m_shownFrame < 0)
     return false;
   auto const& frame = m_frames[m_shownFrame];
@@ -596,8 +645,118 @@ void MSMita::spark(CCPoint world)
   }
 }
 
+bool MSMita::start3D()
+{
+  if (m_renderer) return true;
+  try
+  {
+    auto started = std::chrono::steady_clock::now();
+    m_contextGeneration = ms::programGeneration();
+    m_renderer = std::make_unique<mita3d::Renderer>(m_modelPath);
+    m_renderWait = 0;
+    this->update3D(0);
+    log::info("3D Mita loaded in {:.1f} ms; OpenGL {}",
+              std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count(),
+              reinterpret_cast<char const*>(glGetString(GL_VERSION)));
+    return true;
+  }
+  catch (std::exception const& e)
+  {
+    logOnce(fmt::format("3D unavailable, using atlases: {}", e.what()));
+    if (m_sprite) { m_sprite->removeFromParentAndCleanup(true); m_sprite = nullptr; }
+    this->release3D();
+    return false;
+  }
+}
+
+void MSMita::release3D()
+{
+  m_renderTexture = nullptr;
+  if (m_renderer)
+  {
+    if (m_contextGeneration != ms::programGeneration()) m_renderer->abandonContext();
+    m_renderer.reset();
+    ccGLInvalidateStateCache();
+  }
+  m_renderHeight = 0;
+  m_outlineFor = nullptr;
+}
+
+void MSMita::update3D(float dt)
+{
+  if (!m_renderer || m_failed) return;
+  if (m_contextGeneration != ms::programGeneration())
+  {
+    if (m_sprite) { m_sprite->removeFromParentAndCleanup(true); m_sprite = nullptr; }
+    this->release3D();
+    if (!this->start3D()) this->fail("3D context could not be restored");
+    return;
+  }
+  dt = std::clamp(dt, 0.f, 0.1f);
+  m_elapsed += dt;
+  m_expression += ((m_exitHovered || m_exitConfirmation ? 1.f : 0.f) - m_expression) * (1 - std::exp(-dt / 0.18f));
+  auto win = CCDirector::get()->getWinSize();
+  auto mouse = getMousePos();
+  CCPoint aim;
+  if (Theme::get().mitaParallaxEnabled && !ms::coveredBy(this) && win.width > 0 && win.height > 0)
+    aim = CCPoint(std::clamp(2 * mouse.x / win.width - 1, -1.f, 1.f), std::clamp(2 * mouse.y / win.height - 1, -1.f, 1.f));
+  m_gaze = m_gaze + (aim - m_gaze) * (1 - std::exp(-dt / 0.3f));
+  auto frame = CCEGLView::sharedOpenGLView()->getFrameSize();
+  int height = std::clamp(static_cast<int>(frame.height), 540, 1440);
+  int width = height * 8 / 9;
+  m_renderWait += dt;
+  if (m_sprite && height == m_renderHeight && m_renderWait < 1.f / 60.f) return;
+  m_renderWait = std::fmod(m_renderWait, 1.f / 60.f);
+  m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y});
+  if (!m_sprite || height != m_renderHeight)
+  {
+    auto texture = new RenderTexture(m_renderer->texture(), width, height);
+    m_renderTexture = texture;
+    texture->release();
+    bool created = !m_sprite;
+    if (created)
+    {
+      m_sprite = CCSprite::createWithTexture(texture);
+      if (!m_sprite) throw std::runtime_error("Cannot create 3D Mita sprite");
+      m_sprite->setAnchorPoint({0.5f, 0});
+      this->addChild(m_sprite);
+    }
+    else
+    {
+      m_sprite->setTexture(texture);
+      m_sprite->setTextureRect({0, 0, width / CC_CONTENT_SCALE_FACTOR(), height / CC_CONTENT_SCALE_FACTOR()});
+    }
+    m_sprite->setFlipY(true);
+    m_sprite->setBlendFunc({GL_ONE, GL_ONE_MINUS_SRC_ALPHA});
+    m_sprite->setOpacityModifyRGB(true);
+    m_renderHeight = height;
+    m_outlineFor = nullptr;
+    this->layout();
+    if (created && Theme::get().introDuration > 0)
+    {
+      m_sprite->setOpacity(0);
+      m_sprite->runAction(CCFadeTo::create(Theme::get().introDuration, 255));
+    }
+  }
+  if (win != m_laidOutFor) this->layout();
+  m_sprite->setPosition(m_home);
+  this->updateOutline(m_renderTexture);
+}
+
 void MSMita::start()
 {
+  if (m_use3D && !m_failed)
+  {
+    if (this->start3D())
+    {
+      this->scheduleUpdate();
+      return;
+    }
+    // Keep the installed 2D assets usable if this GPU or model fails.
+    m_use3D = false;
+    if (!this->readManifest()) { m_failed = true; return; }
+    m_plan = std::make_unique<MitaPlan>(static_cast<int>(m_atlases.size()));
+  }
   if (m_failed || m_loader)
     return;
   std::vector<std::filesystem::path> pngs;
@@ -624,6 +783,7 @@ void MSMita::stop()
     m_sprite->removeFromParentAndCleanup(true);
     m_sprite = nullptr;
   }
+  this->release3D();
   m_shownFrame = -1;
   m_outlineFor = nullptr;
   if (m_plan)
@@ -832,6 +992,14 @@ void MSMita::checkSprite()
 
 void MSMita::update(float dt)
 {
+  if (m_use3D)
+  {
+    for (CCNode* node = this; node; node = node->getParent())
+      if (!node->isVisible()) return;
+    try { this->update3D(dt); }
+    catch (std::exception const& e) { this->fail(fmt::format("3D render failed: {}", e.what())); }
+    return;
+  }
   if (m_failed || !m_loader)
     return;
   // Under a screen that covers the menu (a parent hidden): she waits where she is, her pages kept
