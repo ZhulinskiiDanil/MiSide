@@ -20,4 +20,7 @@ namespace ms::options
   void openSavedSongs();
   // GD's list of links (the support's links and sound credits) as the mod's screen
   void openLinks(URLViewLayer* links);
+  // GD's popups that stay at work while shown (a request's progress, the UI's save slots): the mod's screen over them,
+  // following them
+  void mirrorPopup(FLAlertLayer* popup);
 } // namespace ms::options

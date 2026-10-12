@@ -2,6 +2,7 @@
 
 #include "MSOptionsScreen.hpp"
 #include "MSOptionsText.hpp"
+#include "MSWindows.hpp"
 
 #include <Geode/modify/DialogLayer.hpp>
 #include <Geode/modify/FLAlertLayer.hpp>
@@ -133,6 +134,9 @@ class $modify(MSAlertLayer, FLAlertLayer)
     if (ms::options::restyling() && ms::options::showAlert(this))
       return;
     FLAlertLayer::show();
+    // A request's progress, the UI's save slots: shown, and the mod's screen over them
+    if (ms::options::restyling() && (typeinfo_cast<UploadActionPopup*>(this) || typeinfo_cast<UISaveLoadLayer*>(this)))
+      ms::options::mirrorPopup(this);
   }
 
   // Only GD's plain popup, as init made it: nothing added since (a toggle, an input), nothing of a subclass's

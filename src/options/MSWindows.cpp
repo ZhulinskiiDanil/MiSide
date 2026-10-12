@@ -113,9 +113,21 @@ public:
     return nullptr;
   }
 
+  // A window shown under the screen: closing the screen closes it, it closing closes the screen
+  void follow(std::function<void()> closeWindow)
+  {
+    m_follow = true;
+    m_closeWindow = std::move(closeWindow);
+  }
+
   void update(float dt) override
   {
     MSOptionsScreen::update(dt);
+    if (m_follow && !this->isClosing() && !m_window->getParent())
+    {
+      m_closeWindow = nullptr;
+      return this->close();
+    }
     m_watch += dt;
     if (m_watch < WATCH_TIME || this->isClosing())
       return;
@@ -348,6 +360,12 @@ protected:
     this->finishOptions();
   }
 
+  void closed() override
+  {
+    if (m_closeWindow && m_window->getParent())
+      m_closeWindow();
+  }
+
   void click(Ref<CCMenuItem> item, std::function<void()> const& action)
   {
     if (action)
@@ -359,6 +377,8 @@ protected:
   Ref<CCNode> m_window;
   std::vector<Known> m_known;
   Group m_group;
+  bool m_follow = false;
+  std::function<void()> m_closeWindow;
   std::string m_shown;
   float m_watch = 0;
 };
@@ -593,6 +613,28 @@ class $modify(MSLinksDropDown, GJDropDownLayer)
 
 namespace ms::options
 {
+  void mirrorPopup(FLAlertLayer* popup)
+  {
+    auto en = MSScreen::english();
+    std::string title;
+    std::vector<Known> known;
+    if (typeinfo_cast<UploadActionPopup*>(popup))
+    {
+      title = en ? "REQUEST" : "ЗАПРОС";
+      known = {{0x295930, "CLOSE", "ЗАКРЫТЬ", "", ""}};
+    }
+    else if (typeinfo_cast<UISaveLoadLayer*>(popup))
+      title = en ? "SAVE / LOAD UI" : "СОХРАНИТЬ / ЗАГРУЗИТЬ";
+    else
+      return;
+    Ref<FLAlertLayer> keep = popup;
+    if (auto screen = MSWindowScreen::create(title, popup, std::move(known), nullptr, false))
+    {
+      screen->follow([keep] { keep->keyBackClicked(); });
+      screen->show();
+    }
+  }
+
   void openLinks(URLViewLayer* links)
   {
     if (auto screen = MSLinksScreen::create(links))

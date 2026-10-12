@@ -13,6 +13,7 @@ What each owned screen takes, beyond clicking what's shown. Keys go to the top s
 | Statistics, credits (`src/statistics.cpp`, `src/credits.cpp`, `ui/MSScrollView`) | Up/Down and the wheel scroll, a drag or the thumb too; Esc / B / BACK close; GD STATS opens GD's own window |
 | GD's settings (`src/options.cpp`) | Up/Down choose (the column scrolls to keep it in view), Enter / A or a click flips a toggle or opens a row, Left/Right change choices and sliders (the music offset by 5 ms), the wheel scrolls (or moves the slider under the mouse); on a number (music offset, FPS) a click or Enter starts typing (digits, minus or point, Backspace), Enter or another row ends it, Esc drops it; Esc / B / BACK close; GD WINDOW opens GD's own window |
 | Pause settings (`src/pause.cpp`) | As the pause's column; BACK, Esc and B go back to the pause menu |
+| The settings' windows (`src/options/`) | As GD's settings' screens; the tutorial also turns its pages with Left/Right; in the account forms typing goes to GD's fields; the UI editors' preview is dragged as in GD, HIDE MENU / MENU fold and bring back the column |
 | Appearance (`src/settings.cpp`) | Up/Down choose, Enter / A or a click flips a choice, Left/Right change choices and sliders, the wheel moves the slider under the mouse; RESET asks first (Esc closes the question, not the screen); CREDITS opens over it |
 | Loading screen (`src/loading.cpp`) | A click or any key skips the intro |
 
