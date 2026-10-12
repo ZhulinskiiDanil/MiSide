@@ -572,7 +572,8 @@ bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
     auto local = m_sprite->convertToNodeSpace(world);
     auto size = m_sprite->getContentSize();
     // A face-sized ellipse inside the silhouette, excluding the torso and hair above her forehead.
-    float x = (local.x / size.width - 0.53f) / 0.22f;
+    float originalU = (local.x / size.width - (1 - mita3d::OriginalCanvasFraction)) / mita3d::OriginalCanvasFraction;
+    float x = (originalU - 0.53f) / 0.22f;
     float y = (local.y / size.height - 0.49f) / 0.18f;
     if (x * x + y * y <= 1)
     {
@@ -731,14 +732,15 @@ void MSMita::update3D(float dt)
   bool exiting = m_exitHovered || m_exitConfirmation;
   m_expression += ((exiting ? 1.f : 0.f) - m_expression) * (1 - std::exp(-dt / 0.18f));
   auto win = CCDirector::get()->getWinSize();
-  CCPoint aim = exiting ? CCPoint(0, 0) : CCPoint(-0.45f, 0.05f);
+  const float towardViewer = -mita3d::ModelYaw / mita3d::GazeYawRange;
+  CCPoint aim(exiting ? towardViewer : 0.f, 0);
   bool trackingMenu = !exiting && m_menuGazeTarget && m_sprite && !ms::coveredBy(this) && win.width > 0 && win.height > 0;
   if (trackingMenu)
   {
     auto size = m_sprite->getContentSize();
-    auto eyes = m_sprite->convertToWorldSpace({size.width * 0.5f, size.height * 0.59f});
+    auto eyes = m_sprite->convertToWorldSpace({size.width * mita3d::CanvasAnchorX, size.height * 0.59f});
     auto delta = *m_menuGazeTarget - eyes;
-    aim = CCPoint(std::clamp(delta.x / (win.width * 0.6f), -1.f, 1.f),
+    aim = CCPoint(std::clamp(delta.x / (win.width * 0.6f) + towardViewer, -1.f, 1.f),
                   std::clamp(delta.y / (win.height * 0.42f), -1.f, 1.f));
   }
   if (trackingMenu) {
@@ -761,7 +763,7 @@ void MSMita::update3D(float dt)
   m_headGaze = m_headGaze + (heldAim - m_headGaze) * (1 - std::exp(-dt / 0.38f));
   auto frame = CCEGLView::sharedOpenGLView()->getFrameSize();
   int height = std::clamp(static_cast<int>(frame.height), 540, 1440);
-  int width = height * 8 / 9;
+  int width = static_cast<int>(height * mita3d::CanvasAspect);
   m_renderWait += dt;
   if (m_sprite && height == m_renderHeight && m_renderWait < 1.f / 60.f) return;
   m_renderWait = std::fmod(m_renderWait, 1.f / 60.f);
@@ -776,7 +778,7 @@ void MSMita::update3D(float dt)
     {
       m_sprite = CCSprite::createWithTexture(texture);
       if (!m_sprite) throw std::runtime_error("Cannot create 3D Mita sprite");
-      m_sprite->setAnchorPoint({0.5f, 0});
+      m_sprite->setAnchorPoint({mita3d::CanvasAnchorX, 0});
       this->addChild(m_sprite);
     }
     else
@@ -985,7 +987,8 @@ void MSMita::layout()
   // over the menu's buttons
   auto x = winSize.width - (m_reference.width - theme.mitaX) * m_unit;
   auto keepClear = theme.columnLeft + theme.rowWidth + theme.columnClearance;
-  auto drawnLeft = (m_canvas.width / 2 - m_alphaLeft) * width / m_canvas.width;
+  auto layoutWidth = m_use3D ? width * mita3d::OriginalCanvasFraction : width;
+  auto drawnLeft = (m_canvas.width / 2 - m_alphaLeft) * layoutWidth / m_canvas.width;
   x = std::max(x, keepClear + drawnLeft);
   m_home = CCPoint(x, theme.mitaY * m_unit);
 }

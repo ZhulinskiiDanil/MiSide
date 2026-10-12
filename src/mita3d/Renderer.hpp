@@ -3,6 +3,9 @@
 #include <memory>
 
 namespace mita3d {
+inline constexpr float CanvasAspect = 4.f / 3.f;
+inline constexpr float CanvasAnchorX = 2.f / 3.f;
+inline constexpr float OriginalCanvasFraction = 2.f / 3.f;
 class Renderer {
 public:
     explicit Renderer(std::filesystem::path const& model);

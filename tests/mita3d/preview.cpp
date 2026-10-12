@@ -42,20 +42,20 @@ int main(int argc, char** argv) {
         double seconds = argc > 4 ? std::stod(argv[4]) : 0;
         glm::vec2 gaze = argc > 6 ? glm::vec2(std::stof(argv[5]), std::stof(argv[6])) : glm::vec2(0);
         float swatTime = argc > 7 ? std::stof(argv[7]) : -1.f;
-        renderer.render(960, 1080, seconds, expression, gaze, gaze, swatTime);
+        renderer.render(1440, 1080, seconds, expression, gaze, gaze, swatTime);
         GLint viewport[4], active; GLboolean depth, color[4];
         glGetIntegerv(GL_VIEWPORT, viewport); glGetIntegerv(GL_ACTIVE_TEXTURE, &active);
         glGetBooleanv(GL_DEPTH_WRITEMASK, &depth); glGetBooleanv(GL_COLOR_WRITEMASK, color);
         if (viewport[0] != 3 || viewport[3] != 41 || active != GL_TEXTURE3 || depth || color[1] || color[3] ||
             !glIsEnabled(GL_SCISSOR_TEST) || !glIsEnabled(GL_BLEND)) throw std::runtime_error("GL state leaked");
-        bool center = renderer.hit(0.5f, 0.5f), corner = renderer.hit(0, 0.99f);
+        bool center = renderer.hit(mita3d::CanvasAnchorX, 0.5f), corner = renderer.hit(0, 0.99f);
         if (!center || corner || renderer.hit(-1, 0.5f) || renderer.hit(1, 0.5f)) throw std::runtime_error("Silhouette hit test failed");
         GLint row; glGetIntegerv(GL_PACK_ROW_LENGTH, &row);
         if (row != 19) throw std::runtime_error("Pixel storage state leaked");
         auto error = glGetError(); if (error != GL_NO_ERROR) throw std::runtime_error("GL error " + std::to_string(error));
         glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, renderer.texture()); glPixelStorei(GL_PACK_ALIGNMENT, 1);
         glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-        std::vector<unsigned char> pixels(960 * 1080 * 4);
+        std::vector<unsigned char> pixels(1440 * 1080 * 4);
         glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
         std::ofstream out(argv[2], std::ios::binary);
         out.write(reinterpret_cast<char*>(pixels.data()), pixels.size());
@@ -63,22 +63,22 @@ int main(int argc, char** argv) {
         if (frames < 1 || frames > 300) throw std::runtime_error("Invalid preview frame count");
         for (int frame = 1; frame < frames; ++frame) {
             float dt = frame / 30.f;
-            renderer.render(960, 1080, seconds + dt, expression, gaze, gaze, swatTime + dt);
+            renderer.render(1440, 1080, seconds + dt, expression, gaze, gaze, swatTime + dt);
             glBindTexture(GL_TEXTURE_2D, renderer.texture());
             glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
             out.write(reinterpret_cast<char*>(pixels.data()), pixels.size());
         }
         out.close();
         glFinish(); start = std::chrono::steady_clock::now();
-        for (int i = 0; i < 120; ++i) renderer.render(960, 1080, i / 30.0, expression, {});
+        for (int i = 0; i < 120; ++i) renderer.render(1440, 1080, i / 30.0, expression, {});
         glFinish();
         std::cout << "Render average ms " << std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count() / 120 << '\n';
-        renderer.render(480, 540, 4, expression, {});
-        renderer.render(960, 1080, 5, expression, {});
+        renderer.render(720, 540, 4, expression, {});
+        renderer.render(1440, 1080, 5, expression, {});
         GLuint releasedTexture = 0;
         {
             mita3d::Renderer reopened(argv[1]);
-            reopened.render(480, 540, 0, 0, {});
+            reopened.render(720, 540, 0, 0, {});
             releasedTexture = reopened.texture();
         }
         if (glIsTexture(releasedTexture) || !glIsTexture(renderer.texture())) throw std::runtime_error("Texture ownership failed");

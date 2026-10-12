@@ -7,6 +7,8 @@
 
 namespace mita3d {
 inline constexpr float SwatDuration = 2.8f;
+inline constexpr float ModelYaw = -20.f * 3.14159265f / 180.f;
+inline constexpr float GazeYawRange = 0.43f;
 struct Vertex { glm::vec3 position; glm::vec2 uv; };
 struct Mesh {
     std::vector<Vertex> vertices;

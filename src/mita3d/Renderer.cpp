@@ -186,11 +186,11 @@ void Renderer::render(int width, int height, double seconds, float exitWeight, g
     glDepthFunc(GL_LEQUAL); glDepthMask(GL_TRUE); glDepthRange(0, 1);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glClearColor(0, 0, 0, 0); glClearDepth(1); glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // Blender close-up scene: camera (0,-4,1.56), height 0.48, root scale 100; glTF is Y-up.
+    // Blender close-up scene: camera (0,-4,1.56), height 0.48 metres; glTF is Y-up.
     float halfHeight = 0.24f, halfWidth = halfHeight * width / height;
-    auto camera = glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight, 0.1f, 10.f) *
-        glm::lookAt(glm::vec3(0, 1.56f, 4), glm::vec3(0, 1.56f, 0), glm::vec3(0, 1, 0)) *
-        glm::scale(glm::mat4(1), glm::vec3(100));
+    float centerOffset = halfWidth * (2 * CanvasAnchorX - 1);
+    auto camera = glm::ortho(-halfWidth - centerOffset, halfWidth - centerOffset, -halfHeight, halfHeight, 0.1f, 10.f) *
+        glm::lookAt(glm::vec3(0, 1.56f, 4), glm::vec3(0, 1.56f, 0), glm::vec3(0, 1, 0));
     glUseProgram(m->program); glUniformMatrix4fv(m->camera, 1, GL_FALSE, glm::value_ptr(camera));
     glBindVertexArray(m->vao); glBindBuffer(GL_ARRAY_BUFFER, m->vbo); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
     for (auto const& mesh : m->model.meshes) {
