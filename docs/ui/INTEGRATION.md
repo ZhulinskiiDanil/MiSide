@@ -52,3 +52,9 @@ No shared change; `MSPauseBackdrop.*` untouched. `MSPauseColumn` now takes the m
 check in the combined build that it doesn't take the wheel from another mod's scrolling list shown in More, and that
 the restored highlight after the confirmation looks right with a controller.
 
+## UI-06 Dialogs and layout
+
+No shared change. `MSMenuItem::Style::confirm()` now fits its text, which also applies to the main menu's quit
+confirmation (YES / NO, short: no visible change expected). To check in the combined build on 4:3, 16:9 and 21:9:
+the column rows' labels against sliders and values, the results card's width, and RESET's confirmation in APPEARANCE.
+

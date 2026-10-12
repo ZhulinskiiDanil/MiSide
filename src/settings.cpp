@@ -2,6 +2,7 @@
 
 #include "Theme.hpp"
 #include "pause/MSPauseColumn.hpp"
+#include "ui/MSConfirm.hpp"
 #include "ui/MSScreen.hpp"
 #include "ui/MSStyle.hpp"
 
@@ -16,6 +17,9 @@ namespace
   // The mod's own settings this page shows (mod.json), the ones a reset puts back
   constexpr char const* KEYS[] = {"menu-language", "show-title", "show-intro", "confirm-level-exit", "parallax-strength",
                                   "vanilla-menu"};
+  // The title font's capitals' height at scale 1, and the gap from the confirmation's title to its first button
+  constexpr float TITLE_CAP = 17.5f;
+  constexpr float CONFIRM_GAP = 5.1f;
   // The parallax setting's range (mod.json) and the step it's set by
   constexpr float PARALLAX_MAX = 2;
   constexpr float PARALLAX_STEP = 0.1f;
@@ -143,20 +147,83 @@ protected:
       column->addSlider(music ? (en ? "MUSIC" : "МУЗЫКА") : (en ? "EFFECTS" : "ЗВУКИ"), std::move(volume));
     }
 
-    column->addRow(en ? "RESET" : "СБРОСИТЬ", [] {
+    column->addRow(en ? "RESET" : "СБРОСИТЬ", [this] { this->openConfirm(); });
+    m_mainLayer->addChild(column, 10);
+    column->finish(theme.screenLeft, theme.screenTop + fromTop());
+    m_column = column;
+
+    // RESET asks first, in the column's place, as quitting a level does in the pause
+    MSConfirm::Texts texts{en ? "RESET THE SETTINGS?" : "СБРОСИТЬ НАСТРОЙКИ?", en ? "YES" : "ДА", en ? "NO" : "НЕТ"};
+    auto capTop = theme.screenTop + fromTop();
+    MSConfirm::Layout layout{theme.screenLeft,
+                             capTop,
+                             theme.confirmTitleScale,
+                             theme.screenLeft,
+                             capTop - TITLE_CAP * theme.confirmTitleScale - CONFIRM_GAP,
+                             theme.pauseRowPitch,
+                             theme.pauseRowWidth};
+    m_confirm = MSConfirm::create(
+      texts,
+      [this] {
+        for (auto key : KEYS)
+        {
+          if (auto setting = Mod::get()->getSetting(key))
+            setting->reset();
+        }
+        this->closeConfirm();
+      },
+      [this] { this->closeConfirm(); }, layout, MSMenuItem::Style::pause());
+    if (m_confirm)
+      m_mainLayer->addChild(m_confirm, 11);
+    return true;
+  }
+
+  void openConfirm()
+  {
+    // None (its text couldn't be made): reset at once, as before
+    if (!m_confirm)
+    {
       for (auto key : KEYS)
       {
         if (auto setting = Mod::get()->getSetting(key))
           setting->reset();
       }
-    });
-    m_mainLayer->addChild(column, 10);
-    column->finish(theme.screenLeft, theme.screenTop + fromTop());
-    m_column = column;
-    return true;
+      return;
+    }
+    if (m_confirm->isOpen())
+      return;
+    m_column->setShown(false);
+    this->setBottomEnabled(false);
+    m_confirm->open();
   }
 
-  bool onKey(enumKeyCodes key) override { return m_column && m_column->onKey(key); }
+  void closeConfirm()
+  {
+    if (!m_confirm || !m_confirm->isOpen())
+      return;
+    m_confirm->close();
+    m_column->setShown(true);
+    this->setBottomEnabled(true);
+  }
+
+  // Open, the confirmation takes every key, Esc closing it
+  bool onKey(enumKeyCodes key) override
+  {
+    if (m_confirm && m_confirm->isOpen())
+    {
+      m_confirm->onKey(key);
+      return true;
+    }
+    return m_column && m_column->onKey(key);
+  }
+
+  bool onBack() override
+  {
+    if (!m_confirm || !m_confirm->isOpen())
+      return false;
+    m_confirm->keyBack();
+    return true;
+  }
 
   // The menu made again when what it shows changed, through GD's own fade
   void closed() override
@@ -168,6 +235,7 @@ protected:
   }
 
   MSPauseColumn* m_column = nullptr;
+  MSConfirm* m_confirm = nullptr;
   Snapshot m_opened;
 };
 

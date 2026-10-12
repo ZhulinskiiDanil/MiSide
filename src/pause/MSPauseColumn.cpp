@@ -7,6 +7,9 @@ using namespace geode::prelude;
 
 namespace
 {
+  // A slider's label ends this far before its track; a choice's label leaves this share of the row to its value
+  constexpr float TRACK_GAP = 2;
+  constexpr float CHOICE_ROOM = 0.42f;
   constexpr int HIDE_ACTION = 0x4d57;
   constexpr int CONTROL_ACTION = 0x4d58;
   // The 9-slice plate's corners are 5.3 pt: a thinner piece is made this much bigger and scaled down, so its
@@ -65,9 +68,16 @@ bool MSPauseColumn::init()
   return true;
 }
 
-MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action, std::string const& sound)
+MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action, std::string const& sound,
+                                    float reserveRight)
 {
   auto const& theme = Theme::get();
+  auto style = MSMenuItem::Style::pause();
+  if (reserveRight > 0)
+  {
+    style.fitText = true;
+    style.reserveRight = reserveRight;
+  }
   auto item = MSMenuItem::create(
     text, nullptr,
     [this, action = std::move(action), sound](MSMenuItem*) {
@@ -76,7 +86,7 @@ MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void(
       ms::playSound(sound.empty() ? Theme::get().clickSound : sound);
       action();
     },
-    theme.pauseRowWidth, MSMenuItem::Style::pause());
+    theme.pauseRowWidth, style);
   if (item)
     this->addChild(item);
   return item;
@@ -96,12 +106,15 @@ void MSPauseColumn::addChoice(std::string const& text, Choice choice)
   auto const& theme = Theme::get();
   // Its index in m_choices once it's added: the vector may move, the index doesn't
   auto index = m_choices.size();
-  auto item = this->makeItem(text, [this, index] {
-    auto& row = m_choices[index];
-    if (row.choice.change)
-      row.choice.change(1);
-    this->showChoice(row);
-  });
+  auto item = this->makeItem(
+    text,
+    [this, index] {
+      auto& row = m_choices[index];
+      if (row.choice.change)
+        row.choice.change(1);
+      this->showChoice(row);
+    },
+    "", theme.pauseRowWidth * CHOICE_ROOM);
   if (!item)
     return;
   ChoiceRow row;
@@ -163,8 +176,9 @@ void MSPauseColumn::showChoice(ChoiceRow& row)
 void MSPauseColumn::addSlider(std::string const& text, Slider slider)
 {
   auto const& theme = Theme::get();
-  // Choosing the row itself does nothing: its track is dragged, Left/Right move it
-  auto item = this->makeItem(text, nullptr);
+  // Choosing the row itself does nothing: its track is dragged, Left/Right move it. Its label ends before the track
+  auto reserve = theme.pauseRowWidth - theme.pauseTextPadding - theme.pauseSliderLeft + TRACK_GAP;
+  auto item = this->makeItem(text, nullptr, "", reserve);
   if (!item)
     return;
   SliderRow row;

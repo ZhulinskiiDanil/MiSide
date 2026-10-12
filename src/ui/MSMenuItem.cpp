@@ -61,6 +61,8 @@ MSMenuItem::Style MSMenuItem::Style::confirm()
   style.textOffset = theme.confirmTextOffset;
   style.textPadding = theme.confirmTextPadding;
   style.textShadow = false;
+  // Long words (English, a mod's) never run past the button
+  style.fitText = true;
   return style;
 }
 

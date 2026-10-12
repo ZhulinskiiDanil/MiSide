@@ -130,9 +130,26 @@ void MSScreen::ccTouchCancelled(CCTouch*, CCEvent*) {}
 
 void MSScreen::keyBackClicked()
 {
-  if (!m_closing)
-    ms::playSound(Theme::get().clickSound);
+  auto frame = CCDirector::get()->getTotalFrames();
+  if (frame == m_backFrame || m_closing)
+    return;
+  m_backFrame = frame;
+  if (this->onBack())
+    return;
+  ms::playSound(Theme::get().clickSound);
   this->close();
+}
+
+bool MSScreen::onBack() { return false; }
+
+void MSScreen::setBottomEnabled(bool enabled)
+{
+  for (auto item : m_bottom)
+  {
+    item->setEnabled(enabled);
+    if (!enabled)
+      item->setHighlighted(false);
+  }
 }
 
 void MSScreen::keyDown(enumKeyCodes key, double)
@@ -157,7 +174,7 @@ void MSScreen::update(float)
   auto local = m_buttonMenu->convertToNodeSpace(mouse);
   for (auto item : m_bottom)
   {
-    auto over = item->isVisible() && item->boundingBox().containsPoint(local);
+    auto over = item->isVisible() && item->isEnabled() && item->boundingBox().containsPoint(local);
     if (over == item->isHighlighted())
       continue;
     item->setHighlighted(over, true);

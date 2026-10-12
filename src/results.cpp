@@ -18,6 +18,8 @@ namespace
   constexpr float FONT_CAP = 11.7f;
   constexpr float FONT_RAISE = 1.88f;
   constexpr int CARD_Z = 20;
+  // The card's right edge stays this far left of the screen's middle
+  constexpr float NARROW_GAP = 6;
 
   // GD's own nodes of the layer by Geode's IDs (geode-sdk/NodeIDs, EndLevelLayer.cpp): hidden while the card shows,
   // never removed. The stars, moons, orbs and diamonds GD flies in after it opens stay as they are
@@ -91,7 +93,9 @@ class $modify(MSEndLevelLayer, EndLevelLayer)
       return;
     }
 
-    auto width = theme.resultsWidth;
+    // Narrow windows (4:3): up to the screen's middle, where GD flies its stars and orbs in
+    auto winSize = CCDirector::get()->getWinSize();
+    auto width = std::min(theme.resultsWidth, winSize.width / 2 - theme.resultsLeft - NARROW_GAP);
     auto inner = width - theme.resultsPadding * 2;
     auto card = CCNode::create();
     card->setID("results-card"_spr);
@@ -174,7 +178,6 @@ class $modify(MSEndLevelLayer, EndLevelLayer)
     card->addChild(plate, -1);
 
     // On the left, in the middle of the screen's height
-    auto winSize = CCDirector::get()->getWinSize();
     card->setPosition({theme.resultsLeft, winSize.height / 2 + height / 2});
     main->addChild(card, CARD_Z);
 

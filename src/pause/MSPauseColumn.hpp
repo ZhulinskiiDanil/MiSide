@@ -86,7 +86,9 @@ protected:
   };
 
   bool init() override;
-  MSMenuItem* makeItem(std::string const& text, std::function<void()> action, std::string const& sound = "");
+  // reserveRight: room kept for a control on the row's right; the label is made smaller to end before it
+  MSMenuItem* makeItem(std::string const& text, std::function<void()> action, std::string const& sound = "",
+                       float reserveRight = 0);
   void layoutSlider(SliderRow& row, float value);
   // The track's span in the column's space
   cocos2d::CCRect trackRect(SliderRow const& row) const;

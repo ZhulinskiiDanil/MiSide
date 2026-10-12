@@ -39,6 +39,10 @@ protected:
   MSMenuItem* addBottomButton(std::string const& text, float width, std::function<void()> action);
   // A key the screen uses (Esc and B are taken before); true when used
   virtual bool onKey(cocos2d::enumKeyCodes key);
+  // Esc, B or BACK, before the screen closes: true when the screen used it (a confirmation of its own closed)
+  virtual bool onBack();
+  // The bottom row's buttons can't be pressed (a confirmation of the screen's is open)
+  void setBottomEnabled(bool enabled);
   // Into the darkening, then gone, the menu showing again as it comes off; `after` runs once it's gone, else closed()
   void close(std::function<void()> after = nullptr);
   // Once it's gone after a close with nothing to run
@@ -52,4 +56,6 @@ protected:
   geode::Ref<cocos2d::CCNode> m_hidden;
   cocos2d::CCPoint m_lastMouse;
   bool m_closing = false;
+  // GD may send Esc both as a key and as back on one frame: one back a frame
+  unsigned m_backFrame = 0;
 };
