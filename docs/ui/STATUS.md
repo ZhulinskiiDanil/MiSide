@@ -4,8 +4,9 @@ Lane: `D:/Dev/MiSide-ui`, branch `feature/miside-ui`. Builds, installs and in-ga
 stage: "done" means finished code with its integration requests recorded, not verified behavior in the combined
 build. Syntax is checked with `clang++ -fsyntax-only` and the main workspace's compile flags (no objects written).
 
-3D signal (`3D_STATUS: READY_FOR_INTEGRATION` in `D:/Dev/MiSide-3d/docs/3d/INTEGRATION.md`): not present when
-checked before UI-01.
+3D signal (`3D_STATUS: READY_FOR_INTEGRATION` in `D:/Dev/MiSide-3d/docs/3d/INTEGRATION.md`): checked before each
+task and after UI-07; never present (that file lists pending 3D requests only). The queue ended by completion:
+UI-01 to UI-07 are all DONE below. No feature is in progress.
 
 | Task | Status | Result | Commit |
 | --- | --- | --- | --- |
@@ -15,4 +16,4 @@ checked before UI-01.
 | UI-04 Official levels polish | DONE | Inspected first: the floppy already had long-name fitting, coins, normal/practice progress and the coins-needed lock, Up/Down/Enter worked. Added in `src/levels.cpp`, `src/levels/MSLevelList.*`, `src/ui/MSMenuItem.*`: per-row lock (GD's own coin check) or best %, names fitted around it (`reserveRight`, row accessory fading with the row), the chosen level and scroll kept in the mod's saved values (GD always opens page 0 from the menu), the played level chosen after a level. LevelPreview untouched. Syntax checked; not built, not run | a250b13 |
 | UI-05 Pause usability | DONE | `src/pause/MSPauseColumn.*`, `src/pause.cpp`: the row chosen before the quit confirmation or More is chosen again when the column shows (no new shine; the mouse still takes over), the wheel over a slider row moves it by the keys' step, More's BACK is a separate exit row with its close sound. Blur, OpenGL state, ambient, Stress and third-party nodes untouched; the vanilla-pause route kept. Syntax checked; not built, not run | 20d2d36 |
 | UI-06 Dialogs and layout | DONE | Confirmations: RESET in APPEARANCE asks through `MSConfirm` in the column's place like the pause's quit (bottom row off, keys taken, Esc closes it first); `MSScreen` takes one back a frame and lets a screen use it (`onBack`). Long RU/EN strings: confirm-style buttons fit their text; pause/settings rows' labels end before their slider or value (`makeItem` reserve). Narrow windows: the level complete card ends before the screen's middle. Empty/error states: achievements/statistics fall back to GD's own screen with a log when their data is missing (unchanged). Sparks and Mita hit testing untouched. Syntax checked; not built, not run | 80b794e |
-| UI-07 Documentation and credits | DONE | README / README.ru describe what exists now (not the MenuLayer-only scaffold) and build through `tools/build-local.ps1` per PARALLEL_WORK; `src/credits.cpp`, `src/credits/MSCredits.hpp`: CREDITS screen over APPEARANCE with attribution only from LICENSES.md / Mita's ATTRIBUTION.txt and the controls; `docs/ui/CONTROLS.md` lists every owned screen's controls. Licenses untouched. Syntax checked; not built, not run | (this commit) |
+| UI-07 Documentation and credits | DONE | README / README.ru describe what exists now (not the MenuLayer-only scaffold) and build through `tools/build-local.ps1` per PARALLEL_WORK; `src/credits.cpp`, `src/credits/MSCredits.hpp`: CREDITS screen over APPEARANCE with attribution only from LICENSES.md / Mita's ATTRIBUTION.txt and the controls; `docs/ui/CONTROLS.md` lists every owned screen's controls. Licenses untouched. Syntax checked; not built, not run | e60d68e |
