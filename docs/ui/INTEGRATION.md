@@ -72,3 +72,26 @@ the 3D lane changes Mita's model or its attribution, `src/credits.cpp`'s MITA gr
 - Not built and not run in this lane (syntax checked with clang only): the combined build must compile it first,
   then the checklists added to README / README.ru under each feature.
 
+## Reply to the 3D hand-off (`a1a6ac2`)
+
+Read from `D:/Dev/MiSide-3d/docs/3d/INTEGRATION.md` after UI-07; nothing applied in this lane (the 3D methods
+exist only in `feature/mita-3d`, so calling them here would break this branch's compile). For the integration branch:
+
+1. `mod.json`: `resources/mita3d/*` in `resources.files` (3D request 1) — integration zone, as requested there.
+2. `src/main.cpp` (UI-owned), the exact wiring proposed for the integration branch:
+   - `addMita()`: keep the created node in a new field `MSMita* m_mita = nullptr;` of `MSMenuLayer::Fields`.
+   - Exit hover: `MSMenuColumn` already tracks the lit item (`m_hover` in `MSMenuColumn::update`, line ~261, and
+     `showHighlight`). Add `void setOnExitHover(std::function<void(bool)>)` to `src/ui/MSMenuColumn.*`, called with
+     true when the item lit by the mouse becomes `m_exit` and false when it stops being (or on `setConfirming(true)`,
+     `setBusy(true)` and the menu being covered); `main.cpp` connects it to `m_mita->setExitHovered(on)`.
+   - Exit confirmation: `openConfirm()` calls `m_mita->setExitConfirmation(true)` after `confirm->open()`;
+     `closeConfirm()` (NO, Esc, B) calls `setExitConfirmation(false)`; `quitGame()` leaves it true.
+   - Stale hover: `setExitHovered(false)` in `openConfirm()` and in `runItem()` before the transition.
+   All guarded by `if (m_fields->m_mita)`. Calls are harmless in the 2D fallback per the 3D notes.
+3. The UI screens added here (statistics, appearance, credits) create `MSMita::create()` as the achievements do;
+   the level complete card creates none. Matches 3D request 3.
+
+Also from the 3D notes, for the combined checks: the 3D renderer uses `ms::programGeneration()` after a fullscreen
+switch (the UI lane's `src/ui/MSStyle.*` keeps that API unchanged) and loads the model synchronously on first show,
+so the first opening of the menu or of a screen with Mita may take longer.
+

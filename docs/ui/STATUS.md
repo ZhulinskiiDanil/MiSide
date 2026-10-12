@@ -4,9 +4,11 @@ Lane: `D:/Dev/MiSide-ui`, branch `feature/miside-ui`. Builds, installs and in-ga
 stage: "done" means finished code with its integration requests recorded, not verified behavior in the combined
 build. Syntax is checked with `clang++ -fsyntax-only` and the main workspace's compile flags (no objects written).
 
-3D signal (`3D_STATUS: READY_FOR_INTEGRATION` in `D:/Dev/MiSide-3d/docs/3d/INTEGRATION.md`): checked before each
-task and after UI-07; never present (that file lists pending 3D requests only). The queue ended by completion:
-UI-01 to UI-07 are all DONE below. No feature is in progress.
+3D signal: line 3 of `D:/Dev/MiSide-3d/docs/3d/INTEGRATION.md` is exactly `3D_STATUS: READY_FOR_INTEGRATION`
+(read after UI-07, 3D implementation commit `a1a6ac2`). It was absent at every check up to and including the one
+after UI-07's commit (then `3D_STATUS: IMPLEMENTED`), so the queue had already ended by completion: UI-01 to UI-07
+are all DONE below, no feature was in progress when the signal was read, and no new task was started after it.
+Hand-off: UI lane ready for integration; its requests and the reply to the 3D requests are in INTEGRATION.md.
 
 | Task | Status | Result | Commit |
 | --- | --- | --- | --- |
