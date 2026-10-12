@@ -9,8 +9,8 @@ checked before UI-01.
 
 | Task | Status | Result | Commit |
 | --- | --- | --- | --- |
-| UI-01 Statistics | DONE | `src/statistics.cpp`, `src/statistics/MSStats.*`: MiSide screen over the menu with GD's own stats (StatsLayer's keys and order, GameStatsManager values, StatsCell titles), groups, scrolling, GD STATS button to the original window. Shared base `src/ui/MSScreen.*`, `src/ui/MSScrollView.*` for the next screens. Syntax checked; not built, not run | (this commit) |
-| UI-02 Level completion | TODO | — | — |
+| UI-01 Statistics | DONE | `src/statistics.cpp`, `src/statistics/MSStats.*`: MiSide screen over the menu with GD's own stats (StatsLayer's keys and order, GameStatsManager values, StatsCell titles), groups, scrolling, GD STATS button to the original window. Shared base `src/ui/MSScreen.*`, `src/ui/MSScrollView.*` for the next screens. Syntax checked; not built, not run | a48f215 |
+| UI-02 Level completion | DONE | `src/results.cpp`, `src/results/MSResults.*`: EndLevelLayer's frame, chains and labels hidden behind a MiSide card (title, level, GD's end text and message, GD's own label values, coins from GD's coin nodes, buttons pressing GD's own); mods' buttons and GD's reward effects kept; right side left for Mita. Shared `src/ui/MSButtonMenu.*`, `src/ui/MSValueRow.*`. Syntax checked; not built, not run | (this commit) |
 | UI-03 Appearance settings | TODO | — | — |
 | UI-04 Official levels polish | TODO | — | — |
 | UI-05 Pause usability | TODO | — | — |

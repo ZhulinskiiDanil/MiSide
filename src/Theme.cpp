@@ -435,6 +435,21 @@ namespace
     theme.statsGroupScale = 0.26f;
     theme.statsOriginalWidth = 71.3f;
 
+    // ! --- The level complete card --- !
+    theme.resultsEnabled = true;
+    theme.resultsLeft = 46;
+    theme.resultsWidth = 176;
+    theme.resultsPadding = 8;
+    theme.resultsGap = 5;
+    theme.resultsButtonGap = 3;
+    theme.resultsCardColor = ccc3(0x1c, 0x0a, 0x22);
+    theme.resultsCardOpacity = 228;
+    theme.resultsFrameColor = ccc3(0xc2, 0x40, 0x8f);
+    theme.resultsNameColor = ccc3(0xf4, 0xc9, 0xea);
+    theme.resultsNameScale = 0.5f;
+    theme.resultsTextColor = ccc3(0xc9, 0xa3, 0xcf);
+    theme.resultsTextScale = 0.36f;
+
     // ! --- Decoration over the backdrop --- !
     // Faint: a pink line on the dark, never a row of bright marks
     theme.patternSprite = "pattern-tile.png"_spr;
@@ -901,6 +916,19 @@ namespace
     field("stats-group-color", theme.statsGroupColor);
     field("stats-group-scale", theme.statsGroupScale);
     field("stats-original-width", theme.statsOriginalWidth);
+    field("results-enabled", theme.resultsEnabled);
+    field("results-left", theme.resultsLeft);
+    field("results-width", theme.resultsWidth);
+    field("results-padding", theme.resultsPadding);
+    field("results-gap", theme.resultsGap);
+    field("results-button-gap", theme.resultsButtonGap);
+    field("results-card-color", theme.resultsCardColor);
+    field("results-card-opacity", theme.resultsCardOpacity);
+    field("results-frame-color", theme.resultsFrameColor);
+    field("results-name-color", theme.resultsNameColor);
+    field("results-name-scale", theme.resultsNameScale);
+    field("results-text-color", theme.resultsTextColor);
+    field("results-text-scale", theme.resultsTextScale);
     field("pattern-sprite", theme.patternSprite);
     field("pattern-color", theme.patternColor);
     field("pattern-opacity", theme.patternOpacity);

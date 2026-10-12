@@ -3,6 +3,7 @@
 #include "ui/MSScreen.hpp"
 #include "ui/MSScrollView.hpp"
 #include "ui/MSStyle.hpp"
+#include "ui/MSValueRow.hpp"
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
@@ -11,12 +12,8 @@ using namespace geode::prelude;
 
 namespace
 {
-  // The fonts' capitals: their middle this far over the label's middle, at scale 1
-  constexpr float FONT_RAISE = 1.88f;
+  // The title font's capitals: their middle this far over the label's middle, at scale 1
   constexpr float TITLE_RAISE = 2.82f;
-  // Room inside a row
-  constexpr float PADDING = 5;
-  constexpr float NAME_GAP = 6;
 
   // GD's own window, once, from our screen's button (the menu's hook lets it through)
   bool s_original = false;
@@ -90,49 +87,14 @@ protected:
       y -= theme.statsGroupHeight;
       for (auto const& row : groups[g].rows)
       {
-        this->addRow(content, row, y, width, en);
+        auto node = ms::createValueRow(row.title, ms::stats::format(row.value, en), width);
+        node->setPosition({0, y});
+        content->addChild(node);
         y -= theme.statsRowHeight + theme.statsRowGap;
       }
     }
     m_scroll->setContentHeight(-y);
     return true;
-  }
-
-  // A plate, the name on the left (made smaller if it doesn't fit beside the number), the number on the right
-  void addRow(CCNode* content, ms::stats::Row const& row, float top, float width, bool en)
-  {
-    auto const& theme = Theme::get();
-    auto height = theme.statsRowHeight;
-    auto middle = top - height / 2;
-    auto plate = ms::createPanel(theme.rowSprite, theme.statsRowColor, theme.statsRowOpacity);
-    plate->setAnchorPoint({0, 1});
-    plate->ignoreAnchorPointForPosition(false);
-    plate->setContentSize({width, height});
-    plate->setPosition({0, top});
-    content->addChild(plate);
-
-    auto value = ms::createText(ms::stats::format(row.value, en), theme.statsValueScale, theme.statsValueColor,
-                                theme.titleFont, ms::Shadow{});
-    auto valueWidth = 0.f;
-    if (value.node)
-    {
-      valueWidth = value.node->getContentWidth();
-      value.node->setPosition({width - PADDING - valueWidth, middle - TITLE_RAISE * theme.statsValueScale});
-      content->addChild(value.node, 1);
-    }
-    auto scale = theme.statsLabelScale;
-    auto name = ms::createText(row.title, scale, theme.statsLabelColor);
-    auto room = width - PADDING * 2 - valueWidth - NAME_GAP;
-    if (name.node && name.node->getContentWidth() > room && room > 0)
-    {
-      scale *= room / name.node->getContentWidth();
-      name = ms::createText(row.title, scale, theme.statsLabelColor);
-    }
-    if (name.node)
-    {
-      name.node->setPosition({PADDING, middle - FONT_RAISE * scale});
-      content->addChild(name.node, 1);
-    }
   }
 
   bool onKey(enumKeyCodes key) override

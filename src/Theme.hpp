@@ -508,6 +508,25 @@ struct Theme
   // The button to GD's own statistics, next to BACK
   float statsOriginalWidth = 0;
 
+  // ! --- The level complete card --- !
+  // GD's level-complete layer as a card on the left: its title, the level, GD's words, numbers, coins and buttons
+  bool resultsEnabled = false;
+  float resultsLeft = 0;
+  float resultsWidth = 0;
+  float resultsPadding = 0;
+  // Between the words, the numbers and the buttons
+  float resultsGap = 0;
+  float resultsButtonGap = 0;
+  cocos2d::ccColor3B resultsCardColor;
+  GLubyte resultsCardOpacity = 0;
+  cocos2d::ccColor3B resultsFrameColor;
+  // The level's name
+  cocos2d::ccColor3B resultsNameColor;
+  float resultsNameScale = 0;
+  // GD's end text and completion message
+  cocos2d::ccColor3B resultsTextColor;
+  float resultsTextScale = 0;
+
   // ! --- Decoration over the backdrop --- !
   // A faint repeating pattern of thin outlined hearts, flowers and stars (a white tile, tinted)
   std::string patternSprite;
