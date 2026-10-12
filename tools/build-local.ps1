@@ -12,7 +12,8 @@ if (Test-Path -LiteralPath $metadataPath) {
     if ($LASTEXITCODE -ne 0 -or $branch -ne 'main') { throw 'Expected main or a prepared worktree.' }
     $zone = 'main'
 }
-$buildRoot = Join-Path $workspaceRoot ("build-" + $zone)
+$buildName = if ($zone -eq 'main') { 'build' } else { "build-$zone" }
+$buildRoot = Join-Path $workspaceRoot $buildName
 if (-not $env:GEODE_SDK -or -not (Test-Path -LiteralPath $env:GEODE_SDK)) { throw 'Set GEODE_SDK to the existing SDK directory.' }
 foreach ($tool in @('cmake', 'ninja', 'clang', 'clang++', 'geode')) { $null = Get-Command $tool -ErrorAction Stop }
 $configureArgs = @('-S', $workspaceRoot, '-B', $buildRoot, '-G', 'Ninja',

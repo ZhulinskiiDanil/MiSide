@@ -71,3 +71,12 @@ previous basis-during-confirmation behavior.
 Build-main succeeded with installation disabled. Model test and standalone GL
 checks passed. Menu-direction and forward-gaze previews were visually inspected.
 Actual interaction in GD remains for user verification.
+
+## Gaze tuning from reference screenshots
+
+Increased head yaw/pitch toward hovered menu items and vertical targeting range.
+Head aiming uses the neutral rig orientation instead of adding onto animated head
+rotation; body/neck translation and procedural sway remain animated. Independent
+eye rotation is smaller than the head turn. Confirmation retains smile 14 with
+forward gaze. Top/bottom/confirmation renders were inspected, and the model and
+GL checks passed. Main builds now go to build/ at the user request.

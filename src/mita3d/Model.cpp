@@ -48,6 +48,7 @@ struct Model::Data {
     std::vector<glm::quat> rotations;
     std::vector<glm::mat4> world;
     std::vector<size_t> order;
+    glm::mat3 headRestOrientation{1};
     float duration = 0;
     int head = -1, leftEye = -1, rightEye = -1;
 };
@@ -140,6 +141,11 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
         }
     }
     require(m->head >= 0 && m->leftEye >= 0 && m->rightEye >= 0 && !meshes.empty(), "Mita rig does not match");
+    float rest[16];
+    cgltf_node_transform_world(&raw->nodes[m->head], rest);
+    auto restWorld = glm::make_mat4(rest);
+    for (int axis = 0; axis < 3; ++axis)
+        m->headRestOrientation[axis] = glm::normalize(glm::vec3(restWorld[axis]));
     require(raw->animations_count > 0, "Missing author idle animation");
     auto& animation = raw->animations[0];
     for (size_t i = 0; i < animation.channels_count; ++i) {
@@ -191,9 +197,15 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze) {
         auto parent = node.parent ? m->world[node.parent - raw->nodes] : glm::mat4(1);
         auto world = parent * local;
         float yaw = 0, pitch = 0, roll = 0;
-        if (static_cast<int>(i) == m->head) { yaw = gaze.x * 0.06f; pitch = -gaze.y * 0.035f; roll = sway; }
+        if (static_cast<int>(i) == m->head) {
+            // Aim from the neutral rig pose, not on top of the idle clip's head tilt.
+            // The neck position and the rest of the body keep the author's animation.
+            for (int axis = 0; axis < 3; ++axis)
+                world[axis] = glm::vec4(m->headRestOrientation[axis] * glm::length(glm::vec3(world[axis])), 0);
+            yaw = gaze.x * 0.34f; pitch = -gaze.y * 0.32f; roll = sway;
+        }
         if (static_cast<int>(i) == m->leftEye || static_cast<int>(i) == m->rightEye) {
-            yaw = gaze.x * 0.24f; pitch = -gaze.y * 0.18f;
+            yaw = gaze.x * 0.16f; pitch = -gaze.y * 0.12f;
         }
         if (yaw || pitch || roll) {
             auto pivot = glm::vec3(world[3]);

@@ -707,7 +707,7 @@ void MSMita::update3D(float dt)
     auto eyes = m_sprite->convertToWorldSpace({size.width * 0.5f, size.height * 0.59f});
     auto delta = *m_menuGazeTarget - eyes;
     aim = CCPoint(std::clamp(delta.x / (win.width * 0.6f), -1.f, 1.f),
-                  std::clamp(delta.y / (win.height * 0.6f), -1.f, 1.f));
+                  std::clamp(delta.y / (win.height * 0.42f), -1.f, 1.f));
   }
   m_gaze = m_gaze + (aim - m_gaze) * (1 - std::exp(-dt / 0.16f));
   auto frame = CCEGLView::sharedOpenGLView()->getFrameSize();
