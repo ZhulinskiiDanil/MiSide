@@ -1,3 +1,10 @@
+# v1.3.0
+
+* Pages as in MiSide: the title and rows slide out to the right as the next page's come in from the left, a step apart; the logo, the background and Mita stay
+* CREATE as a page of the menu: its buttons as the main menu's rows in groups, BACK under them, the mods' buttons in the tray; in and out of it without GD's fade through black
+* Mita goes on as she was between the menu and CREATE instead of starting over
+* A click on Mita works on the pages over the menu (achievements, statistics...)
+
 # v1.2.1
 
 * The log says whether Mita runs in 3D or from her 2D frames and why, and where EXIT is: for reports from phones
