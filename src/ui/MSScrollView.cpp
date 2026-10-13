@@ -3,6 +3,7 @@
 #include "../Theme.hpp"
 #include "MSStyle.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 using namespace geode::prelude;
@@ -79,10 +80,11 @@ bool MSScrollView::init(CCRect view, float barLeft, float barWidth, ccColor3B tr
   this->setPosition({0, 0});
   this->setContentSize({0, 0});
 
-  // Cut at the top and bottom only, up to the bar
+  // Cut at the top and bottom only: the whole width, for the rows sliding past the bar as a page goes
   auto clip = Clip::create();
   clip->setPosition({0, view.origin.y});
-  clip->setContentSize({std::max(barLeft - 1, view.getMaxX()), view.size.height});
+  clip->setContentSize({std::max({barLeft - 1, view.getMaxX(), CCDirector::get()->getWinSize().width}),
+                        view.size.height});
   this->addChild(clip);
   m_clip = clip;
   m_content = CCNode::create();
@@ -102,6 +104,32 @@ bool MSScrollView::init(CCRect view, float barLeft, float barWidth, ccColor3B tr
 }
 
 CCNode* MSScrollView::content() const { return m_content; }
+
+ms::wave::Steps MSScrollView::pageSteps()
+{
+  ms::wave::Steps steps;
+  ms::wave::Step bar;
+  bar.slide = false;
+  for (auto node : {m_track, m_thumb})
+  {
+    if (ms::wave::shows(node))
+      bar.nodes.push_back(node);
+  }
+  if (!bar.nodes.empty())
+    steps.push_back(std::move(bar));
+  // In this node's space: the clip's and the content's offsets added
+  auto offset = m_clip->getPosition() + m_content->getPosition();
+  for (auto child : CCArrayExt<CCNode*>(m_content->getChildren()))
+  {
+    if (!ms::wave::shows(child))
+      continue;
+    auto box = child->boundingBox();
+    box.origin += offset;
+    if (box.getMaxY() > m_view.getMinY() && box.getMinY() < m_view.getMaxY())
+      steps.push_back({{child}});
+  }
+  return steps;
+}
 
 float MSScrollView::scroll() const { return m_scroll; }
 

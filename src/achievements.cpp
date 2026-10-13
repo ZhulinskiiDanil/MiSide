@@ -1,8 +1,6 @@
 #include "Theme.hpp"
 #include "achievements/MSAchievementList.hpp"
-#include "ui/MSBackground.hpp"
-#include "ui/MSMenuItem.hpp"
-#include "ui/MSMita.hpp"
+#include "ui/MSScreen.hpp"
 #include "ui/MSStyle.hpp"
 
 #include <Geode/Geode.hpp>
@@ -12,19 +10,6 @@ using namespace geode::prelude;
 
 namespace
 {
-  // The title font's capitals: 17.5 pt high at scale 1, their middle 2.82 pt over the label's
-  constexpr float TITLE_CAP = 17.5f;
-  constexpr float CAP_RAISE = 2.82f;
-  // The item font's capitals: 11.7 pt high at scale 1, their middle 1.88 pt over the label's
-  constexpr float FONT_CAP = 11.7f;
-  constexpr float FONT_RAISE = 1.88f;
-  constexpr int BACKGROUND_Z = -100;
-  constexpr int MITA_Z = -50;
-  constexpr int MENU_Z = 10;
-  constexpr int CURTAIN_Z = 1000;
-
-  bool english() { return Mod::get()->getSettingValue<std::string>("menu-language") == "EN"; }
-
   // Every achievement GD has now, in its own order (the ones other mods add too), with its status and reward as
   // GD's achievement cell reads them: earned at 100%, the icon "type_id" (no type matched: a cube)
   std::vector<MSAchievement> readAchievements()
@@ -75,216 +60,64 @@ namespace
     return list;
   }
 
-  // The menu's darkening, coming off over what's under it after the screen has gone
-  void fadeOff(CCNode* scene, GLubyte from)
-  {
-    auto const& theme = Theme::get();
-    auto fade = CCLayerColor::create(Theme::withAlpha(theme.fadeColor, from));
-    scene->addChild(fade, std::numeric_limits<int>::max());
-    fade->runAction(CCSequence::createWithTwoActions(CCFadeTo::create(theme.fadeBackDuration, 0),
-                                                     CCRemoveSelf::create()));
-  }
 } // namespace
 
-// GD's achievements as a screen of MiSide's: the room's background, ACHIEVEMENTS with the count earned, the list on
-// the left, BACK under it, Mita on the right. A popup over the menu (so the menu knows it's covered): opaque, the
-// menu hidden under it while it's open. Esc and BACK close it
-class MSAchievementsLayer : public FLAlertLayer
+// GD's achievements as a page of the menu: ACHIEVEMENTS with the count earned at the list's right edge on its line,
+// the list under it, BACK under the list. Esc and BACK close it
+class MSAchievementsScreen : public MSScreen
 {
 public:
-  static MSAchievementsLayer* create()
+  static MSAchievementsScreen* create()
   {
-    auto layer = new MSAchievementsLayer();
-    if (layer->setup())
+    auto screen = new MSAchievementsScreen();
+    if (screen->setup())
     {
-      layer->autorelease();
-      return layer;
+      screen->autorelease();
+      return screen;
     }
-    delete layer;
+    delete screen;
     return nullptr;
   }
 
-  ~MSAchievementsLayer() override { CCTouchDispatcher::get()->unregisterForcePrio(this); }
-
+protected:
   bool setup()
   {
     auto achievements = readAchievements();
     if (achievements.empty())
       return false;
-    CCTouchDispatcher::get()->registerForcePrio(this, 2);
-    auto const& theme = Theme::get();
-    if (!this->initWithColor(Theme::withAlpha(theme.fadeColor, 255)))
-      return false;
-    m_noElasticity = true;
-    auto winSize = CCDirector::get()->getWinSize();
-    auto fromTop = winSize.height - 320;
     auto en = english();
+    if (!this->initScreen(en ? "ACHIEVEMENTS" : "ДОСТИЖЕНИЯ"))
+      return false;
+    auto const& theme = Theme::get();
 
-    m_mainLayer = CCLayer::create();
-    this->addChild(m_mainLayer);
-    m_buttonMenu = CCMenu::create();
-    m_buttonMenu->setPosition({0, 0});
-    m_mainLayer->addChild(m_buttonMenu, MENU_Z);
-
-    auto strength = static_cast<float>(Mod::get()->getSettingValue<double>("parallax-strength"));
-    if (auto background = MSBackground::create(strength))
-      m_mainLayer->addChild(background, BACKGROUND_Z);
-    if (auto mita = MSMita::create())
-      m_mainLayer->addChild(mita, MITA_Z);
-
-    // ACHIEVEMENTS, and how many are earned at the list's right edge on the same line
-    ms::Shadow shadow{theme.confirmTitleShadowColor, theme.confirmTitleShadowOpacity, 1,
-                      theme.confirmTitleShadowOffset};
-    auto capTop = theme.achievementsTitleCapTop + fromTop;
-    auto title = ms::createText(en ? "ACHIEVEMENTS" : "ДОСТИЖЕНИЯ", theme.confirmTitleScale, theme.confirmTitleColor,
-                                theme.titleFont, shadow);
-    if (title.node)
-    {
-      title.node->setPosition(
-        {theme.achievementsTitleLeft, capTop - (TITLE_CAP / 2 + CAP_RAISE) * theme.confirmTitleScale});
-      m_mainLayer->addChild(title.node, MENU_Z);
-    }
+    // How many are earned, its middle on the title's
     auto earned = std::count_if(achievements.begin(), achievements.end(), [](auto const& a) { return a.earned; });
     auto counter = ms::createText(fmt::format("{} / {}", earned, achievements.size()), theme.achievementsCounterScale,
                                   theme.achievementsCounterColor, theme.font, ms::Shadow{});
-    if (counter.node)
+    if (counter.node && !m_titleNodes.empty())
     {
-      // Its capitals' bottom on the title's
-      auto titleBottom = capTop - TITLE_CAP * theme.confirmTitleScale;
+      auto title = m_titleNodes.front();
+      auto middle = title->getPositionY() - title->getScaledContentSize().height / 2;
       auto right = theme.achievementsScrollLeft + theme.achievementsScrollWidth;
-      counter.node->setPosition({right - counter.node->getContentWidth(),
-                                 titleBottom + FONT_CAP * theme.achievementsCounterScale / 2 -
-                                   FONT_RAISE * theme.achievementsCounterScale});
-      m_mainLayer->addChild(counter.node, MENU_Z);
+      counter.node->setPosition({right - counter.node->getContentWidth(), middle});
+      m_mainLayer->addChild(counter.node, 10);
+      this->addToTitle(counter.node);
     }
 
     m_list = MSAchievementList::create(std::move(achievements), en);
     if (!m_list)
       return false;
-    m_mainLayer->addChild(m_list, MENU_Z);
-
-    // BACK under the list, as MiSide's: as wide as the rows and the bar
-    auto style = MSMenuItem::Style::confirm();
-    if (auto back = MSMenuItem::create(en ? "BACK" : "НАЗАД", nullptr, [this](MSMenuItem*) { this->close(); },
-                                       theme.achievementsBackWidth, style))
-    {
-      back->setPosition({theme.achievementsListLeft - 1, theme.achievementsBackTop + fromTop - style.height / 2});
-      m_buttonMenu->addChild(back);
-      m_back = back;
-    }
-
-    // Comes in from the menu's darkening
-    m_curtain = CCLayerColor::create(Theme::withAlpha(theme.fadeColor, theme.fadeOpacity));
-    m_curtain->setContentSize(winSize);
-    this->addChild(m_curtain, CURTAIN_Z);
-
-    this->setTouchEnabled(true);
-    this->setKeypadEnabled(true);
-    this->setKeyboardEnabled(true);
-    this->scheduleUpdate();
+    m_mainLayer->addChild(m_list, 10);
     return true;
   }
 
-  // BACK lights up under the mouse, with its shine, as the menu's rows do
-  void update(float) override
-  {
-    if (!m_back || m_closing)
-      return;
-    auto mouse = getMousePos();
-    if (mouse.equals(m_lastMouse))
-      return;
-    m_lastMouse = mouse;
-    auto local = m_back->getParent()->convertToNodeSpace(mouse);
-    auto over = m_back->boundingBox().containsPoint(local);
-    if (over == m_back->isHighlighted())
-      return;
-    m_back->setHighlighted(over, true);
-    if (over)
-      ms::playSound(Theme::get().hoverSound);
-  }
+  ms::wave::Steps contentSteps() override { return m_list->pageSteps(); }
 
-  void show() override
-  {
-    FLAlertLayer::show();
-    auto const& theme = Theme::get();
-    // Once it covers the screen, the menu under it hides (its Mita and its effects wait)
-    m_curtain->runAction(CCSequence::createWithTwoActions(CCFadeTo::create(theme.fadeBackDuration, 0),
-                                                          CallFuncExt::create([this] { this->hideMenu(true); })));
-  }
+  bool onKey(enumKeyCodes key) override { return m_list->onKey(key); }
 
-  void registerWithTouchDispatcher() override { CCTouchDispatcher::get()->addTargetedDelegate(this, -500, true); }
-
-  // Every touch is the screen's: nothing reaches the hidden menu
-  bool ccTouchBegan(CCTouch*, CCEvent*) override { return true; }
-  void ccTouchMoved(CCTouch*, CCEvent*) override {}
-  void ccTouchEnded(CCTouch*, CCEvent*) override {}
-  void ccTouchCancelled(CCTouch*, CCEvent*) override {}
-
-  void keyBackClicked() override { this->close(); }
-
-  void keyDown(enumKeyCodes key, double) override
-  {
-    if (key == KEY_Escape || key == CONTROLLER_B)
-      return this->close();
-    if (m_list)
-      m_list->onKey(key);
-  }
-
-protected:
-  void hideMenu(bool hidden)
-  {
-    auto scene = this->getParent();
-    if (!scene)
-      return;
-    if (hidden)
-    {
-      for (auto child : CCArrayExt<CCNode*>(scene->getChildren()))
-      {
-        if (auto menu = typeinfo_cast<MenuLayer*>(child); menu && menu->isVisible())
-        {
-          menu->setVisible(false);
-          m_hidden = menu;
-        }
-      }
-    }
-    else if (m_hidden)
-    {
-      m_hidden->setVisible(true);
-      m_hidden = nullptr;
-    }
-  }
-
-  // Into the darkening, then gone, the menu showing again as it comes off
-  void close()
-  {
-    if (m_closing)
-      return;
-    m_closing = true;
-    ms::playSound(Theme::get().clickSound);
-    if (m_list)
-      m_list->setActive(false);
-    if (m_back)
-      m_back->setHighlighted(false);
-    auto const& theme = Theme::get();
-    m_curtain->stopAllActions();
-    m_curtain->runAction(CCSequence::createWithTwoActions(
-      CCFadeTo::create(theme.fadeDuration, theme.fadeOpacity), CallFuncExt::create([this] {
-        this->hideMenu(false);
-        if (auto scene = this->getParent())
-          fadeOff(scene, Theme::get().fadeOpacity);
-        this->setKeypadEnabled(false);
-        this->setKeyboardEnabled(false);
-        this->setTouchEnabled(false);
-        this->removeFromParentAndCleanup(true);
-      })));
-  }
+  void closing() override { m_list->setActive(false); }
 
   MSAchievementList* m_list = nullptr;
-  MSMenuItem* m_back = nullptr;
-  CCPoint m_lastMouse;
-  CCLayerColor* m_curtain = nullptr;
-  Ref<CCNode> m_hidden;
-  bool m_closing = false;
 };
 
 // The achievements button (the column's ACHIEVEMENTS presses it): the screen of MiSide's instead of GD's dropdown,
@@ -295,12 +128,12 @@ class $modify(MSAchievementsMenuLayer, MenuLayer)
   {
     if (Mod::get()->getSettingValue<bool>("vanilla-menu") || !Theme::get().achievementsEnabled)
       return MenuLayer::onAchievements(sender);
-    auto layer = MSAchievementsLayer::create();
-    if (!layer)
+    auto screen = MSAchievementsScreen::create();
+    if (!screen)
     {
       log::warn("Achievements: no screen of the mod's, GD's own");
       return MenuLayer::onAchievements(sender);
     }
-    layer->show();
+    screen->show();
   }
 };

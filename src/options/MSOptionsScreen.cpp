@@ -83,11 +83,34 @@ void MSOptionsScreen::addText(std::string const& text)
   m_top -= node->getScaledContentSize().height + TEXT_GAP;
 }
 
+ms::wave::Steps MSOptionsScreen::contentSteps()
+{
+  ms::wave::Steps steps;
+  for (auto node : m_texts)
+  {
+    if (!ms::wave::shows(node))
+      continue;
+    ms::wave::Step step{{node}};
+    if (auto it = m_attached.find(node); it != m_attached.end())
+      step.nodes.insert(step.nodes.end(), it->second.begin(), it->second.end());
+    steps.push_back(std::move(step));
+  }
+  if (m_column)
+  {
+    auto rows = m_column->pageSteps();
+    steps.insert(steps.end(), rows.begin(), rows.end());
+  }
+  if (ms::wave::shows(m_info))
+    steps.push_back({{m_info}});
+  return steps;
+}
+
 void MSOptionsScreen::resetOptions()
 {
   for (auto node : m_texts)
     node->removeFromParent();
   m_texts.clear();
+  m_attached.clear();
   this->showInfo("");
   if (m_column)
     m_column->removeFromParent();

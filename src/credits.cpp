@@ -142,6 +142,8 @@ protected:
     return true;
   }
 
+  ms::wave::Steps contentSteps() override { return m_scroll->pageSteps(); }
+
   MSScrollView* m_scroll = nullptr;
 };
 

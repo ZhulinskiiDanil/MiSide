@@ -13,7 +13,6 @@ namespace
   constexpr float SWIPE_START = 6;
   constexpr float CHOICE_ROOM = 0.42f;
   constexpr int HIDE_ACTION = 0x4d57;
-  constexpr int CONTROL_ACTION = 0x4d58;
   // The 9-slice plate's corners are 5.3 pt: a thinner piece is made this much bigger and scaled down, so its
   // corners stay round
   constexpr float SMALL_PANEL = 2;
@@ -694,48 +693,22 @@ void MSPauseColumn::setShown(bool shown, bool animate)
   if (shown == m_isShown)
     return;
   this->commitEdit();
+  auto const& theme = Theme::get();
+  // Its rows as they are now, before any of them is taken out of the keys' reach
+  auto steps = this->pageSteps();
   m_isShown = shown;
-  // GD gives the wheel only to the last mouse delegate: a hidden column takes itself out, so the wheel reaches
-  // what's under it (the levels' list, the pause's sliders), and a column shown again comes back on top
-  this->setMouseEnabled(shown);
-  auto time = animate ? std::max(Theme::get().pauseDuration, 0.f) : 0.f;
   m_dragging = nullptr;
   m_resetting = nullptr;
+  m_tracking = m_swiping = false;
   if (!shown)
     m_restore = m_shown;
   this->highlight(-1, false);
   this->stopActionByTag(HIDE_ACTION);
+  // Nothing is chosen from the first frame of going; each one back at rest, its shine stopped
   for (auto item : m_items)
   {
-    // Nothing is chosen from the first frame of fading out; each one back at rest, its shine stopped
     item->setEnabled(shown && this->inView(item));
     item->resetLook();
-    item->fadeTo(time, shown ? 255 : 0);
-  }
-  // The sliders', choices' and fields' controls, the groups' names and the scroll bar fade with the rows
-  std::vector<CCNode*> extras(m_headers.begin(), m_headers.end());
-  for (auto& row : m_sliders)
-    extras.push_back(row.control);
-  for (auto& row : m_choices)
-    extras.push_back(row.control);
-  for (auto& row : m_fields)
-    extras.push_back(row.control);
-  for (auto node : {m_track, m_thumb})
-  {
-    if (node)
-      extras.push_back(node);
-  }
-  for (auto node : extras)
-  {
-    node->stopActionByTag(CONTROL_ACTION);
-    if (time <= 0)
-    {
-      ms::setOpacity(node, shown ? 255 : 0);
-      continue;
-    }
-    auto fade = CCFadeTo::create(time, shown ? 255 : 0);
-    fade->setTag(CONTROL_ACTION);
-    node->runAction(fade);
   }
   if (shown)
   {
@@ -748,19 +721,49 @@ void MSPauseColumn::setShown(bool shown, bool animate)
       this->highlight(m_restore, false);
     }
     m_restore = -1;
+    // From the left, as a page comes (the one going leaves first)
+    if (animate)
+      ms::wave::in(this->pageSteps(), theme.pageInDelay);
+    else
+      ms::wave::show(this->pageSteps());
     return;
   }
-  if (time <= 0)
+  if (!animate)
   {
+    ms::wave::hide(steps);
     this->setVisible(false);
     return;
   }
-  auto hide = CCSequence::createWithTwoActions(CCDelayTime::create(time), CCHide::create());
+  // To the right, as a page goes; hidden as a whole once it has
+  auto gone = ms::wave::out(steps);
+  auto hide = CCSequence::createWithTwoActions(CCDelayTime::create(gone), CCHide::create());
   hide->setTag(HIDE_ACTION);
   this->runAction(hide);
 }
 
 bool MSPauseColumn::isShown() const { return m_isShown; }
+
+ms::wave::Steps MSPauseColumn::pageSteps()
+{
+  ms::wave::Steps steps;
+  ms::wave::Step bar;
+  bar.slide = false;
+  for (auto node : {m_track, m_thumb})
+  {
+    if (ms::wave::shows(node))
+      bar.nodes.push_back(node);
+  }
+  if (!bar.nodes.empty())
+    steps.push_back(std::move(bar));
+  for (auto node : m_layout)
+  {
+    if (ms::wave::shows(node))
+      steps.push_back({{node}});
+  }
+  if (ms::wave::shows(m_exit))
+    steps.push_back({{m_exit}});
+  return steps;
+}
 
 bool MSPauseColumn::canUse() { return m_isShown && this->isVisible() && !ms::coveredBy(this); }
 

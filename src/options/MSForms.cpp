@@ -140,6 +140,7 @@ protected:
       input->setAnchorPoint({0.5f, 0.5f});
       input->setPosition({theme.screenLeft + theme.optionsRowWidth / 2, m_top + fromTop() - height / 2});
       m_mainLayer->addChild(input, 11);
+      m_attached[box].push_back(input);
       m_inputs.emplace_back(input);
       m_top -= height + FIELD_GAP;
     }
@@ -162,6 +163,7 @@ protected:
         ms::setColor(status, theme.optionsInfoColor);
         status->setVisible(false);
         m_mainLayer->addChild(status, 10);
+        this->addToPage(status);
         m_status = status;
       }
     }

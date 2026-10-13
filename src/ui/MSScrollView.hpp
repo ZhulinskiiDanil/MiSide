@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MSWave.hpp"
+
 #include <Geode/Geode.hpp>
 
 #include <functional>
@@ -15,6 +17,9 @@ public:
                               cocos2d::ccColor3B thumb);
 
   cocos2d::CCNode* content() const;
+  // The content's nodes in view, each a step from the top; the scroll bar only fades: what goes and comes with a
+  // page
+  ms::wave::Steps pageSteps();
   void setContentHeight(float height);
   // How far the wheel or an arrow key moves it
   void setStep(float step);

@@ -152,6 +152,8 @@ protected:
     }
 
     column->addRow(en ? "RESET" : "СБРОСИТЬ", [this] { this->openConfirm(); });
+    // Down to the bottom row, scrolling past it
+    column->setViewHeight(theme.screenTop - theme.screenBottom - 4);
     m_mainLayer->addChild(column, 10);
     column->finish(theme.screenLeft, theme.screenTop + fromTop());
     m_column = column;
@@ -237,6 +239,8 @@ protected:
     log::info("Appearance changed: the menu is made again");
     CCDirector::get()->replaceScene(CCTransitionFade::create(0.5f, MenuLayer::scene(false)));
   }
+
+  ms::wave::Steps contentSteps() override { return m_column->pageSteps(); }
 
   MSPauseColumn* m_column = nullptr;
   MSConfirm* m_confirm = nullptr;

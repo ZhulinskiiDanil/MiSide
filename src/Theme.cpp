@@ -368,12 +368,10 @@ namespace
     // 25.6 pt down, 10 in view, the icon 19.5 pt in a white frame; the scroll bar at 202, 4.5 wide; BACK 14 pt high,
     // 26.4 pt up, as wide as the rows and the bar
     theme.achievementsEnabled = true;
-    theme.achievementsTitleLeft = 59.7f;
-    theme.achievementsTitleCapTop = 307.2f;
     theme.achievementsCounterScale = 0.32f;
     theme.achievementsCounterColor = ccc3(0xd8, 0x9c, 0xd8);
     theme.achievementsListLeft = 61.2f;
-    theme.achievementsListTop = 294.4f;
+    theme.achievementsListTop = 202.5f;
     theme.achievementsListBottom = 30;
     theme.achievementsRowWidth = 137.1f;
     theme.achievementsRowHeight = 23.3f;
@@ -401,17 +399,14 @@ namespace
     theme.achievementsScrollWidth = 4.5f;
     theme.achievementsScrollTrackColor = ccc3(0x68, 0x00, 0x84);
     theme.achievementsScrollThumbColor = ccc3(0xff, 0xff, 0xff);
-    theme.achievementsBackTop = 26.4f;
-    theme.achievementsBackWidth = 145.3f;
     theme.achievementsExpandDuration = 0.18f;
     theme.achievementsScrollSmoothing = 0.08f;
 
     // ! --- The mod's screens --- !
     // The achievements' layout; BACK and the button next to it share the row's 145.3 pt
-    theme.screenTitleLeft = 59.7f;
-    theme.screenTitleCapTop = 307.2f;
+    // From the top of the menu's first row (its middle at 195, 15 pt high)
     theme.screenLeft = 61.2f;
-    theme.screenTop = 294.4f;
+    theme.screenTop = 202.5f;
     theme.screenBottom = 30;
     theme.screenWidth = 137.1f;
     theme.screenScrollLeft = 202;
@@ -419,6 +414,14 @@ namespace
     theme.screenBackTop = 26.4f;
     theme.screenBackWidth = 70;
     theme.screenButtonWidth = 71.3f;
+
+    // ! --- Going from page to page --- !
+    // About half a second for a page
+    theme.pageSlide = 44;
+    theme.pageStepDuration = 0.22f;
+    theme.pageStagger = 0.03f;
+    theme.pageStaggerTotal = 0.27f;
+    theme.pageInDelay = 0.06f;
 
     // ! --- GD's settings --- !
     theme.optionsRowWidth = 200;
@@ -864,8 +867,6 @@ namespace
     field("levels-preview-width", theme.levelsPreviewWidth);
 
     field("achievements-enabled", theme.achievementsEnabled);
-    field("achievements-title-left", theme.achievementsTitleLeft);
-    field("achievements-title-cap-top", theme.achievementsTitleCapTop);
     field("achievements-counter-scale", theme.achievementsCounterScale);
     field("achievements-counter-color", theme.achievementsCounterColor);
     field("achievements-list-left", theme.achievementsListLeft);
@@ -897,12 +898,8 @@ namespace
     field("achievements-scroll-width", theme.achievementsScrollWidth);
     field("achievements-scroll-track-color", theme.achievementsScrollTrackColor);
     field("achievements-scroll-thumb-color", theme.achievementsScrollThumbColor);
-    field("achievements-back-top", theme.achievementsBackTop);
-    field("achievements-back-width", theme.achievementsBackWidth);
     field("achievements-expand-duration", theme.achievementsExpandDuration);
     field("achievements-scroll-smoothing", theme.achievementsScrollSmoothing);
-    field("screen-title-left", theme.screenTitleLeft);
-    field("screen-title-cap-top", theme.screenTitleCapTop);
     field("screen-left", theme.screenLeft);
     field("screen-top", theme.screenTop);
     field("screen-bottom", theme.screenBottom);
@@ -912,6 +909,11 @@ namespace
     field("screen-back-top", theme.screenBackTop);
     field("screen-back-width", theme.screenBackWidth);
     field("screen-button-width", theme.screenButtonWidth);
+    field("page-slide", theme.pageSlide);
+    field("page-step-duration", theme.pageStepDuration);
+    field("page-stagger", theme.pageStagger);
+    field("page-stagger-total", theme.pageStaggerTotal);
+    field("page-in-delay", theme.pageInDelay);
     field("options-row-width", theme.optionsRowWidth);
     field("options-view-bottom", theme.optionsViewBottom);
     field("options-info-top", theme.optionsInfoTop);

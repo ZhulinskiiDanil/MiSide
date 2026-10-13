@@ -196,8 +196,7 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
     f.m_moreTitle = this->title(en ? "MORE" : "ДОПОЛНИТЕЛЬНО");
     if (f.m_moreTitle)
     {
-      ms::setOpacity(f.m_moreTitle, 0);
-      f.m_moreTitle->setVisible(false);
+      ms::wave::hide({{{f.m_moreTitle}}});
     }
 
     f.m_card = MSLevelCard::create([this] { this->play(); });
@@ -350,19 +349,18 @@ class $modify(MSLevelSelectLayer, LevelSelectLayer)
 
   // ! --- States --- !
 
+  // A title out to the right, or in from the left, with the rows it names
   void fade(CCNode* node, bool shown)
   {
     if (!node)
       return;
-    auto time = std::max(Theme::get().pauseDuration, 0.f);
-    node->stopAllActions();
     if (shown)
     {
       node->setVisible(true);
-      node->runAction(CCFadeTo::create(time, 255));
+      ms::wave::in({{{node}}}, Theme::get().pageInDelay);
     }
     else
-      node->runAction(CCSequence::createWithTwoActions(CCFadeTo::create(time, 0), CCHide::create()));
+      ms::wave::out({{{node}}});
   }
 
   void showMore(bool shown)

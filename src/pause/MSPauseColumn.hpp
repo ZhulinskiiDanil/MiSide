@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../ui/MSMenuItem.hpp"
+#include "../ui/MSWave.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -77,6 +78,9 @@ public:
   // when it hid is chosen again (no new shine), until the mouse lights another
   void setShown(bool shown, bool animate = true);
   bool isShown() const;
+  // Its rows and groups' names in view, from the top, then Quit; the scroll bar only fades: what goes and comes
+  // with a page
+  ms::wave::Steps pageSteps();
   // True when the key was used
   bool onKey(cocos2d::enumKeyCodes key);
   // A field being typed in stops, its text dropped: true when one was (Esc goes no further then)

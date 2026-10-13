@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../ui/MSMenuItem.hpp"
+#include "../ui/MSWave.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -33,8 +34,10 @@ public:
   void setAccessory(int index, cocos2d::CCNode* node);
   // Each time the rows scroll
   void setOnScroll(std::function<void(int)> scrolled);
-  // Fades out (taking nothing from the first frame) or in
+  // Out to the right (taking nothing from the first frame) or in from the left, as a page goes and comes
   void setShown(bool shown);
+  // The rows in view from the top; the scroll bar only fades
+  ms::wave::Steps pageSteps();
   // Up/Down and their controller keys. True when used
   bool onKey(cocos2d::enumKeyCodes key);
 

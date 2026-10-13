@@ -434,11 +434,13 @@ bool MSAchievementList::init(std::vector<MSAchievement> achievements, bool engli
   this->setPosition({0, 0});
   this->setContentSize({0, 0});
 
-  // The rows are cut at the list's top and bottom; sideways there's room for the shine's glow
+  // The rows are cut at the list's top and bottom; sideways there's room for the shine's glow, and for the rows
+  // sliding past the bar as the page goes
   auto view = this->viewRect();
   auto clip = Clip::create();
   clip->setPosition({0, view.origin.y});
-  clip->setContentSize({theme.achievementsScrollLeft - 1, view.size.height});
+  clip->setContentSize({std::max(theme.achievementsScrollLeft - 1, CCDirector::get()->getWinSize().width),
+                        view.size.height});
   this->addChild(clip);
   m_clip = clip;
 
@@ -731,6 +733,26 @@ void MSAchievementList::scrollWheel(float y, float x)
   m_target = std::clamp(m_target + (y > 0 ? 1 : -1) * this->pitch() * WHEEL_ROWS, 0.f, this->maxScroll());
 }
 
+ms::wave::Steps MSAchievementList::pageSteps()
+{
+  ms::wave::Steps steps;
+  ms::wave::Step bar;
+  bar.slide = false;
+  for (auto node : {m_track, m_thumb})
+  {
+    if (ms::wave::shows(node))
+      bar.nodes.push_back(node);
+  }
+  if (!bar.nodes.empty())
+    steps.push_back(std::move(bar));
+  for (auto row : m_rows)
+  {
+    if (ms::wave::shows(row))
+      steps.push_back({{row}});
+  }
+  return steps;
+}
+
 void MSAchievementList::update(float dt)
 {
   auto const& theme = Theme::get();
@@ -777,6 +799,9 @@ void MSAchievementList::update(float dt)
     changed = true;
   }
   m_scroll = std::clamp(m_scroll, 0.f, std::max(this->maxScroll(), 0.f));
+  // A page's wave moving the rows: they stay as they are until it's done
+  if (std::any_of(m_rows.begin(), m_rows.end(), [](auto row) { return ms::wave::moving(row); }))
+    return;
   this->layout();
   for (auto row : m_rows)
   {

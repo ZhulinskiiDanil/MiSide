@@ -311,10 +311,8 @@ class $modify(MSPauseLayer, PauseLayer)
     }
     for (auto subtitle : {f.m_moreTitle, f.m_settingsTitle})
     {
-      if (!subtitle)
-        continue;
-      ms::setOpacity(subtitle, 0);
-      subtitle->setVisible(false);
+      if (subtitle)
+        ms::wave::hide({{{subtitle}}});
     }
 
     // The level's bar and its numbers
@@ -426,22 +424,20 @@ class $modify(MSPauseLayer, PauseLayer)
 
   // ! --- States --- !
 
-  void fade(CCNode* node, bool shown)
+  // Out to the right, or in from the left, as its column goes and comes; `slide` off: it only fades
+  void fade(CCNode* node, bool shown, bool slide = true)
   {
     if (!node)
       return;
-    auto time = std::max(Theme::get().pauseDuration, 0.f);
     node->stopActionByTag(FADE_ACTION);
-    CCAction* action = nullptr;
+    ms::wave::Steps steps{{{node}, slide}};
     if (shown)
     {
       node->setVisible(true);
-      action = CCFadeTo::create(time, 255);
+      ms::wave::in(steps, Theme::get().pageInDelay);
     }
     else
-      action = CCSequence::createWithTwoActions(CCFadeTo::create(time, 0), CCHide::create());
-    action->setTag(FADE_ACTION);
-    node->runAction(action);
+      ms::wave::out(steps);
   }
 
   void setModMenus(bool shown)
@@ -470,7 +466,7 @@ class $modify(MSPauseLayer, PauseLayer)
     f.m_more->setShown(shown);
     this->fade(f.m_subtitle, !shown);
     this->fade(f.m_moreTitle, shown);
-    this->fade(f.m_info, !shown);
+    this->fade(f.m_info, !shown, false);
     this->setModMenus(shown);
     if (!shown)
       f.m_closedOnFrame = CCDirector::get()->getTotalFrames();
@@ -633,7 +629,7 @@ class $modify(MSPauseLayer, PauseLayer)
     f.m_settings->setShown(shown);
     this->fade(f.m_subtitle, !shown);
     this->fade(f.m_settingsTitle, shown);
-    this->fade(f.m_info, !shown);
+    this->fade(f.m_info, !shown, false);
     if (!shown)
     {
       this->showSettingsInfo("");

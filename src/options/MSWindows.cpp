@@ -700,6 +700,15 @@ protected:
   }
 
   int m_page = 0;
+  // GD's picture of the page moves with it too
+  ms::wave::Steps contentSteps() override
+  {
+    auto steps = MSOptionsScreen::contentSteps();
+    if (ms::wave::shows(m_picture))
+      steps.push_back({{m_picture}});
+    return steps;
+  }
+
   CCNode* m_picture = nullptr;
 };
 

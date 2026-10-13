@@ -187,6 +187,21 @@ void MSMenuColumn::notifyExitHover(bool hovered)
 
 MSMenuItem* MSMenuColumn::getExit() const { return m_exit; }
 
+ms::wave::Steps MSMenuColumn::pageSteps()
+{
+  ms::wave::Steps steps;
+  if (ms::wave::shows(m_subtitle))
+    steps.push_back({{m_subtitle}});
+  for (auto row : m_rows)
+  {
+    if (ms::wave::shows(row))
+      steps.push_back({{row}});
+  }
+  if (ms::wave::shows(m_exit))
+    steps.push_back({{m_exit}});
+  return steps;
+}
+
 bool MSMenuColumn::isConfirming() const { return m_confirming; }
 
 void MSMenuColumn::setConfirming(bool confirming)
@@ -196,39 +211,26 @@ void MSMenuColumn::setConfirming(bool confirming)
   m_confirming = confirming;
   this->notifyExitHover(false);
   auto const& theme = Theme::get();
-  auto time = std::max(theme.confirmDuration, 0.f);
   if (confirming)
   {
     m_keysOnExit = m_hover < 0 && m_shown >= 0 && m_items[m_shown] == m_exit;
   }
   m_shown = -1;
   m_hover = -1;
+  // Nothing is chosen from the first frame of going; each one back at rest, its shine stopped
   for (auto item : m_items)
   {
-    // Nothing is chosen from the first frame of fading out; each one back at rest, its shine stopped
     item->setEnabled(!confirming);
     item->resetLook();
-    item->stopActionByTag(0x4d56);
-    if (confirming)
-    {
-      item->fadeTo(time, 0);
-      auto hide = CCSequence::createWithTwoActions(CCDelayTime::create(time), CCHide::create());
-      hide->setTag(0x4d56);
-      item->runAction(hide);
-    }
-    else
-    {
-      item->setVisible(true);
-      item->fadeTo(time, 255);
-    }
   }
-  if (m_subtitleText)
-  {
-    m_subtitleText->stopAllActions();
-    m_subtitleText->runAction(CCFadeTo::create(time, confirming ? 0 : 255));
-  }
+  // MAIN MENU and the rows go to the right as the question comes, and back from the left, as pages do (the logo
+  // stays)
   if (confirming)
+  {
+    ms::wave::out(this->pageSteps());
     return;
+  }
+  ms::wave::in(this->pageSteps(), theme.pageInDelay);
   // Back to the menu as it was: the keys' Quit chosen again, or the mouse's row once it moves
   m_keyboard = -1;
   if (m_keysOnExit && m_exit)
@@ -272,8 +274,9 @@ void MSMenuColumn::update(float dt)
   this->notifyExitHover(usable && m_exit &&
                         (m_mouseActive ? m_exit->boundingBox().containsPoint(local) : keyed == m_exit));
 
-  // Quit leans away from the mouse, every frame (it springs back with no mouse to lean from)
-  if (m_exit)
+  // Quit leans away from the mouse, every frame (it springs back with no mouse to lean from); not while a page's
+  // wave moves it, or it's out
+  if (m_exit && m_exit->isVisible() && !ms::wave::moving(m_exit))
     m_exit->stepDodge(dt, usable && m_mouseActive ? &local : nullptr);
 
   if (m_onGazeTarget)

@@ -119,7 +119,9 @@ void MSConfirm::open()
   }
   m_shown = -1;
   this->setVisible(true);
-  this->setShown(1, theme.confirmDuration);
+  // Its question then its buttons, from the left as a page comes
+  this->setShown(1, 0);
+  ms::wave::in(this->pageSteps(), theme.pageInDelay);
   // No first, so a stray Enter or click can't quit
   this->highlight(NO, true);
 }
@@ -135,15 +137,28 @@ void MSConfirm::close()
     item->resetLook();
   }
   m_shown = -1;
-  this->setShown(0, theme.confirmDuration);
+  // To the right, as a page goes; hidden as a whole once it has
+  auto gone = ms::wave::out(this->pageSteps());
   this->stopActionByTag(FADE_ACTION);
-  auto hide = CCSequence::createWithTwoActions(CCDelayTime::create(std::max(theme.confirmDuration, 0.f)),
-                                                CCHide::create());
+  auto hide = CCSequence::createWithTwoActions(CCDelayTime::create(gone), CCHide::create());
   hide->setTag(FADE_ACTION);
   this->runAction(hide);
 }
 
 bool MSConfirm::isOpen() const { return m_open; }
+
+ms::wave::Steps MSConfirm::pageSteps()
+{
+  ms::wave::Steps steps;
+  if (ms::wave::shows(m_title))
+    steps.push_back({{m_title}});
+  for (auto item : m_items)
+  {
+    if (ms::wave::shows(item))
+      steps.push_back({{item}});
+  }
+  return steps;
+}
 
 bool MSConfirm::canChoose()
 {

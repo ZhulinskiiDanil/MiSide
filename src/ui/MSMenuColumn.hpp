@@ -2,6 +2,7 @@
 
 #include "MSLogo.hpp"
 #include "MSMenuItem.hpp"
+#include "MSWave.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -38,6 +39,8 @@ public:
   bool onKey(cocos2d::enumKeyCodes key);
   // Quit
   MSMenuItem* getExit() const;
+  // MAIN MENU, the rows and Quit, from the top: what goes as a page comes in over the menu (the logo stays)
+  ms::wave::Steps pageSteps();
   // The quit confirmation takes the list's place: the rows, Quit and the subtitle fade out and take nothing from
   // the first frame (Quit stops leaning away), the logo stays. Back: they fade in, and if the keys chose Quit,
   // Quit is chosen again

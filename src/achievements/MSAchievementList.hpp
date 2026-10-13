@@ -2,6 +2,7 @@
 
 #include "../ui/MSShine.hpp"
 #include "../ui/ShinePass.hpp"
+#include "../ui/MSWave.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -82,6 +83,9 @@ public:
   // Up/Down and Enter, with their controller keys. True when used
   bool onKey(cocos2d::enumKeyCodes key);
   void setActive(bool active);
+  // The rows in view, each a step from the top; the scroll bar only fades: what goes and comes with the page.
+  // While a wave moves its rows, the list doesn't lay them out
+  ms::wave::Steps pageSteps();
 
   void scrollWheel(float y, float x) override;
   void update(float dt) override;

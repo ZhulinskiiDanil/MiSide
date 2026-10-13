@@ -214,17 +214,44 @@ void MSLevelList::setShown(bool shown)
 {
   if (shown == m_shown)
     return;
+  // The rows as they are now, before any of them is taken out of reach
+  auto steps = this->pageSteps();
   m_shown = shown;
-  for (auto row : m_rows)
-    row->resetLook();
+  auto visible = this->visible();
+  for (int i = 0; i < static_cast<int>(m_rows.size()); i++)
+  {
+    m_rows[i]->resetLook();
+    m_rows[i]->setEnabled(shown && i >= m_offset && i < m_offset + visible);
+  }
   if (m_chosen >= 0)
     m_rows[m_chosen]->setChosen(true);
   m_hover = -1;
   m_lastMouse = CCPoint{-1, -1};
-  auto time = std::max(Theme::get().pauseDuration, 0.f);
-  this->layout(true);
+  if (shown)
+    ms::wave::in(this->pageSteps(), Theme::get().pageInDelay);
+  else
+    ms::wave::out(steps);
+}
+
+ms::wave::Steps MSLevelList::pageSteps()
+{
+  ms::wave::Steps steps;
+  ms::wave::Step bar;
+  bar.slide = false;
   for (auto node : {m_track, m_thumb})
-    node->runAction(CCFadeTo::create(time, shown ? 255 : 0));
+  {
+    if (ms::wave::shows(node))
+      bar.nodes.push_back(node);
+  }
+  if (!bar.nodes.empty())
+    steps.push_back(std::move(bar));
+  auto last = std::min(m_offset + this->visible(), static_cast<int>(m_rows.size()));
+  for (int i = std::max(m_offset, 0); i < last; i++)
+  {
+    if (ms::wave::shows(m_rows[i]))
+      steps.push_back({{m_rows[i]}});
+  }
+  return steps;
 }
 
 bool MSLevelList::onKey(enumKeyCodes key)

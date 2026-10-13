@@ -430,8 +430,6 @@ struct Theme
   // (the reward's icon in a white frame on the left, the title in the middle), a scroll bar on the right, BACK under
   // it; Mita on the right. Points of the 569×320 screen, measured on MiSide's (2560×1440)
   bool achievementsEnabled = false;
-  float achievementsTitleLeft = 0;
-  float achievementsTitleCapTop = 0;
   float achievementsCounterScale = 0;
   cocos2d::ccColor3B achievementsCounterColor;
   float achievementsListLeft = 0;
@@ -466,17 +464,14 @@ struct Theme
   float achievementsScrollWidth = 0;
   cocos2d::ccColor3B achievementsScrollTrackColor;
   cocos2d::ccColor3B achievementsScrollThumbColor;
-  float achievementsBackTop = 0;
-  float achievementsBackWidth = 0;
   // A row opening or closing takes this long; the list follows the wheel with this smoothing (seconds)
   float achievementsExpandDuration = 0;
   float achievementsScrollSmoothing = 0;
 
   // ! --- The mod's screens --- !
-  // The statistics' and the other screens over the menu, laid out as the achievements': the title, a column on the
-  // left with its scroll bar, the bottom row of buttons (BACK first). Points of the 569×320 screen, from its top
-  float screenTitleLeft = 0;
-  float screenTitleCapTop = 0;
+  // The statistics' and the other screens: pages of the menu, as MiSide's. The logo stays; the page's title takes
+  // MAIN MENU's place and look, a column on the left from the menu's first row down with its scroll bar, the bottom
+  // row of buttons (BACK first). Points of the 569×320 screen, from its top
   float screenLeft = 0;
   float screenTop = 0;
   float screenBottom = 0;
@@ -488,6 +483,17 @@ struct Theme
   float screenBackWidth = 0;
   // The other buttons in the bottom row (CREDITS)
   float screenButtonWidth = 0;
+
+  // ! --- Going from page to page --- !
+  // The page going: its title and rows slide right and fade out one after another from the top; the page coming
+  // slides in from the left the same way into their places. This far (points), each step this long (seconds, fast
+  // first, slowing down), the next step this much later but the whole page's at most `pageStaggerTotal`, the coming
+  // page this much after the going one
+  float pageSlide = 0;
+  float pageStepDuration = 0;
+  float pageStagger = 0;
+  float pageStaggerTotal = 0;
+  float pageInDelay = 0;
 
   // ! --- GD's settings --- !
   // Their screens' column: wider rows than the pause's, scrolling down to the view's bottom; under it, what the lit

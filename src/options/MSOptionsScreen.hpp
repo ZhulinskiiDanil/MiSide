@@ -6,6 +6,7 @@
 #include <Geode/Geode.hpp>
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // A screen of the mod's for GD's settings and the windows they open: paragraphs of text under the title, a column of
@@ -47,6 +48,8 @@ protected:
   bool onKey(cocos2d::enumKeyCodes key) override;
   // Esc while typing a number stops the typing, not the screen
   bool onBack() override;
+  // The paragraphs, the column's rows and what the lit one does, for the page's transitions
+  ms::wave::Steps contentSteps() override;
 
   MSPauseColumn* m_column = nullptr;
   cocos2d::CCNode* m_info = nullptr;
@@ -54,6 +57,8 @@ protected:
   // The column's top, in the 320 pt screen's points from its bottom
   float m_top = 0;
   std::vector<cocos2d::CCNode*> m_texts;
+  // Nodes moving with one of m_texts in a page's transition (a form's field with its box)
+  std::unordered_map<cocos2d::CCNode*, std::vector<cocos2d::CCNode*>> m_attached;
   std::vector<geode::Ref<cocos2d::CCNode>> m_driven;
 };
 

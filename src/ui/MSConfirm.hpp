@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MSMenuItem.hpp"
+#include "MSWave.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -45,6 +46,8 @@ public:
   // Fades out; nothing is chosen from the first frame
   void close();
   bool isOpen() const;
+  // Its question and buttons, from the top: what goes and comes as it opens and closes
+  ms::wave::Steps pageSteps();
   // A key while it's open: every key is its, so none reaches what's hidden. Esc and B are `keyBack`
   void onKey(cocos2d::enumKeyCodes key);
   void keyBack();
