@@ -48,21 +48,22 @@ namespace
 #endif
   }
 
-  // A node only cocos' own code or the mod's draws: its setOpacity and the cascade are safe on it. Anything else
-  // (GD's classes, and every other mod's, which may hand out its own subclass of GD's) may read members it never
-  // set (GJItemIcon's does), so it's never faded, only hidden while the wave moves it
+  // A node whose opacity can be set: exactly one of cocos' plain classes (not GD's or another mod's subclass of
+  // one, whose setOpacity may reach members it never set: GJItemIcon's does)
+  bool isPlain(CCNode* node)
+  {
+    auto const& type = typeid(*node);
+    return type == typeid(CCSprite) || type == typeid(CCLabelBMFont) || type == typeid(CCLabelTTF) ||
+           type == typeid(CCLayerColor) || type == typeid(CCLayerGradient) || type == typeid(CCNodeRGBA) ||
+           type == typeid(CCLayerRGBA) || type == typeid(CCScale9Sprite) || type == typeid(CCSpriteBatchNode);
+  }
+
+  // The mod's own classes: not faded themselves (their setOpacity may be their own), only what's under them
   bool isSafe(CCNode* node)
   {
     void const* vtable = nullptr;
     std::memcpy(&vtable, static_cast<void const*>(node), sizeof(vtable));
-    if (isOwn(vtable))
-      return true;
-    std::string_view name = typeid(*node).name();
-#ifdef GEODE_IS_WINDOWS
-    return name.starts_with("class cocos2d::") || name.starts_with("struct cocos2d::");
-#else
-    return name.starts_with("N7cocos2d");
-#endif
+    return isPlain(node) || isOwn(vtable);
   }
 
   // How a node's look fades. A menu item through its own multiplier (its look is its own, lit or not); the topmost
@@ -110,9 +111,9 @@ namespace
     }
     auto children = CCArrayExt<CCNode*>(node->getChildren());
     auto drives = false;
-    // Its opacity must not reach a node that isn't safe, through the cascade or its own setOpacity (a menu item's sets its
-    // images' directly): a node holding one isn't faded itself, only what's under it is
-    if (rgba && !holdsUnsafe(node))
+    // Faded itself only as a plain cocos node with nothing unsafe under it (the cascade must not reach one); else only
+    // what's under it is
+    if (rgba && isPlain(node) && !holdsUnsafe(node))
     {
       if (!followsParent)
         fade.tops.emplace_back(node, rgba->getOpacity());
