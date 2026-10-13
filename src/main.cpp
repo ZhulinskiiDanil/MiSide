@@ -10,7 +10,8 @@
 #include "ui/MSModTray.hpp"
 #include "ui/MSMorePopup.hpp"
 #include "ui/MSProfileCard.hpp"
-#include "ui/MSTransition.hpp"
+#include "ui/MSScenes.hpp"
+#include "ui/MSWave.hpp"
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
@@ -85,7 +86,6 @@ namespace
   // GD's own delay between saving and ending (MenuLayer::FLAlert_Clicked, the quit popup's Yes)
   constexpr float QUIT_DELAY = 0.5f;
   // Over the whole menu
-  constexpr int TRANSITION_Z = 1000;
 
   // Hidden, never removed: the node stays in the tree for the mods that look for it
   void hide(CCNode* node)
@@ -108,7 +108,6 @@ class $modify(MSMenuLayer, MenuLayer)
   {
     MSMenuColumn* m_column = nullptr;
     MSMita* m_mita = nullptr;
-    MSTransition* m_transition = nullptr;
     MSProfileCard* m_card = nullptr;
     MSConfirm* m_confirm = nullptr;
     // The confirmation closed on this frame: the same Esc doesn't open it again
@@ -119,6 +118,8 @@ class $modify(MSMenuLayer, MenuLayer)
     // GD's settings button (hidden, the column presses it), and whether GD's own window is asked for
     Ref<CCMenuItem> m_settingsButton;
     bool m_vanillaOptions = false;
+    // GD's CREATE button: its screen is a page of the mod's too, gone to as a page
+    Ref<CCMenuItem> m_creatorButton;
   };
 
   bool init()
@@ -134,12 +135,14 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addBackground();
     this->addColumn();
     this->addConfirm();
-    this->addTransition();
     this->addProfileCard();
     this->addTray();
     this->addGuard();
     // Last: her place in the drawing order comes from everything else that's in the layer by now
     this->addMita();
+    // The page comes in from the left once the scene is in (from the game's start, a level, CREATE)
+    ms::wave::hide(this->pageSteps());
+    ms::scenes::whenShown(this, [this] { ms::wave::in(this->pageSteps()); });
     // The menu's music back (from the icon kit's): GD starts it only when it isn't already playing
     GameManager::get()->fadeInMenuMusic();
     return true;
@@ -256,6 +259,8 @@ class $modify(MSMenuLayer, MenuLayer)
         column->addEntry(text, button);
       // The mod's appearance settings right after GD's: no vanilla button, a hidden one of its own, pressed through
       // the column's darkening as the others are
+      if (std::string_view(entry.button) == "editor-button")
+        m_fields->m_creatorButton = button;
       if (std::string_view(entry.button) == "settings-button")
       {
         m_fields->m_settingsButton = button;
@@ -286,24 +291,37 @@ class $modify(MSMenuLayer, MenuLayer)
     });
   }
 
-  void addTransition()
+  // MAIN MENU and its rows, then the rest that goes with them (only fading): the tray, the profile card, the mods'
+  // nodes. The logo, the background and Mita stay
+  ms::wave::Steps pageSteps()
   {
-    auto transition = MSTransition::create();
-    if (!transition)
-      return;
-    transition->setID("transition"_spr);
-    this->addChild(transition, TRANSITION_Z);
-    m_fields->m_transition = transition;
+    auto column = m_fields->m_column;
+    if (!column)
+      return {};
+    auto steps = column->pageSteps();
+    ms::wave::Step rest;
+    rest.slide = false;
+    for (auto child : CCArrayExt<CCNode*>(this->getChildren()))
+    {
+      auto id = child->getID();
+      if (child == column || child == m_fields->m_mita || id == "background"_spr)
+        continue;
+      if (ms::wave::shows(child))
+        rest.nodes.push_back(child);
+    }
+    if (!rest.nodes.empty())
+      steps.push_back(std::move(rest));
+    return steps;
   }
 
   // ! --- Running an item --- !
 
-  // The darkening, then the vanilla button's activate(): its callback, and every mod's hook on it, run as usual
+  // The vanilla button's activate(): its callback, and every mod's hook on it, run as usual. CREATE as a page:
+  // the menu's out, then GD's screen at once (no fade through black), coming in the same way
   void runItem(MSMenuItem* item)
   {
     Ref<CCMenuItem> target = item->getTarget();
     auto column = m_fields->m_column;
-    auto transition = m_fields->m_transition;
     if (!target || !column)
       return;
     if (m_fields->m_mita)
@@ -314,13 +332,25 @@ class $modify(MSMenuLayer, MenuLayer)
       this->openConfirm();
       return;
     }
-    if (!transition)
+    if (target != m_fields->m_creatorButton)
     {
       target->activate();
       return;
     }
     column->setBusy(true);
-    transition->play([target] { target->activate(); }, [column] { column->setBusy(false); });
+    auto gone = ms::wave::out(this->pageSteps());
+    Ref<MenuLayer> self = this;
+    this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(gone), CallFuncExt::create([self, target] {
+      auto menu = static_cast<MSMenuLayer*>(self.data());
+      ms::scenes::skipNextTransition();
+      target->activate();
+      // No scene came (a mod's popup instead): the menu back as it was
+      if (!ms::scenes::skipped())
+      {
+        menu->m_fields->m_column->setBusy(false);
+        ms::wave::in(menu->pageSteps());
+      }
+    })));
   }
 
   // ! --- GD's settings --- !

@@ -1,6 +1,7 @@
 #include "MSMita.hpp"
 
 #include "../Theme.hpp"
+#include "MSScenes.hpp"
 #include "MSStyle.hpp"
 #include "../mita3d/Renderer.hpp"
 
@@ -463,6 +464,7 @@ bool MSMita::init()
 {
   if (!CCNode::init())
     return false;
+  m_noIntro = ms::scenes::comingAtOnce();
   m_modelPath = Mod::get()->getResourcesDir() / "mita.glb";
   std::error_code error;
 #if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_ANDROID)
@@ -843,7 +845,7 @@ void MSMita::update3D(float dt)
     m_renderHeight = height;
     m_outlineFor = nullptr;
     this->layout();
-    if (created && Theme::get().introDuration > 0)
+    if (created && Theme::get().introDuration > 0 && !m_noIntro)
     {
       m_sprite->setOpacity(0);
       m_sprite->runAction(CCFadeTo::create(Theme::get().introDuration, 255));
@@ -1067,7 +1069,7 @@ void MSMita::show(int index)
     m_sprite->setPosition(m_home);
     this->checkSprite();
     auto const& theme = Theme::get();
-    if (theme.introDuration > 0)
+    if (theme.introDuration > 0 && !m_noIntro)
     {
       m_sprite->setOpacity(0);
       m_sprite->runAction(CCFadeTo::create(theme.introDuration, 255));

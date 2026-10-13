@@ -551,8 +551,6 @@ namespace
     // ! --- Timings --- !
     theme.hoverDuration = 0.08f;
     theme.introDuration = 0.18f;
-    theme.introStagger = 0.015f;
-    theme.introShift = 0;
     theme.fadeDuration = 0.15f;
     theme.fadeBackDuration = 0.15f;
     theme.parallaxSmoothing = 0.12f;
@@ -1024,8 +1022,6 @@ namespace
 
     field("hover-duration", theme.hoverDuration);
     field("intro-duration", theme.introDuration);
-    field("intro-stagger", theme.introStagger);
-    field("intro-shift", theme.introShift);
     field("fade-duration", theme.fadeDuration);
     field("fade-back-duration", theme.fadeBackDuration);
     field("parallax-smoothing", theme.parallaxSmoothing);

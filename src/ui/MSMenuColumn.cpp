@@ -118,14 +118,6 @@ void MSMenuColumn::finish()
                m_exit->isVisible() ? "" : "not ");
   }
   this->measureArea();
-
-  for (size_t i = 0; i < m_items.size(); i++)
-    m_items[i]->playIntro(theme.introStagger * i);
-  if (m_subtitleText && theme.introDuration > 0)
-  {
-    ms::setOpacity(m_subtitleText, 0);
-    m_subtitleText->runAction(CCFadeTo::create(theme.introDuration, 255));
-  }
 }
 
 void MSMenuColumn::measureArea()

@@ -4,6 +4,7 @@
 #include "ui/MSLogo.hpp"
 #include "ui/MSMita.hpp"
 #include "ui/MSModTray.hpp"
+#include "ui/MSScenes.hpp"
 #include "ui/MSStyle.hpp"
 #include "ui/MSWave.hpp"
 
@@ -111,6 +112,7 @@ class $modify(MSCreatorLayer, CreatorLayer)
   struct Fields
   {
     bool m_styled = false;
+    bool m_leaving = false;
     MSPauseColumn* m_column = nullptr;
     CCNode* m_title = nullptr;
   };
@@ -236,6 +238,7 @@ class $modify(MSCreatorLayer, CreatorLayer)
 
     // Out of sight until the scene is in: then from the left, as a page comes
     ms::wave::hide(this->pageSteps());
+    ms::scenes::whenShown(this, [this] { ms::wave::in(this->pageSteps()); });
     f.m_styled = true;
   }
 
@@ -253,10 +256,20 @@ class $modify(MSCreatorLayer, CreatorLayer)
     return steps;
   }
 
-  void onEnterTransitionDidFinish()
+  // BACK, Esc: the page out, then the menu at once (no fade through black), its page coming in
+  void onBack(CCObject* sender)
   {
-    CreatorLayer::onEnterTransitionDidFinish();
-    if (m_fields->m_styled)
-      ms::wave::in(this->pageSteps());
+    auto& f = *m_fields.self();
+    if (!f.m_styled)
+      return CreatorLayer::onBack(sender);
+    if (f.m_leaving)
+      return;
+    f.m_leaving = true;
+    auto gone = ms::wave::out(this->pageSteps());
+    Ref<CreatorLayer> self = this;
+    this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(gone), CallFuncExt::create([self] {
+      ms::scenes::skipNextTransition();
+      static_cast<MSCreatorLayer*>(self.data())->CreatorLayer::onBack(nullptr);
+    })));
   }
 };

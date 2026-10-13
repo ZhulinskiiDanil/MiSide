@@ -658,8 +658,6 @@ struct Theme
   // ! --- Timings --- !
   float hoverDuration = 0;
   float introDuration = 0;
-  float introStagger = 0;
-  float introShift = 0;
   float fadeDuration = 0;
   float fadeBackDuration = 0;
   // The background reaches the mouse's offset in about this many seconds

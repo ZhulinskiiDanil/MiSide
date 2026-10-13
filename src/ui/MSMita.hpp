@@ -149,4 +149,6 @@ protected:
   float m_unit = 1;
   cocos2d::CCPoint m_parallax;
   bool m_failed = false;
+  // Her scene comes in at once in place of another with her (ms::scenes): no fade-in
+  bool m_noIntro = false;
 };

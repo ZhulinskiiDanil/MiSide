@@ -480,27 +480,6 @@ void MSMenuItem::resetLook()
   this->refresh(false);
 }
 
-void MSMenuItem::playIntro(float delay)
-{
-  auto const& theme = Theme::get();
-  if (theme.introDuration <= 0)
-    return;
-  if (theme.introShift != 0)
-  {
-    auto position = this->getPosition();
-    this->setPosition(position - CCPoint{theme.introShift, 0});
-    this->runAction(CCSequence::createWithTwoActions(
-      CCDelayTime::create(delay), CCEaseOut::create(CCMoveTo::create(theme.introDuration, position), 2.f)));
-  }
-  m_visibility = 0;
-  m_visibilityFrom = 0;
-  m_visibilityTo = 1;
-  m_visibilityTime = 0;
-  m_visibilityDuration = theme.introDuration;
-  m_visibilityDelay = std::max(delay, 0.f);
-  this->apply();
-}
-
 void MSMenuItem::fadeTo(float time, GLubyte opacity)
 {
   m_visibilityFrom = m_visibility;

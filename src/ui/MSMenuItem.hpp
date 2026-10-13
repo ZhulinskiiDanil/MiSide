@@ -71,8 +71,6 @@ public:
   void setChosen(bool chosen);
   // Its vanilla button can't be pressed now
   bool isUnavailable() const;
-  // Fades in when the menu opens
-  void playIntro(float delay);
   // Fades it as a whole (the quit confirmation coming and going): its plate, text, accent and glow each end at their
   // own style's opacity times this, never at full
   void fadeTo(float time, GLubyte opacity);
