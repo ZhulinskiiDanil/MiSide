@@ -142,7 +142,11 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addMita();
     // The page comes in from the left once the scene is in (from the game's start, a level, CREATE)
     ms::wave::hide(this->pageSteps());
-    ms::scenes::whenShown(this, [this] { ms::wave::in(this->pageSteps()); });
+    ms::scenes::whenShown(this, [this] {
+      auto steps = this->pageSteps();
+      log::debug("Pages: the menu's page in, {} steps", steps.size());
+      ms::wave::in(steps);
+    });
     // The menu's music back (from the icon kit's): GD starts it only when it isn't already playing
     GameManager::get()->fadeInMenuMusic();
     return true;

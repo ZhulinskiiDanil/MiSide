@@ -57,6 +57,8 @@ public:
 
   // Before any row: the rows' width (the theme's pause row by default); a slider keeps to the row's right end
   void setRowWidth(float width);
+  // Before any row: how they look (the pause's by default; the main menu's rows: MSMenuItem::Style::row())
+  void setItemStyle(MSMenuItem::Style style);
   // Before finish(): the rows past this height (from the first one's top) scroll. 0: no limit
   void setViewHeight(float height);
   // sound: in place of the click (empty: the click)
@@ -179,6 +181,7 @@ protected:
   std::unordered_map<MSMenuItem*, std::string> m_infos;
   std::function<void(std::string const&)> m_onInfo;
   float m_rowWidth = 0;
+  std::optional<MSMenuItem::Style> m_style;
   int m_shown = -1;
   // The row chosen when it hid (a confirmation, More), chosen again when it shows
   int m_restore = -1;

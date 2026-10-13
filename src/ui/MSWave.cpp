@@ -1,6 +1,7 @@
 #include "MSWave.hpp"
 
 #include "../Theme.hpp"
+#include "MSMenuItem.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -40,38 +41,79 @@ namespace
 #endif
   }
 
-  // How a node's look fades: the topmost nodes with an opacity get theirs set (each with its own), everything under
-  // them follows through cocos' cascade, turned on for the wave where it was off
+  // How a node's look fades. A menu item through its own multiplier (its look is its own, lit or not); the topmost
+  // other nodes with an opacity get theirs set, what's under them following through cocos' cascade, turned on for
+  // the wave where it was off. Nothing reaches a node of GD's (neither setOpacity nor the cascade's
+  // updateDisplayedOpacity is safe on every one: GJItemIcon's reads members some icons never set): those hide while
+  // the wave moves them, and show again in place
   struct Fade
   {
+    std::vector<Ref<MSMenuItem>> items;
     std::vector<std::pair<Ref<CCNode>, GLubyte>> tops;
     std::vector<Ref<CCNode>> cascaded;
+    std::vector<Ref<CCNode>> hidden;
   };
+
+  // A node of GD's in its tree
+  bool holdsGames(CCNode* node)
+  {
+    if (typeinfo_cast<CCRGBAProtocol*>(node) && isGames(node))
+      return true;
+    for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
+    {
+      if (holdsGames(child))
+        return true;
+    }
+    return false;
+  }
 
   void collect(CCNode* node, bool followsParent, Fade& fade)
   {
+    if (auto item = typeinfo_cast<MSMenuItem*>(node))
+    {
+      fade.items.emplace_back(item);
+      return;
+    }
     auto rgba = typeinfo_cast<CCRGBAProtocol*>(node);
+    if (rgba && isGames(node))
+    {
+      if (node->isVisible())
+      {
+        node->setVisible(false);
+        fade.hidden.emplace_back(node);
+      }
+      return;
+    }
+    auto children = CCArrayExt<CCNode*>(node->getChildren());
+    auto drives = false;
     if (rgba)
     {
-      // Under no opacity of ours a node of GD's can't fade (it's left as it is)
-      if (!followsParent && !isGames(node))
-        fade.tops.emplace_back(node, rgba->getOpacity());
-      if (!rgba->isCascadeOpacityEnabled())
+      // Its opacity (and the cascade from it) must not reach a node of GD's: set only where it can't
+      auto unsafe = holdsGames(node);
+      if (!unsafe)
       {
-        rgba->setCascadeOpacityEnabled(true);
-        fade.cascaded.emplace_back(node);
+        if (!followsParent)
+          fade.tops.emplace_back(node, rgba->getOpacity());
+        if (!rgba->isCascadeOpacityEnabled())
+        {
+          rgba->setCascadeOpacityEnabled(true);
+          fade.cascaded.emplace_back(node);
+        }
+        drives = true;
       }
+      else if (!rgba->isCascadeOpacityEnabled() && !followsParent)
+        fade.tops.emplace_back(node, rgba->getOpacity());
     }
-    // Its children follow when its own opacity moves: set here, or following its parent's
-    auto driven = rgba && (followsParent || !isGames(node));
-    for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
-      collect(child, driven, fade);
+    for (auto child : children)
+      collect(child, drives, fade);
   }
 
-  // Back as it was: the tops' opacities, then the cascade off again where it was, what's under those shown with
-  // their own opacities again
+  // Back as it was: the items' multipliers, the tops' opacities, then the cascade off again where it was (what's
+  // under those shown with their own opacities again), GD's nodes shown
   void restore(Fade const& fade)
   {
+    for (auto const& item : fade.items)
+      item->setWaveAlpha(1);
     for (auto const& [node, opacity] : fade.tops)
     {
       if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node.data()))
@@ -87,6 +129,8 @@ namespace
           inner->updateDisplayedOpacity(255);
       }
     }
+    for (auto const& node : fade.hidden)
+      node->setVisible(true);
   }
 
   // One node of a step: from its place (and opacity) to the right and transparent, or from the left into them
@@ -149,6 +193,8 @@ namespace
       auto shown = m_in ? eased : 1 - eased;
       auto offset = m_in ? -m_slide * (1 - eased) : m_slide * eased;
       m_pTarget->setPosition({m_home.x + offset, m_home.y});
+      for (auto const& item : m_fade.items)
+        item->setWaveAlpha(shown);
       for (auto const& [node, opacity] : m_fade.tops)
       {
         if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node.data()))

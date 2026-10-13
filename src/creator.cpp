@@ -145,7 +145,11 @@ class $modify(MSCreatorLayer, CreatorLayer)
     auto column = MSPauseColumn::create();
     if (!column)
       return;
-    column->setRowWidth(theme.optionsRowWidth);
+    // The main menu's rows, as wide (the longer names made to fit)
+    auto style = MSMenuItem::Style::row();
+    style.fitText = true;
+    column->setItemStyle(style);
+    column->setRowWidth(theme.rowWidth);
     auto rows = 0;
     for (auto const& group : groups())
     {

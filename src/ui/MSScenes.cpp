@@ -17,7 +17,7 @@ namespace
     return s_armed && CCDirector::get()->getTotalFrames() - s_armedOn <= 1;
   }
 
-  // Waits for its scene to be the running one, then calls back once and goes
+  // Waits for its scene to be the running one, then calls back once
   class Waiter : public CCNode
   {
   public:
@@ -44,8 +44,10 @@ namespace
       if (CCDirector::get()->getRunningScene() != scene)
         return;
       this->unscheduleUpdate();
+      log::debug("Pages: {}'s scene is in", this->getParent() ? typeid(*this->getParent()).name() : "?");
+      // Stays, idle (going from inside its own update isn't safe)
       auto then = std::move(m_then);
-      this->removeFromParent();
+      m_then = nullptr;
       if (then)
         then();
     }
@@ -79,6 +81,7 @@ class $modify(MSScenesDirector, CCDirector)
 {
   bool replaceScene(CCScene* scene)
   {
+    log::debug("Pages: scene change, {}", armed() ? "without its transition" : "as GD makes it");
     if (armed())
     {
       s_armed = false;

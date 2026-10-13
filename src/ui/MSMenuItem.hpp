@@ -71,6 +71,8 @@ public:
   void setChosen(bool chosen);
   // Its vanilla button can't be pressed now
   bool isUnavailable() const;
+  // How much of it a page's wave shows (0..1), over its own look: what's lit or not stays its own to draw
+  void setWaveAlpha(float alpha);
   // Fades it as a whole (the quit confirmation coming and going): its plate, text, accent and glow each end at their
   // own style's opacity times this, never at full
   void fadeTo(float time, GLubyte opacity);
@@ -140,6 +142,7 @@ protected:
   float m_lookDuration = 0;
   // 0..1: how much of it shows (the intro, the confirmation's fades), and where it's going, after a delay
   float m_visibility = 1;
+  float m_waveAlpha = 1;
   float m_visibilityFrom = 1;
   float m_visibilityTo = 1;
   float m_visibilityTime = 0;

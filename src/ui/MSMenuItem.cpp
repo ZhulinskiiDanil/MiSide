@@ -442,7 +442,7 @@ void MSMenuItem::refresh(bool animate)
 void MSMenuItem::apply()
 {
   auto const& look = m_look;
-  auto visible = std::clamp(m_visibility, 0.f, 1.f);
+  auto visible = std::clamp(m_visibility, 0.f, 1.f) * std::clamp(m_waveAlpha, 0.f, 1.f);
   ms::setColor(m_plate, look.plate);
   ms::setOpacity(m_plate, toByte(look.plateOpacity * visible));
   ms::setColor(m_label, look.text);
@@ -478,6 +478,14 @@ void MSMenuItem::resetLook()
     m_shineGlow->setPass(0, 0);
   }
   this->refresh(false);
+}
+
+void MSMenuItem::setWaveAlpha(float alpha)
+{
+  if (alpha == m_waveAlpha)
+    return;
+  m_waveAlpha = alpha;
+  this->apply();
 }
 
 void MSMenuItem::fadeTo(float time, GLubyte opacity)

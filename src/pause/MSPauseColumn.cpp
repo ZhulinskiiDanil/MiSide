@@ -109,10 +109,12 @@ float MSPauseColumn::sliderLeft() const
   return theme.pauseSliderLeft + (m_rowWidth - theme.pauseRowWidth);
 }
 
+void MSPauseColumn::setItemStyle(MSMenuItem::Style style) { m_style = std::move(style); }
+
 MSMenuItem* MSPauseColumn::makeItem(std::string const& text, std::function<void()> action, std::string const& sound,
                                     float reserveRight)
 {
-  auto style = MSMenuItem::Style::pause();
+  auto style = m_style ? *m_style : MSMenuItem::Style::pause();
   if (reserveRight > 0)
   {
     style.fitText = true;
