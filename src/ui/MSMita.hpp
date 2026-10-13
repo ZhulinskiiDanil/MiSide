@@ -32,6 +32,8 @@ public:
 
   // Never claims a touch: it only sparks
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
+  // A click on her passed on by a page standing over her menu (ms::coveredBy counts it as a popup over her)
+  void clickThrough(cocos2d::CCTouch* touch);
 
   void update(float dt) override;
   void visit() override;

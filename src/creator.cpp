@@ -113,6 +113,8 @@ class $modify(MSCreatorLayer, CreatorLayer)
   {
     bool m_styled = false;
     bool m_leaving = false;
+    // GD's own way back, called once the page is out: let through
+    bool m_passing = false;
     MSPauseColumn* m_column = nullptr;
     CCNode* m_title = nullptr;
   };
@@ -260,11 +262,20 @@ class $modify(MSCreatorLayer, CreatorLayer)
     return steps;
   }
 
+  // Esc: GD's has its own copy of onBack's code, so it goes the same way as BACK here
+  void keyBackClicked()
+  {
+    if (!m_fields->m_styled)
+      return CreatorLayer::keyBackClicked();
+    this->onBack(nullptr);
+  }
+
   // BACK, Esc: the page out, then the menu at once (no fade through black), its page coming in
   void onBack(CCObject* sender)
   {
     auto& f = *m_fields.self();
-    if (!f.m_styled)
+    // Called later from outside this hook, GD's onBack comes through it again: on to GD's then
+    if (!f.m_styled || f.m_passing)
       return CreatorLayer::onBack(sender);
     if (f.m_leaving)
       return;
@@ -272,8 +283,11 @@ class $modify(MSCreatorLayer, CreatorLayer)
     auto gone = ms::wave::out(this->pageSteps());
     Ref<CreatorLayer> self = this;
     this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(gone), CallFuncExt::create([self] {
+      auto layer = static_cast<MSCreatorLayer*>(self.data());
       ms::scenes::skipNextTransition();
-      static_cast<MSCreatorLayer*>(self.data())->CreatorLayer::onBack(nullptr);
+      layer->m_fields->m_passing = true;
+      layer->CreatorLayer::onBack(nullptr);
+      layer->m_fields->m_passing = false;
     })));
   }
 };

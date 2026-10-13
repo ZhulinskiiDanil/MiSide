@@ -376,7 +376,7 @@ MSMita* MSMita::carry()
   mita->m_exitHovered = false;
   mita->m_exitConfirmation = false;
   mita->m_menuGazeTarget.reset();
-  log::info("Mita: carried to the next scene as she is");
+  log::debug("Mita: carried to the next scene as she is");
   return mita;
 }
 
@@ -641,20 +641,26 @@ bool MSMita::isDrawnAt(CCPoint world)
 
 bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
 {
+  if (ms::coveredBy(this))
+    return false;
+  this->clickThrough(touch);
+  return false;
+}
+
+void MSMita::clickThrough(CCTouch* touch)
+{
   auto const& theme = Theme::get();
   if (!theme.mitaSparkEnabled || m_failed)
-    return false;
-  // Shown, and no popup over her
+    return;
+  // Shown
   for (CCNode* node = this; node; node = node->getParent())
   {
     if (!node->isVisible())
-      return false;
+      return;
   }
-  if (ms::coveredBy(this))
-    return false;
   auto world = touch->getLocation();
   if (!this->isDrawnAt(world))
-    return false;
+    return;
   this->spark(world);
   // MiSide's own click on her, with the sparks, as loud as GD's effects
   ms::playSound(theme.mitaSparkSound);
@@ -678,7 +684,6 @@ bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
       }
     }
   }
-  return false;
 }
 
 void MSMita::spark(CCPoint world)

@@ -9,12 +9,6 @@
 #include <string_view>
 #include <typeinfo>
 
-#ifdef GEODE_IS_WINDOWS
-#include <Windows.h>
-#else
-#include <dlfcn.h>
-#endif
-
 using namespace geode::prelude;
 
 namespace
@@ -23,29 +17,23 @@ namespace
   // Set on a node a wave hid, so the next wave in shows it (and only those of the hidden ones)
   constexpr auto HIDDEN_KEY = "wave-hidden"_spr;
 
-  // Whether a node's class is the mod's own: its vtable in this module's code
-  bool isOwn(void const* vtable)
+  // Whether a node's class is the mod's own: by its name (MS..., Mita...). Not by where its vtable is: a class of
+  // GD's that Geode's bindings build inline (GJItemIcon::create) has its vtable in this module too
+  bool isOwn(CCNode* node)
   {
+    std::string_view name = typeid(*node).name();
 #ifdef GEODE_IS_WINDOWS
-    static auto const RANGE = [] {
-      HMODULE module = nullptr;
-      GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                         reinterpret_cast<LPCWSTR>(&isOwn), &module);
-      auto base = reinterpret_cast<uintptr_t>(module);
-      auto dos = reinterpret_cast<IMAGE_DOS_HEADER const*>(base);
-      auto nt = reinterpret_cast<IMAGE_NT_HEADERS const*>(base + dos->e_lfanew);
-      return std::pair{base, base + nt->OptionalHeader.SizeOfImage};
-    }();
-    auto address = reinterpret_cast<uintptr_t>(vtable);
-    return RANGE.first && address >= RANGE.first && address < RANGE.second;
+    for (auto kind : {"class ", "struct "})
+    {
+      if (name.starts_with(kind))
+        name.remove_prefix(std::string_view(kind).size());
+    }
 #else
-    static void* const BASE = [] {
-      Dl_info info{};
-      return dladdr(reinterpret_cast<void*>(&isOwn), &info) ? info.dli_fbase : nullptr;
-    }();
-    Dl_info info{};
-    return BASE && dladdr(vtable, &info) && info.dli_fbase == BASE;
+    // Itanium's: the name's length first
+    while (!name.empty() && name.front() >= '0' && name.front() <= '9')
+      name.remove_prefix(1);
 #endif
+    return name.starts_with("MS") || name.starts_with("Mita");
   }
 
   // A node whose opacity can be set: exactly one of cocos' plain classes (not GD's or another mod's subclass of
@@ -55,16 +43,13 @@ namespace
     auto const& type = typeid(*node);
     return type == typeid(CCSprite) || type == typeid(CCLabelBMFont) || type == typeid(CCLabelTTF) ||
            type == typeid(CCLayerColor) || type == typeid(CCLayerGradient) || type == typeid(CCNodeRGBA) ||
-           type == typeid(CCLayerRGBA) || type == typeid(CCScale9Sprite) || type == typeid(CCSpriteBatchNode);
+           type == typeid(CCLayerRGBA) || type == typeid(CCScale9Sprite) || type == typeid(CCSpriteBatchNode) ||
+           // A label's letters
+           type == typeid(CCFontSprite) || type == typeid(CCSpriteExtra);
   }
 
   // The mod's own classes: not faded themselves (their setOpacity may be their own), only what's under them
-  bool isSafe(CCNode* node)
-  {
-    void const* vtable = nullptr;
-    std::memcpy(&vtable, static_cast<void const*>(node), sizeof(vtable));
-    return isPlain(node) || isOwn(vtable);
-  }
+  bool isSafe(CCNode* node) { return isPlain(node) || isOwn(node); }
 
   // How a node's look fades. A menu item through its own multiplier (its look is its own, lit or not); the topmost
   // other nodes with an opacity get theirs set, what's under them following through cocos' cascade, turned on for
@@ -248,7 +233,6 @@ namespace
     if (count == 0)
       return 0;
     auto stagger = count > 1 ? std::min(theme.pageStagger, theme.pageStaggerTotal / (count - 1)) : 0.f;
-    auto started = 0, idle = 0;
     auto time = std::max(theme.pageStepDuration, 0.01f);
     for (int i = 0; i < count; i++)
     {
@@ -274,11 +258,8 @@ namespace
         auto action = WaveAction::create(in, delay + stagger * i, time, step.slide ? theme.pageSlide : 0.f);
         action->setTag(WAVE_ACTION);
         node->runAction(action);
-        started++;
-        idle += node->isRunning() ? 0 : 1;
       }
     }
-    log::info("Pages: wave {}, {} nodes, {} not running", in ? "in" : "out", started, idle);
     return delay + stagger * (count - 1) + time;
   }
 } // namespace

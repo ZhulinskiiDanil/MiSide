@@ -294,7 +294,19 @@ void MSScreen::show()
 
 void MSScreen::registerWithTouchDispatcher() { CCTouchDispatcher::get()->addTargetedDelegate(this, -500, true); }
 
-bool MSScreen::ccTouchBegan(CCTouch*, CCEvent*) { return !m_overlay; }
+bool MSScreen::ccTouchBegan(CCTouch* touch, CCEvent*)
+{
+  // In place, Mita is the menu's under it: a click on her still sparks (she never claims it)
+  if (m_inPlace && !m_closing)
+  {
+    if (auto scene = CCDirector::get()->getRunningScene())
+    {
+      if (auto mita = typeinfo_cast<MSMita*>(scene->getChildByIDRecursive("mita"_spr)); mita && mita->isVisible())
+        mita->clickThrough(touch);
+    }
+  }
+  return !m_overlay;
+}
 
 void MSScreen::ccTouchMoved(CCTouch*, CCEvent*) {}
 

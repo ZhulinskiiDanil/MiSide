@@ -799,8 +799,9 @@ void MSAchievementList::update(float dt)
     changed = true;
   }
   m_scroll = std::clamp(m_scroll, 0.f, std::max(this->maxScroll(), 0.f));
-  // A page's wave moving the rows: they stay as they are until it's done
-  if (std::any_of(m_rows.begin(), m_rows.end(), [](auto row) { return ms::wave::moving(row); }))
+  // A page's wave moving the rows: they stay as they are until it's done; gone with the page, they stay gone (laid
+  // out again, the rows it hid would show for a frame before the screen is removed)
+  if (!m_active || std::any_of(m_rows.begin(), m_rows.end(), [](auto row) { return ms::wave::moving(row); }))
     return;
   this->layout();
   for (auto row : m_rows)
