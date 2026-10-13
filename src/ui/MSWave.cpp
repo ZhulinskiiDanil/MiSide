@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <string_view>
+#include <typeinfo>
 
 #ifdef GEODE_IS_WINDOWS
 #include <Windows.h>
@@ -21,23 +23,45 @@ namespace
   // Set on a node a wave hid, so the next wave in shows it (and only those of the hidden ones)
   constexpr auto HIDDEN_KEY = "wave-hidden"_spr;
 
-  // A node of GD's own classes (its vtable in GD's code): its setOpacity can't be called on any node (GJItemIcon's
-  // reads members some icons never set), so it only follows its parent's through cocos' cascade
-  bool isGames(CCNode* node)
+  // Whether a node's class is the mod's own: its vtable in this module's code
+  bool isOwn(void const* vtable)
   {
-    uintptr_t vtable = 0;
-    std::memcpy(&vtable, static_cast<void const*>(node), sizeof(vtable));
-    auto base = geode::base::get();
 #ifdef GEODE_IS_WINDOWS
-    static uintptr_t const SIZE = [base] {
+    static auto const RANGE = [] {
+      HMODULE module = nullptr;
+      GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                         reinterpret_cast<LPCWSTR>(&isOwn), &module);
+      auto base = reinterpret_cast<uintptr_t>(module);
       auto dos = reinterpret_cast<IMAGE_DOS_HEADER const*>(base);
       auto nt = reinterpret_cast<IMAGE_NT_HEADERS const*>(base + dos->e_lfanew);
-      return static_cast<uintptr_t>(nt->OptionalHeader.SizeOfImage);
+      return std::pair{base, base + nt->OptionalHeader.SizeOfImage};
     }();
-    return vtable >= base && vtable < base + SIZE;
+    auto address = reinterpret_cast<uintptr_t>(vtable);
+    return RANGE.first && address >= RANGE.first && address < RANGE.second;
 #else
+    static void* const BASE = [] {
+      Dl_info info{};
+      return dladdr(reinterpret_cast<void*>(&isOwn), &info) ? info.dli_fbase : nullptr;
+    }();
     Dl_info info{};
-    return dladdr(reinterpret_cast<void*>(vtable), &info) && info.dli_fbase == reinterpret_cast<void*>(base);
+    return BASE && dladdr(vtable, &info) && info.dli_fbase == BASE;
+#endif
+  }
+
+  // A node only cocos' own code or the mod's draws: its setOpacity and the cascade are safe on it. Anything else
+  // (GD's classes, and every other mod's, which may hand out its own subclass of GD's) may read members it never
+  // set (GJItemIcon's does), so it's never faded, only hidden while the wave moves it
+  bool isSafe(CCNode* node)
+  {
+    void const* vtable = nullptr;
+    std::memcpy(&vtable, static_cast<void const*>(node), sizeof(vtable));
+    if (isOwn(vtable))
+      return true;
+    std::string_view name = typeid(*node).name();
+#ifdef GEODE_IS_WINDOWS
+    return name.starts_with("class cocos2d::") || name.starts_with("struct cocos2d::");
+#else
+    return name.starts_with("N7cocos2d");
 #endif
   }
 
@@ -54,14 +78,14 @@ namespace
     std::vector<Ref<CCNode>> hidden;
   };
 
-  // A node of GD's in its tree
-  bool holdsGames(CCNode* node)
+  // A node that isn't safe to fade, in its tree
+  bool holdsUnsafe(CCNode* node)
   {
-    if (typeinfo_cast<CCRGBAProtocol*>(node) && isGames(node))
+    if (typeinfo_cast<CCRGBAProtocol*>(node) && !isSafe(node))
       return true;
     for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
     {
-      if (holdsGames(child))
+      if (holdsUnsafe(child))
         return true;
     }
     return false;
@@ -75,7 +99,7 @@ namespace
       return;
     }
     auto rgba = typeinfo_cast<CCRGBAProtocol*>(node);
-    if (rgba && isGames(node))
+    if (rgba && !isSafe(node))
     {
       if (node->isVisible())
       {
@@ -86,9 +110,9 @@ namespace
     }
     auto children = CCArrayExt<CCNode*>(node->getChildren());
     auto drives = false;
-    // Its opacity must not reach a node of GD's, through the cascade or its own setOpacity (a menu item's sets its
+    // Its opacity must not reach a node that isn't safe, through the cascade or its own setOpacity (a menu item's sets its
     // images' directly): a node holding one isn't faded itself, only what's under it is
-    if (rgba && !holdsGames(node))
+    if (rgba && !holdsUnsafe(node))
     {
       if (!followsParent)
         fade.tops.emplace_back(node, rgba->getOpacity());
