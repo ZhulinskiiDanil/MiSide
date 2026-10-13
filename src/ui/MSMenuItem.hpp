@@ -80,6 +80,8 @@ public:
   void resetLook();
   // A node of the caller's on the row (a lock, a number), placed in the row's own space: it fades with the row
   void setAccessory(cocos2d::CCNode* node);
+  // What draws its own look: everything else on it is the caller's (a slider, a value)
+  cocos2d::CCNode* getContent() const { return m_content; }
 
   // Exit: it leans away from the mouse around this place (its middle, in the column's space)
   void setDodgeHome(cocos2d::CCPoint home);

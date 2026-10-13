@@ -82,6 +82,12 @@ namespace
     if (auto item = typeinfo_cast<MSMenuItem*>(node))
     {
       fade.items.emplace_back(item);
+      // What the caller put on the row (a slider, a value) fades as any other node, its own look through the item
+      for (auto child : CCArrayExt<CCNode*>(item->getChildren()))
+      {
+        if (child != item->getContent())
+          collect(child, false, fade);
+      }
       return;
     }
     auto rgba = typeinfo_cast<CCRGBAProtocol*>(node);
