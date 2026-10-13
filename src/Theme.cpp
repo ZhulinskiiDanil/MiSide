@@ -505,7 +505,7 @@ namespace
     // ! --- Mita --- !
     theme.mitaEnabled = true;
     // The close-up set's placement: anchor at her canvas' bottom middle, the canvas as high as the screen
-    theme.mitaX = 414.5f;
+    theme.mitaX = 400.f;
     theme.mitaY = 0;
     theme.mitaScale = 320.f / 1080.f;
     theme.mitaFps = 24;
@@ -515,6 +515,8 @@ namespace
     theme.mitaFreezeFrame = -1;
     theme.mitaOutlineEnabled = true;
     theme.mitaOutlineColor = ccc3(0xff, 0x4f, 0xa3);
+    // A faint purple evening, as on MiSide's menu
+    theme.mitaTint = ccc3(0xe5, 0xd5, 0xff);
     theme.mitaOutlineOpacity = 210;
     // About 2.4 points on the screen, as before at the old set's scale
     theme.mitaOutlineWidth = 8;
@@ -990,6 +992,7 @@ namespace
     field("mita-freeze-frame", theme.mitaFreezeFrame);
     field("mita-outline-enabled", theme.mitaOutlineEnabled);
     field("mita-outline-color", theme.mitaOutlineColor);
+    field("mita-tint", theme.mitaTint);
     field("mita-outline-opacity", theme.mitaOutlineOpacity);
     field("mita-outline-width", theme.mitaOutlineWidth);
     field("mita-spark-enabled", theme.mitaSparkEnabled);

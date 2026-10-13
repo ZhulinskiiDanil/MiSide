@@ -614,6 +614,8 @@ struct Theme
   // A thin pink line around her outline, drawn by her own shader (only hers)
   bool mitaOutlineEnabled = false;
   cocos2d::ccColor3B mitaOutlineColor;
+  // The 3D model's light, multiplied into her colours
+  cocos2d::ccColor3B mitaTint;
   GLubyte mitaOutlineOpacity = 0;
   // In her texture's pixels. Her frames have wide transparent sides (68 px at least, more than the line reaches into
   // the frame next to it); at their top and bottom edges the atlas repeats the edge, so no line shows there

@@ -186,7 +186,7 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
     require(std::abs(m->duration - SwatDuration) < 0.001f, "Unexpected Mita_Swat duration");
     pose(0, 0);
 }
-void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze, float swatTime) {
+void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze, float swatTime, float facing) {
     auto raw = m->gltf.get();
     float t = glm::clamp(swatTime, 0.f, m->duration);
     float swatWeight = swatTime >= 0 && swatTime < m->duration ?
@@ -212,6 +212,12 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
     gaze = glm::clamp(gaze, glm::vec2(-1), glm::vec2(1));
     headGaze = glm::clamp(headGaze, glm::vec2(-1), glm::vec2(1));
     auto modelTurn = glm::rotate(glm::mat4(1), ModelYaw, glm::vec3(0, 1, 0));
+    // How far the head follows the gaze sideways: part of the way, the eyes the rest; facing the viewer (asked whether
+    // to quit), she turns her whole face to them
+    facing = glm::clamp(facing, 0.f, 1.f);
+    float headTurn = glm::mix(0.27f, GazeYawRange, facing);
+    // The irises at rest look a little to her right of where her face points: facing the viewer, they're turned to them
+    float eyesToViewer = ExitEyesYaw * facing;
     for (auto i : m->order) {
         auto& node = raw->nodes[i];
         auto local = node.has_matrix ? glm::make_mat4(node.matrix) :
@@ -219,26 +225,34 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
             glm::scale(glm::mat4(1), m->scales[i]);
         auto parent = node.parent ? m->world[node.parent - raw->nodes] : modelTurn;
         auto world = parent * local;
-        float yaw = 0, pitch = 0;
+        float yaw = 0, pitch = 0, roll = 0;
+        // Raised to the camera above her: half with her head, half with her eyes. Facing the viewer, her head turns a
+        // little aside and rises past it, her eyes down into the camera
+        float headUp = CameraPitch * 0.5f * (1 - facing) + ViewerChinUp * facing;
         if (static_cast<int>(i) == m->head) {
-            yaw = headGaze.x * 0.27f * (1 - swatWeight);
-            pitch = -headGaze.y * 0.09f * (1 - swatWeight);
+            yaw = (headGaze.x * headTurn - ViewerHeadAside * facing) * (1 - swatWeight);
+            pitch = (-headGaze.y * HeadPitchRange - headUp) * (1 - swatWeight);
+            roll = -ViewerHeadTilt * facing * (1 - swatWeight);
         }
         if (static_cast<int>(i) == m->eyes[0] || static_cast<int>(i) == m->eyes[1]) {
-            yaw = glm::clamp(gaze.x * GazeYawRange - headGaze.x * 0.27f, -0.24f, 0.24f) * (1 - swatWeight);
-            pitch = -glm::clamp(gaze.y * 0.29f - headGaze.y * 0.09f, -0.24f, 0.24f) * (1 - swatWeight);
+            yaw = glm::clamp(gaze.x * GazeYawRange - headGaze.x * headTurn + eyesToViewer + ViewerHeadAside * facing,
+                             -0.24f, 0.24f) * (1 - swatWeight);
+            pitch = -glm::clamp(gaze.y * 0.29f - headGaze.y * HeadPitchRange + CameraPitch - headUp, -0.24f, 0.24f) *
+                    (1 - swatWeight);
         }
-        if (yaw || pitch) {
+        if (yaw || pitch || roll) {
             auto pivot = glm::vec3(world[3]);
             world = glm::translate(glm::mat4(1), pivot) *
                     glm::rotate(glm::mat4(1), yaw, glm::vec3(0, 1, 0)) *
                     glm::rotate(glm::mat4(1), pitch, glm::vec3(1, 0, 0)) *
+                    glm::rotate(glm::mat4(1), roll, glm::vec3(0, 0, 1)) *
                     glm::translate(glm::mat4(1), -pivot) * world;
         }
         m->world[i] = world;
     }
     float blinkPhase = static_cast<float>(std::fmod(std::max(seconds, 0.0) + 1.4, 5.7));
     float blink = blinkPhase < 0.18f ? std::sin(blinkPhase / 0.18f * 3.14159265f) : 0;
+    blink = std::max(blink, ViewerSquint * facing);
     exitWeight = glm::clamp(exitWeight, 0.f, 1.f);
     for (size_t j = 0; j < meshes.size(); ++j) {
         auto& mesh = meshes[j]; auto& source = m->sources[j];

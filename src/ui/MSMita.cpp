@@ -320,9 +320,11 @@ uniform sampler2D CC_Texture0;
 uniform vec2 u_texel;
 uniform vec4 u_outline;
 uniform float u_premult;
+uniform vec3 u_tint;
 void main()
 {
   vec4 color = texture2D(CC_Texture0, v_texCoord);
+  color.rgb *= u_tint;
   // Inside her: nothing to add, and no need to look around
   if (color.a > 0.99)
   {
@@ -506,7 +508,8 @@ bool MSMita::init()
   {
     m_canvas = CCSize(960, 1080);
     m_reference = CCSize(569, 320);
-    m_alphaLeft = 80;
+    // Her hair's left tip, close up, reaches a little past the left of MiSide's frame
+    m_alphaLeft = -30;
     this->makeOutline();
     this->setContentSize(CCDirector::get()->getWinSize());
     return true;
@@ -540,6 +543,7 @@ void MSMita::makeOutline()
   m_outlineTexel = program->getUniformLocationForName("u_texel");
   m_outlineColor = program->getUniformLocationForName("u_outline");
   m_outlinePremult = program->getUniformLocationForName("u_premult");
+  m_outlineTint = program->getUniformLocationForName("u_tint");
   m_outline = program;
 }
 
@@ -554,6 +558,7 @@ void MSMita::updateOutline(CCTexture2D* texture)
     m_outlineTexel = m_outline->getUniformLocationForName("u_texel");
     m_outlineColor = m_outline->getUniformLocationForName("u_outline");
     m_outlinePremult = m_outline->getUniformLocationForName("u_premult");
+    m_outlineTint = m_outline->getUniformLocationForName("u_tint");
     m_outlineFor = nullptr;
   }
   if (texture == m_outlineFor)
@@ -568,6 +573,9 @@ void MSMita::updateOutline(CCTexture2D* texture)
   auto color = theme.mitaOutlineColor;
   m_outline->setUniformLocationWith4f(m_outlineColor, color.r / 255.f, color.g / 255.f, color.b / 255.f,
                                       theme.mitaOutlineOpacity / 255.f);
+  // The model's evening light; MiSide's own frames have theirs already
+  auto tint = m_use3D ? theme.mitaTint : ccWHITE;
+  m_outline->setUniformLocationWith3f(m_outlineTint, tint.r / 255.f, tint.g / 255.f, tint.b / 255.f);
 }
 
 void MSMita::visit()
@@ -669,7 +677,7 @@ void MSMita::clickThrough(CCTouch* touch)
     auto local = m_sprite->convertToNodeSpace(world);
     auto size = m_sprite->getContentSize();
     // A face-sized ellipse inside the silhouette, excluding the torso and hair above her forehead.
-    float originalU = (local.x / size.width - (1 - mita3d::OriginalCanvasFraction)) / mita3d::OriginalCanvasFraction;
+    float originalU = (local.x / size.width - mita3d::CanvasAnchorX) / mita3d::OriginalCanvasFraction + 0.5f;
     float x = (originalU - 0.53f) / 0.22f;
     float y = (local.y / size.height - 0.49f) / 0.18f;
     if (x * x + y * y <= 1)
@@ -825,17 +833,20 @@ void MSMita::update3D(float dt)
   }
   else
     m_swatCooldown = std::max(0.f, m_swatCooldown - dt);
+  // Displeased while the exit is hovered or asked about; facing the viewer only while asked
   bool exiting = m_exitHovered || m_exitConfirmation;
   m_expression += ((exiting ? 1.f : 0.f) - m_expression) * (1 - std::exp(-dt / 0.18f));
+  m_facing += ((m_exitConfirmation ? 1.f : 0.f) - m_facing) * (1 - std::exp(-dt / 0.18f));
   auto win = CCDirector::get()->getWinSize();
   const float towardViewer = -mita3d::ModelYaw / mita3d::GazeYawRange;
-  CCPoint aim(exiting ? towardViewer : 0.f, 0);
-  bool trackingMenu = !exiting && m_menuGazeTarget && m_sprite && !ms::coveredBy(this) && win.width > 0 && win.height > 0;
+  CCPoint aim(m_exitConfirmation ? towardViewer : 0.f, 0);
+  bool trackingMenu = !m_exitConfirmation && m_menuGazeTarget && m_sprite && !ms::coveredBy(this) && win.width > 0 && win.height > 0;
   if (trackingMenu)
   {
     auto size = m_sprite->getContentSize();
-    auto eyes = m_sprite->convertToWorldSpace({size.width * mita3d::CanvasAnchorX, size.height * 0.59f});
-    auto delta = *m_menuGazeTarget - eyes;
+    // Level with a point below her eyes, as in MiSide: the menu's top row has her look a little up
+    auto level = m_sprite->convertToWorldSpace({size.width * mita3d::CanvasAnchorX, size.height * 0.45f});
+    auto delta = *m_menuGazeTarget - level;
     aim = CCPoint(std::clamp(delta.x / (win.width * 0.6f) + towardViewer, -1.f, 1.f),
                   std::clamp(delta.y / (win.height * 0.42f), -1.f, 1.f));
   }
@@ -843,7 +854,7 @@ void MSMita::update3D(float dt)
     m_lastGazeAim = aim;
     m_gazeHold = 0.65f;
   } else {
-    m_gazeHold = exiting ? 0.f : std::max(0.f, m_gazeHold - dt);
+    m_gazeHold = m_exitConfirmation ? 0.f : std::max(0.f, m_gazeHold - dt);
   }
   auto heldAim = m_gazeHold > 0 ? m_lastGazeAim : aim;
   if (m_swatTime >= 0)
@@ -863,7 +874,8 @@ void MSMita::update3D(float dt)
   m_renderWait += dt;
   if (m_sprite && height == m_renderHeight && m_renderWait < 1.f / 60.f) return;
   m_renderWait = std::fmod(m_renderWait, 1.f / 60.f);
-  m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y}, {m_headGaze.x, m_headGaze.y}, m_swatTime);
+  m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y}, {m_headGaze.x, m_headGaze.y}, m_swatTime,
+                     m_facing);
   if (!m_sprite || height != m_renderHeight)
   {
     auto texture = new RenderTexture(m_renderer->texture(), width, height);

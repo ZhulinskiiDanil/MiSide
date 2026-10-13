@@ -24,7 +24,7 @@ public:
   // of her scene as she is (her animation goes on where it was); a new one otherwise
   static MSMita* carry();
   ~MSMita() override;
-  // Hover and confirmation both use basis and a forward gaze.
+  // Hovered, she's displeased; asked whether to quit, she also faces the viewer
   void setExitHovered(bool value) { m_exitHovered = value; }
   void setExitConfirmation(bool value) { m_exitConfirmation = value; }
   void setMenuGazeTarget(std::optional<cocos2d::CCPoint> target) { m_menuGazeTarget = target; }
@@ -113,6 +113,7 @@ protected:
   bool m_use3D = false;
   bool m_exitHovered = false;
   bool m_exitConfirmation = false;
+  float m_facing = 0;
   float m_expression = 0;
   cocos2d::CCPoint m_gaze{0, 0};
   cocos2d::CCPoint m_headGaze{0, 0};
@@ -137,6 +138,7 @@ protected:
   GLint m_outlineTexel = -1;
   GLint m_outlineColor = -1;
   GLint m_outlinePremult = -1;
+  GLint m_outlineTint = -1;
   unsigned m_outlineGeneration = 0;
   cocos2d::CCTexture2D* m_outlineFor = nullptr;
   cocos2d::CCSize m_reference;
