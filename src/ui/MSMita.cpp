@@ -355,6 +355,31 @@ void main()
   }
 } // namespace
 
+namespace
+{
+  // The one on screen
+  MSMita* s_live = nullptr;
+} // namespace
+
+MSMita* MSMita::carry()
+{
+  if (!s_live || !s_live->getParent() || !ms::scenes::comingAtOnce())
+    return MSMita::create();
+  auto mita = s_live;
+  // Held through her leaving (her scene was the only one holding her), given to the next as a new one would be
+  mita->retain();
+  mita->m_carried = true;
+  mita->removeFromParentAndCleanup(false);
+  mita->m_carried = false;
+  mita->autorelease();
+  // What the last scene had her do ends with it
+  mita->m_exitHovered = false;
+  mita->m_exitConfirmation = false;
+  mita->m_menuGazeTarget.reset();
+  log::info("Mita: carried to the next scene as she is");
+  return mita;
+}
+
 MSMita* MSMita::create()
 {
   if (!Theme::get().mitaEnabled)
@@ -371,6 +396,8 @@ MSMita* MSMita::create()
 
 MSMita::~MSMita()
 {
+  if (s_live == this)
+    s_live = nullptr;
   if (m_loader)
     m_loader->stop();
   this->release3D();
@@ -557,15 +584,26 @@ void MSMita::visit()
 void MSMita::onEnter()
 {
   CCNode::onEnter();
-  this->start();
+  s_live = this;
+  // Carried here: still running, as she was
+  if (m_renderer || m_loader)
+    this->scheduleUpdate();
+  else
+    this->start();
   // After the menus (a button over her takes its click); never swallowing
   CCTouchDispatcher::get()->addTargetedDelegate(this, 10, false);
 }
 
 void MSMita::onExit()
 {
-  // Nothing of hers outlives the menu being on screen: the pages are loaded again if it comes back
-  this->stop();
+  // Nothing of hers outlives the menu being on screen (the pages are loaded again if it comes back), unless she's
+  // carried to the next scene
+  if (!m_carried)
+  {
+    this->stop();
+    if (s_live == this)
+      s_live = nullptr;
+  }
   CCTouchDispatcher::get()->removeDelegate(this);
   CCNode::onExit();
 }

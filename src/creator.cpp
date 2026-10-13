@@ -200,7 +200,7 @@ class $modify(MSCreatorLayer, CreatorLayer)
       background->setID("background"_spr);
       this->addChild(background, BACKGROUND_Z);
     }
-    if (auto mita = MSMita::create())
+    if (auto mita = MSMita::carry())
     {
       mita->setID("mita"_spr);
       this->addChild(mita, MITA_Z);

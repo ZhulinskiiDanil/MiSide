@@ -20,6 +20,9 @@ class MSMita : public cocos2d::CCNode, public cocos2d::CCTargetedTouchDelegate
 public:
   // Null when the theme turns her off or her files are missing or broken (logged once)
   static MSMita* create();
+  // For a scene being made: when it comes in at once in place of hers (ms::scenes), the Mita on screen, taken out
+  // of her scene as she is (her animation goes on where it was); a new one otherwise
+  static MSMita* carry();
   ~MSMita() override;
   // Hover and confirmation both use basis and a forward gaze.
   void setExitHovered(bool value) { m_exitHovered = value; }
@@ -151,4 +154,6 @@ protected:
   bool m_failed = false;
   // Her scene comes in at once in place of another with her (ms::scenes): no fade-in
   bool m_noIntro = false;
+  // Being carried to the next scene: leaving this one stops nothing
+  bool m_carried = false;
 };

@@ -33,6 +33,7 @@ namespace
     void onEnter() override
     {
       CCNode::onEnter();
+      log::info("Pages: waiting for {}'s scene", this->getParent() ? typeid(*this->getParent()).name() : "?");
       this->scheduleUpdate();
     }
 
@@ -44,7 +45,7 @@ namespace
       if (CCDirector::get()->getRunningScene() != scene)
         return;
       this->unscheduleUpdate();
-      log::debug("Pages: {}'s scene is in", this->getParent() ? typeid(*this->getParent()).name() : "?");
+      log::info("Pages: {}'s scene is in", this->getParent() ? typeid(*this->getParent()).name() : "?");
       // Stays, idle (going from inside its own update isn't safe)
       auto then = std::move(m_then);
       m_then = nullptr;
@@ -81,7 +82,8 @@ class $modify(MSScenesDirector, CCDirector)
 {
   bool replaceScene(CCScene* scene)
   {
-    log::debug("Pages: scene change, {}", armed() ? "without its transition" : "as GD makes it");
+    log::info("Pages: scene change to {}, {}", scene ? typeid(*scene).name() : "?",
+              armed() ? "without its transition" : "as GD makes it");
     if (armed())
     {
       s_armed = false;

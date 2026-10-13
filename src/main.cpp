@@ -144,8 +144,24 @@ class $modify(MSMenuLayer, MenuLayer)
     ms::wave::hide(this->pageSteps());
     ms::scenes::whenShown(this, [this] {
       auto steps = this->pageSteps();
-      log::debug("Pages: the menu's page in, {} steps", steps.size());
-      ms::wave::in(steps);
+      auto time = ms::wave::in(steps);
+      log::info("Pages: the menu's page in, {} steps, {:.2f} s", steps.size(), time);
+      // Diagnostics: what's still moving or hidden once it should be in
+      Ref<MenuLayer> self = this;
+      this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(time + 0.2f), CallFuncExt::create([self] {
+        auto menu = static_cast<MSMenuLayer*>(self.data());
+        auto nodes = 0, moving = 0, hidden = 0;
+        for (auto const& step : menu->pageSteps())
+        {
+          for (auto node : step.nodes)
+          {
+            nodes++;
+            moving += ms::wave::moving(node) ? 1 : 0;
+            hidden += node->isVisible() ? 0 : 1;
+          }
+        }
+        log::info("Pages: the menu's page after its wave: {} nodes, {} moving, {} hidden", nodes, moving, hidden);
+      })));
     });
     // The menu's music back (from the icon kit's): GD starts it only when it isn't already playing
     GameManager::get()->fadeInMenuMusic();
@@ -534,7 +550,7 @@ class $modify(MSMenuLayer, MenuLayer)
 
   void addMita()
   {
-    auto mita = MSMita::create();
+    auto mita = MSMita::carry();
     if (!mita)
       return;
     mita->setID("mita"_spr);

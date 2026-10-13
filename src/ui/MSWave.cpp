@@ -86,23 +86,18 @@ namespace
     }
     auto children = CCArrayExt<CCNode*>(node->getChildren());
     auto drives = false;
-    if (rgba)
+    // Its opacity must not reach a node of GD's, through the cascade or its own setOpacity (a menu item's sets its
+    // images' directly): a node holding one isn't faded itself, only what's under it is
+    if (rgba && !holdsGames(node))
     {
-      // Its opacity (and the cascade from it) must not reach a node of GD's: set only where it can't
-      auto unsafe = holdsGames(node);
-      if (!unsafe)
-      {
-        if (!followsParent)
-          fade.tops.emplace_back(node, rgba->getOpacity());
-        if (!rgba->isCascadeOpacityEnabled())
-        {
-          rgba->setCascadeOpacityEnabled(true);
-          fade.cascaded.emplace_back(node);
-        }
-        drives = true;
-      }
-      else if (!rgba->isCascadeOpacityEnabled() && !followsParent)
+      if (!followsParent)
         fade.tops.emplace_back(node, rgba->getOpacity());
+      if (!rgba->isCascadeOpacityEnabled())
+      {
+        rgba->setCascadeOpacityEnabled(true);
+        fade.cascaded.emplace_back(node);
+      }
+      drives = true;
     }
     for (auto child : children)
       collect(child, drives, fade);
@@ -228,6 +223,7 @@ namespace
     if (count == 0)
       return 0;
     auto stagger = count > 1 ? std::min(theme.pageStagger, theme.pageStaggerTotal / (count - 1)) : 0.f;
+    auto started = 0, idle = 0;
     auto time = std::max(theme.pageStepDuration, 0.01f);
     for (int i = 0; i < count; i++)
     {
@@ -253,8 +249,11 @@ namespace
         auto action = WaveAction::create(in, delay + stagger * i, time, step.slide ? theme.pageSlide : 0.f);
         action->setTag(WAVE_ACTION);
         node->runAction(action);
+        started++;
+        idle += node->isRunning() ? 0 : 1;
       }
     }
+    log::info("Pages: wave {}, {} nodes, {} not running", in ? "in" : "out", started, idle);
     return delay + stagger * (count - 1) + time;
   }
 } // namespace
