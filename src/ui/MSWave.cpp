@@ -4,6 +4,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+
+#ifdef GEODE_IS_WINDOWS
+#include <Windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
 using namespace geode::prelude;
 
@@ -13,18 +20,73 @@ namespace
   // Set on a node a wave hid, so the next wave in shows it (and only those of the hidden ones)
   constexpr auto HIDDEN_KEY = "wave-hidden"_spr;
 
-  // The nodes whose opacity makes the node's, each with its own: down the tree to the first that passes its
-  // opacity on by itself (a label, a node cascading it)
-  void collect(CCNode* node, std::vector<std::pair<Ref<CCNode>, GLubyte>>& out)
+  // A node of GD's own classes (its vtable in GD's code): its setOpacity can't be called on any node (GJItemIcon's
+  // reads members some icons never set), so it only follows its parent's through cocos' cascade
+  bool isGames(CCNode* node)
   {
-    if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node))
+    uintptr_t vtable = 0;
+    std::memcpy(&vtable, static_cast<void const*>(node), sizeof(vtable));
+    auto base = geode::base::get();
+#ifdef GEODE_IS_WINDOWS
+    static uintptr_t const SIZE = [base] {
+      auto dos = reinterpret_cast<IMAGE_DOS_HEADER const*>(base);
+      auto nt = reinterpret_cast<IMAGE_NT_HEADERS const*>(base + dos->e_lfanew);
+      return static_cast<uintptr_t>(nt->OptionalHeader.SizeOfImage);
+    }();
+    return vtable >= base && vtable < base + SIZE;
+#else
+    Dl_info info{};
+    return dladdr(reinterpret_cast<void*>(vtable), &info) && info.dli_fbase == reinterpret_cast<void*>(base);
+#endif
+  }
+
+  // How a node's look fades: the topmost nodes with an opacity get theirs set (each with its own), everything under
+  // them follows through cocos' cascade, turned on for the wave where it was off
+  struct Fade
+  {
+    std::vector<std::pair<Ref<CCNode>, GLubyte>> tops;
+    std::vector<Ref<CCNode>> cascaded;
+  };
+
+  void collect(CCNode* node, bool followsParent, Fade& fade)
+  {
+    auto rgba = typeinfo_cast<CCRGBAProtocol*>(node);
+    if (rgba)
     {
-      out.emplace_back(node, rgba->getOpacity());
-      if (rgba->isCascadeOpacityEnabled() || typeinfo_cast<CCLabelBMFont*>(node))
-        return;
+      // Under no opacity of ours a node of GD's can't fade (it's left as it is)
+      if (!followsParent && !isGames(node))
+        fade.tops.emplace_back(node, rgba->getOpacity());
+      if (!rgba->isCascadeOpacityEnabled())
+      {
+        rgba->setCascadeOpacityEnabled(true);
+        fade.cascaded.emplace_back(node);
+      }
     }
+    // Its children follow when its own opacity moves: set here, or following its parent's
+    auto driven = rgba && (followsParent || !isGames(node));
     for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
-      collect(child, out);
+      collect(child, driven, fade);
+  }
+
+  // Back as it was: the tops' opacities, then the cascade off again where it was, what's under those shown with
+  // their own opacities again
+  void restore(Fade const& fade)
+  {
+    for (auto const& [node, opacity] : fade.tops)
+    {
+      if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node.data()))
+        rgba->setOpacity(opacity);
+    }
+    for (auto const& node : fade.cascaded)
+    {
+      if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node.data()))
+        rgba->setCascadeOpacityEnabled(false);
+      for (auto child : CCArrayExt<CCNode*>(node->getChildren()))
+      {
+        if (auto inner = typeinfo_cast<CCRGBAProtocol*>(child))
+          inner->updateDisplayedOpacity(255);
+      }
+    }
   }
 
   // One node of a step: from its place (and opacity) to the right and transparent, or from the left into them
@@ -47,7 +109,7 @@ namespace
     {
       CCActionInterval::startWithTarget(target);
       m_home = target->getPosition();
-      collect(target, m_opacities);
+      collect(target, false, m_fade);
       // Coming in: out of sight from the first frame, through its delay
       this->apply(0);
     }
@@ -71,11 +133,7 @@ namespace
         return;
       m_settled = true;
       m_pTarget->setPosition(m_home);
-      for (auto const& [node, opacity] : m_opacities)
-      {
-        if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node.data()))
-          rgba->setOpacity(opacity);
-      }
+      restore(m_fade);
       if (!m_in)
       {
         m_pTarget->setVisible(false);
@@ -91,7 +149,7 @@ namespace
       auto shown = m_in ? eased : 1 - eased;
       auto offset = m_in ? -m_slide * (1 - eased) : m_slide * eased;
       m_pTarget->setPosition({m_home.x + offset, m_home.y});
-      for (auto const& [node, opacity] : m_opacities)
+      for (auto const& [node, opacity] : m_fade.tops)
       {
         if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(node.data()))
           rgba->setOpacity(static_cast<GLubyte>(std::lround(opacity * shown)));
@@ -104,7 +162,7 @@ namespace
     float m_time = 0;
     float m_slide = 0;
     CCPoint m_home;
-    std::vector<std::pair<Ref<CCNode>, GLubyte>> m_opacities;
+    Fade m_fade;
   };
 
   // A wave already moving it ends where it was going first
