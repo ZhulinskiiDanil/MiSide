@@ -378,6 +378,7 @@ MSMita* MSMita::carry()
   mita->m_exitHovered = false;
   mita->m_exitConfirmation = false;
   mita->m_menuGazeTarget.reset();
+  mita->m_idleLoop = false;
   log::debug("Mita: carried to the next scene as she is");
   return mita;
 }
@@ -658,7 +659,7 @@ bool MSMita::ccTouchBegan(CCTouch* touch, CCEvent*)
 void MSMita::clickThrough(CCTouch* touch)
 {
   auto const& theme = Theme::get();
-  if (!theme.mitaSparkEnabled || m_failed)
+  if (!theme.mitaSparkEnabled || m_failed || m_greeting)
     return;
   // Shown
   for (CCNode* node = this; node; node = node->getParent())
@@ -769,6 +770,25 @@ void MSMita::spark(CCPoint world)
   }
 }
 
+float MSMita::greetingDuration() const
+{
+  return m_renderer ? m_renderer->idleDuration() : 0.f;
+}
+
+void MSMita::setGreeting(greeting::State const& state)
+{
+  bool starting = !m_greeting && !state.done;
+  m_greeting = !state.done;
+  m_greetingState = state;
+  m_idleLoop = false;
+  m_noIntro = true;
+  if (m_sprite)
+  {
+    if (starting) m_sprite->stopAllActions();
+    m_sprite->setOpacity(static_cast<GLubyte>(255 * state.model));
+  }
+}
+
 bool MSMita::start3D()
 {
   if (m_renderer) return true;
@@ -822,6 +842,8 @@ void MSMita::update3D(float dt)
   }
   dt = std::clamp(dt, 0.f, 0.1f);
   m_elapsed += dt;
+  if (m_idleLoop)
+    m_idleTime += dt;
   if (m_swatTime >= 0)
   {
     m_swatTime += dt;
@@ -875,7 +897,9 @@ void MSMita::update3D(float dt)
   if (m_sprite && height == m_renderHeight && m_renderWait < 1.f / 60.f) return;
   m_renderWait = std::fmod(m_renderWait, 1.f / 60.f);
   m_renderer->render(width, height, m_elapsed, m_expression, {m_gaze.x, m_gaze.y}, {m_headGaze.x, m_headGaze.y}, m_swatTime,
-                     m_facing);
+                     m_facing, m_greeting ? m_greetingState.animation : (m_idleLoop ? m_idleTime : -1.f),
+                     m_greeting ? m_greetingState.weight : 1.f, !m_greeting,
+                     m_greeting ? m_greetingState.zoom : 0.f);
   if (!m_sprite || height != m_renderHeight)
   {
     auto texture = new RenderTexture(m_renderer->texture(), width, height);
@@ -908,6 +932,13 @@ void MSMita::update3D(float dt)
   }
   if (win != m_laidOutFor) this->layout();
   m_sprite->setPosition(m_home);
+  if (m_greeting)
+  {
+    auto position = m_home;
+    position.x += (win.width * 0.5f - m_home.x) * m_greetingState.zoom;
+    m_sprite->setPosition(position);
+    m_sprite->setOpacity(static_cast<GLubyte>(255 * m_greetingState.model));
+  }
   this->updateOutline(m_renderTexture);
 }
 

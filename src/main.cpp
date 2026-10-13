@@ -11,6 +11,7 @@
 #include "ui/MSMorePopup.hpp"
 #include "ui/MSProfileCard.hpp"
 #include "ui/MSScenes.hpp"
+#include "ui/MSStyle.hpp"
 #include "ui/MSWave.hpp"
 
 #include <Geode/Geode.hpp>
@@ -22,9 +23,10 @@ using namespace geode::prelude;
 
 namespace
 {
+  bool s_greetingShown = false;
   // A node by its ID, from Geode's IDs for MenuLayer (loader/src/ids/MenuLayer.cpp). Missing: a warning,
   // and the step that needed it is skipped
-  CCNode* find(CCNode* parent, std::string_view id, bool required = true)
+  CCNode *find(CCNode *parent, std::string_view id, bool required = true)
   {
     auto node = parent ? parent->getChildByID(id) : nullptr;
     if (!node && required)
@@ -33,12 +35,12 @@ namespace
   }
 
   // A vanilla button in its menu, or wherever another mod moved it
-  CCMenuItem* findButton(CCNode* layer, std::string_view menu, std::string_view id)
+  CCMenuItem *findButton(CCNode *layer, std::string_view menu, std::string_view id)
   {
     auto node = find(find(layer, menu, false), id, false);
     if (!node)
       node = layer->getChildByIDRecursive(id);
-    auto button = typeinfo_cast<CCMenuItem*>(node);
+    auto button = typeinfo_cast<CCMenuItem *>(node);
     if (!button)
       log::warn("Button {} not found, skipped", id);
     return button;
@@ -46,34 +48,34 @@ namespace
 
   struct Entry
   {
-    char const* ru;
-    char const* en;
+    char const *ru;
+    char const *en;
     // Where Geode's IDs put the vanilla button
-    char const* menu;
-    char const* button;
+    char const *menu;
+    char const *button;
     // Quit: apart from the rows, near the bottom
     bool exit = false;
   };
 
   // Item -> the vanilla button it presses
   constexpr Entry ENTRIES[] = {
-    {"ИГРАТЬ", "PLAY", "main-menu", "play-button"},
-    {"ГАРДЕРОБ", "WARDROBE", "main-menu", "icon-kit-button"},
-    {"СОЗДАТЬ", "CREATE", "main-menu", "editor-button"},
-    {"НАСТРОЙКИ", "SETTINGS", "bottom-menu", "settings-button"},
-    {"ДОСТИЖЕНИЯ", "ACHIEVEMENTS", "bottom-menu", "achievements-button"},
-    {"СТАТИСТИКА", "STATISTICS", "bottom-menu", "stats-button"},
-    {"ВЫХОД", "EXIT", "close-menu", "close-button", true},
+      {"ИГРАТЬ", "PLAY", "main-menu", "play-button"},
+      {"ГАРДЕРОБ", "WARDROBE", "main-menu", "icon-kit-button"},
+      {"СОЗДАТЬ", "CREATE", "main-menu", "editor-button"},
+      {"НАСТРОЙКИ", "SETTINGS", "bottom-menu", "settings-button"},
+      {"ДОСТИЖЕНИЯ", "ACHIEVEMENTS", "bottom-menu", "achievements-button"},
+      {"СТАТИСТИКА", "STATISTICS", "bottom-menu", "stats-button"},
+      {"ВЫХОД", "EXIT", "close-menu", "close-button", true},
   };
 
   // The menus whose buttons go in the tray's row, in this order: the ones the other mods add theirs to, with the
   // vanilla buttons that do something and have no item (the daily chest, Newgrounds). profile-menu's own button
   // is the profile card; close-menu and top-right-menu stay at the top
-  char const* const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "profile-menu", "main-menu", "side-menu"};
+  char const *const TRAY_SOURCES[] = {"bottom-menu", "right-side-menu", "profile-menu", "main-menu", "side-menu"};
 
   // The menus whose buttons are in the "…" popup instead: RobTop, the social links, More Games. Hidden as a whole,
   // their buttons stay in them
-  char const* const POPUP_SOURCES[] = {"social-media-menu", "more-games-menu"};
+  char const *const POPUP_SOURCES[] = {"social-media-menu", "more-games-menu"};
 
   // Behind everything of the menu
   constexpr int BACKGROUND_Z = -100;
@@ -88,7 +90,7 @@ namespace
   // Over the whole menu
 
   // Hidden, never removed: the node stays in the tree for the mods that look for it
-  void hide(CCNode* node)
+  void hide(CCNode *node)
   {
     if (node)
       node->setVisible(false);
@@ -97,7 +99,7 @@ namespace
 
 class $modify(MSMenuLayer, MenuLayer)
 {
-  static void onModify(auto& self)
+  static void onModify(auto &self)
   {
     // After the other mods' init: the buttons they add are already there
     if (self.setHookPriorityPost("MenuLayer::init", Priority::VeryLate).isErr())
@@ -106,10 +108,10 @@ class $modify(MSMenuLayer, MenuLayer)
 
   struct Fields
   {
-    MSMenuColumn* m_column = nullptr;
-    MSMita* m_mita = nullptr;
-    MSProfileCard* m_card = nullptr;
-    MSConfirm* m_confirm = nullptr;
+    MSMenuColumn *m_column = nullptr;
+    MSMita *m_mita = nullptr;
+    MSProfileCard *m_card = nullptr;
+    MSConfirm *m_confirm = nullptr;
     // The confirmation closed on this frame: the same Esc doesn't open it again
     unsigned m_closedOnFrame = 0;
     // GD may send Esc both as a key and as back: the press that opened it doesn't close it
@@ -120,6 +122,16 @@ class $modify(MSMenuLayer, MenuLayer)
     bool m_vanillaOptions = false;
     // GD's CREATE button: its screen is a page of the mod's too, gone to as a page
     Ref<CCMenuItem> m_creatorButton;
+    bool m_greeting = false;
+    bool m_greetingInterface = false;
+    float m_greetingClock = 0;
+    float m_greetingDuration = 0;
+    ms::wave::Steps m_greetingSteps;
+    CCNodeRGBA *m_greetingVeil = nullptr;
+    CCLayerGradient* m_greetingVeilBase = nullptr;
+    CCNode* m_greetingVeilGlow = nullptr;
+    CCNode *m_greetingGlow = nullptr;
+    CCNode *m_greetingEdges = nullptr;
   };
 
   bool init()
@@ -141,8 +153,26 @@ class $modify(MSMenuLayer, MenuLayer)
     // Last: her place in the drawing order comes from everything else that's in the layer by now
     this->addMita();
     // The page comes in from the left once the scene is in (from the game's start, a level, CREATE)
-    ms::wave::hide(this->pageSteps());
-    ms::scenes::whenShown(this, [this] { ms::wave::in(this->pageSteps()); });
+    if (!s_greetingShown && m_fields->m_mita)
+    {
+      s_greetingShown = true;
+      m_fields->m_greeting = true;
+      m_fields->m_greetingSteps = this->pageSteps(true);
+      if (m_fields->m_column)
+      {
+        m_fields->m_column->setBusy(true);
+      }
+      ms::wave::hide(m_fields->m_greetingSteps);
+      m_fields->m_mita->setVisible(false);
+      ms::scenes::whenShown(this, [this]
+                            { this->startGreeting(); });
+    }
+    else
+    {
+      ms::wave::hide(this->pageSteps());
+      ms::scenes::whenShown(this, [this]
+                            { ms::wave::in(this->pageSteps()); });
+    }
     // The menu's music back (from the icon kit's): GD starts it only when it isn't already playing
     GameManager::get()->fadeInMenuMusic();
     return true;
@@ -150,6 +180,8 @@ class $modify(MSMenuLayer, MenuLayer)
 
   void keyDown(enumKeyCodes key, double timestamp)
   {
+    if (m_fields->m_greeting)
+      return;
     // The confirmation open: every key is its own, none reaches the hidden list or GD's own (a controller's A
     // plays, Y opens the icon kit)
     if (auto confirm = m_fields->m_confirm; confirm && confirm->isOpen())
@@ -172,6 +204,8 @@ class $modify(MSMenuLayer, MenuLayer)
   // Esc (and a controller's B): GD's quit popup, or the confirmation in its place; open, it goes back
   void keyBackClicked()
   {
+    if (m_fields->m_greeting)
+      return;
     auto confirm = m_fields->m_confirm;
     auto column = m_fields->m_column;
     if (!confirm || !column)
@@ -195,7 +229,7 @@ class $modify(MSMenuLayer, MenuLayer)
     if (auto background = find(this, "main-menu-bg"))
     {
       hide(background);
-      if (auto layer = typeinfo_cast<CCLayer*>(background))
+      if (auto layer = typeinfo_cast<CCLayer *>(background))
         layer->setTouchEnabled(false);
     }
     hide(find(this, "main-title"));
@@ -229,7 +263,8 @@ class $modify(MSMenuLayer, MenuLayer)
 
   void addColumn()
   {
-    auto column = MSMenuColumn::create([this](MSMenuItem* item) { this->runItem(item); });
+    auto column = MSMenuColumn::create([this](MSMenuItem *item)
+                                       { this->runItem(item); });
     if (!column)
       return;
     auto english = this->isEnglish();
@@ -238,8 +273,8 @@ class $modify(MSMenuLayer, MenuLayer)
       column->setLogo(MSLogo::create());
       column->setSubtitle(english ? "MAIN MENU" : "ГЛАВНОЕ МЕНЮ");
     }
-    std::vector<CCNode*> menus;
-    for (auto const& entry : ENTRIES)
+    std::vector<CCNode *> menus;
+    for (auto const &entry : ENTRIES)
     {
       // No vanilla button, no item; but GD on phones has no quit button (its back key asks): EXIT is there all the
       // same, asking in the column, with a hidden button of the mod's own doing what the back key does
@@ -247,7 +282,8 @@ class $modify(MSMenuLayer, MenuLayer)
       auto own = false;
       if (!button && entry.exit)
       {
-        button = CCMenuItemExt::createSpriteExtra(CCNode::create(), [this](auto) { this->keyBackClicked(); });
+        button = CCMenuItemExt::createSpriteExtra(CCNode::create(), [this](auto)
+                                                  { this->keyBackClicked(); });
         own = true;
       }
       if (!button)
@@ -264,7 +300,8 @@ class $modify(MSMenuLayer, MenuLayer)
       if (std::string_view(entry.button) == "settings-button")
       {
         m_fields->m_settingsButton = button;
-        auto appearance = CCMenuItemExt::createSpriteExtra(CCNode::create(), [](auto) { ms::settings::open(); });
+        auto appearance = CCMenuItemExt::createSpriteExtra(CCNode::create(), [](auto)
+                                                           { ms::settings::open(); });
         column->addEntry(english ? "APPEARANCE" : "ОФОРМЛЕНИЕ", appearance);
       }
       if (own)
@@ -281,27 +318,27 @@ class $modify(MSMenuLayer, MenuLayer)
     this->addChild(column, COLUMN_Z);
     column->finish();
     m_fields->m_column = column;
-    column->setOnGazeTarget([this](std::optional<CCPoint> target) {
+    column->setOnGazeTarget([this](std::optional<CCPoint> target)
+                            {
       if (m_fields->m_mita)
-        m_fields->m_mita->setMenuGazeTarget(target);
-    });
-    column->setOnExitHover([this](bool on) {
+        m_fields->m_mita->setMenuGazeTarget(target); });
+    column->setOnExitHover([this](bool on)
+                           {
       if (m_fields->m_mita)
-        m_fields->m_mita->setExitHovered(on);
-    });
+        m_fields->m_mita->setExitHovered(on); });
   }
 
   // MAIN MENU and its rows, then the rest that goes with them (only fading): the tray, the profile card, the mods'
   // nodes. The logo, the background and Mita stay
-  ms::wave::Steps pageSteps()
+  ms::wave::Steps pageSteps(bool includeLogo = false)
   {
     auto column = m_fields->m_column;
     if (!column)
       return {};
-    auto steps = column->pageSteps();
+    auto steps = column->pageSteps(includeLogo);
     ms::wave::Step rest;
     rest.slide = false;
-    for (auto child : CCArrayExt<CCNode*>(this->getChildren()))
+    for (auto child : CCArrayExt<CCNode *>(this->getChildren()))
     {
       auto id = child->getID();
       if (child == column || child == m_fields->m_mita || id == "background"_spr)
@@ -318,7 +355,7 @@ class $modify(MSMenuLayer, MenuLayer)
 
   // The vanilla button's activate(): its callback, and every mod's hook on it, run as usual. CREATE as a page:
   // the menu's out, then GD's screen at once (no fade through black), coming in the same way
-  void runItem(MSMenuItem* item)
+  void runItem(MSMenuItem *item)
   {
     Ref<CCMenuItem> target = item->getTarget();
     auto column = m_fields->m_column;
@@ -340,7 +377,8 @@ class $modify(MSMenuLayer, MenuLayer)
     column->setBusy(true);
     auto gone = ms::wave::out(this->pageSteps());
     Ref<MenuLayer> self = this;
-    this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(gone), CallFuncExt::create([self, target] {
+    this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(gone), CallFuncExt::create([self, target]
+                                                                                                    {
       auto menu = static_cast<MSMenuLayer*>(self.data());
       ms::scenes::skipNextTransition();
       target->activate();
@@ -349,8 +387,7 @@ class $modify(MSMenuLayer, MenuLayer)
       {
         menu->m_fields->m_column->setBusy(false);
         ms::wave::in(menu->pageSteps());
-      }
-    })));
+      } })));
   }
 
   // ! --- GD's settings --- !
@@ -362,7 +399,8 @@ class $modify(MSMenuLayer, MenuLayer)
     if (!m_fields->m_column || m_fields->m_vanillaOptions)
       return MenuLayer::openOptions(videoOptions);
     Ref<MSMenuLayer> self = this;
-    ms::options::open([self] { self->openVanillaOptions(); }, videoOptions);
+    ms::options::open([self]
+                      { self->openVanillaOptions(); }, videoOptions);
   }
 
   // GD's own settings window, through the settings button as a click would (the mods' hooks on onOptions run too)
@@ -386,7 +424,9 @@ class $modify(MSMenuLayer, MenuLayer)
     auto english = this->isEnglish();
     MSConfirm::Texts texts{english ? "QUIT THE GAME?" : "ВЫЙТИ ИЗ ИГРЫ?", english ? "YES" : "ДА",
                            english ? "NO" : "НЕТ"};
-    auto confirm = MSConfirm::create(texts, [this] { this->quitGame(); }, [this] { this->closeConfirm(); });
+    auto confirm = MSConfirm::create(texts, [this]
+                                     { this->quitGame(); }, [this]
+                                     { this->closeConfirm(); });
     if (!confirm)
       return;
     confirm->setID("quit-confirm"_spr);
@@ -452,7 +492,7 @@ class $modify(MSMenuLayer, MenuLayer)
       return;
     auto label = find(this, "player-username", false);
     std::string name = GameManager::get()->m_playerName;
-    if (auto text = typeinfo_cast<CCLabelBMFont*>(label))
+    if (auto text = typeinfo_cast<CCLabelBMFont *>(label))
       name = text->getString();
 
     auto card = MSProfileCard::create(button, name);
@@ -471,17 +511,17 @@ class $modify(MSMenuLayer, MenuLayer)
   // ! --- The tray --- !
 
   // The buttons the popup shows: what's visible of its menus' buttons
-  std::vector<CCMenuItem*> popupButtons()
+  std::vector<CCMenuItem *> popupButtons()
   {
-    std::vector<CCMenuItem*> buttons;
+    std::vector<CCMenuItem *> buttons;
     for (auto id : POPUP_SOURCES)
     {
       auto menu = find(this, id, false);
       if (!menu)
         continue;
-      for (auto child : CCArrayExt<CCNode*>(menu->getChildren()))
+      for (auto child : CCArrayExt<CCNode *>(menu->getChildren()))
       {
-        if (auto button = typeinfo_cast<CCMenuItem*>(child); button && button->isVisible())
+        if (auto button = typeinfo_cast<CCMenuItem *>(child); button && button->isVisible())
           buttons.push_back(button);
       }
     }
@@ -501,7 +541,8 @@ class $modify(MSMenuLayer, MenuLayer)
   {
     std::function<void()> more;
     if (!this->popupButtons().empty())
-      more = [this] { this->openPopup(); };
+      more = [this]
+      { this->openPopup(); };
     auto tray = MSModTray::create({std::begin(TRAY_SOURCES), std::end(TRAY_SOURCES)}, std::move(more));
     if (!tray)
       return;
@@ -528,6 +569,100 @@ class $modify(MSMenuLayer, MenuLayer)
 
   // ! --- Mita --- !
 
+  void startGreeting()
+  {
+    auto &f = *m_fields.operator->();
+    f.m_greetingDuration = f.m_mita->greetingDuration();
+    if (f.m_greetingDuration <= 0)
+    {
+      f.m_greeting = false;
+      f.m_mita->setVisible(true);
+      if (f.m_column)
+        f.m_column->setBusy(false);
+      ms::wave::in(f.m_greetingSteps);
+      return;
+    }
+    auto win = CCDirector::get()->getWinSize();
+    auto const &theme = Theme::get();
+    auto z = f.m_mita->getZOrder();
+    f.m_greetingGlow = ms::createStretched(theme.glowSprite, {win.width, win.height * 1.4f}, ccc3(132, 22, 120), 180);
+    if (auto glow = f.m_greetingGlow)
+    {
+      glow->setPosition({win.width * 0.5f, win.height * 0.55f});
+      this->addChild(glow, z - 1);
+    }
+    f.m_greetingEdges = ms::createStretched(theme.vignetteSprite, win, ccc3(12, 2, 18), 210);
+    if (auto edges = f.m_greetingEdges)
+    {
+      edges->setPosition({win.width * 0.5f, win.height * 0.5f});
+      this->addChild(edges, z);
+    }
+    f.m_greetingVeil = CCNodeRGBA::create();
+    auto base = CCLayerGradient::create(ccc4(20, 3, 34, 255), ccc4(55, 5, 49, 255), {1, 0});
+    f.m_greetingVeilBase = base;
+    base->setContentSize(win);
+    f.m_greetingVeil->addChild(base);
+    if (auto glow = ms::createStretched(theme.glowSprite, {win.width * 1.1f, win.height * 1.6f}, ccc3(140, 15, 145), 190))
+    {
+      f.m_greetingVeilGlow = glow;
+      glow->setPosition({win.width * 0.45f, win.height * 0.5f});
+      f.m_greetingVeil->addChild(glow);
+    }
+    this->addChild(f.m_greetingVeil, COLUMN_Z + 1);
+    f.m_mita->setGreeting(greeting::at(0, f.m_greetingDuration));
+    f.m_mita->setVisible(true);
+    this->schedule(schedule_selector(MSMenuLayer::stepGreeting));
+  }
+
+  void stepGreeting(float dt)
+  {
+    auto &f = *m_fields.operator->();
+    f.m_greetingClock += std::clamp(dt, 0.f, 0.1f);
+    auto state = greeting::at(f.m_greetingClock, f.m_greetingDuration);
+    f.m_mita->setGreeting(state);
+    auto win = CCDirector::get()->getWinSize();
+    // CCLayerGradient needs its own setOpacity to rebuild the vertex colors;
+    // inherited cascade opacity alone leaves the opaque veil drawn over Mita.
+    if (f.m_greetingVeilBase)
+      f.m_greetingVeilBase->setOpacity(static_cast<GLubyte>(255 * state.veil));
+    if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(f.m_greetingVeilGlow))
+      rgba->setOpacity(static_cast<GLubyte>(190 * state.veil));
+    if (auto glow = f.m_greetingGlow)
+    {
+      if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(glow))
+        rgba->setOpacity(static_cast<GLubyte>(180 * state.aura));
+      glow->setPosition({win.width * (0.5f + 0.25f * (1 - state.zoom)), win.height * 0.55f});
+    }
+    if (auto edges = f.m_greetingEdges)
+    {
+      if (auto rgba = typeinfo_cast<CCRGBAProtocol*>(edges))
+        rgba->setOpacity(static_cast<GLubyte>((150 + 60 * state.zoom) * state.aura));
+      auto size = edges->getContentSize();
+      edges->setScaleX(win.width / size.width * (1 + 0.12f * (1 - state.zoom)));
+      edges->setScaleY(win.height / size.height * (1 + 0.12f * (1 - state.zoom)));
+    }
+    if (state.showInterface && !f.m_greetingInterface)
+    {
+      f.m_greetingInterface = true;
+      ms::wave::in(f.m_greetingSteps);
+    }
+    if (state.done)
+    {
+      f.m_greeting = false;
+      if (f.m_column)
+        f.m_column->setBusy(false);
+      for (CCNode *node : {static_cast<CCNode *>(f.m_greetingVeil), static_cast<CCNode *>(f.m_greetingGlow), static_cast<CCNode *>(f.m_greetingEdges)})
+        if (node)
+          node->removeFromParentAndCleanup(true);
+      f.m_greetingVeil = nullptr;
+      f.m_greetingVeilBase = nullptr;
+      f.m_greetingVeilGlow = nullptr;
+      f.m_greetingGlow = f.m_greetingEdges = nullptr;
+      f.m_greetingSteps.clear();
+      this->unschedule(schedule_selector(MSMenuLayer::stepGreeting));
+    }
+  }
+
   void addMita()
   {
     auto mita = MSMita::carry();
@@ -545,7 +680,7 @@ class $modify(MSMenuLayer, MenuLayer)
     auto background = this->getChildByID("background"_spr);
     auto floor = background ? background->getZOrder() : BACKGROUND_Z;
     auto lowest = std::numeric_limits<int>::max();
-    for (auto child : CCArrayExt<CCNode*>(this->getChildren()))
+    for (auto child : CCArrayExt<CCNode *>(this->getChildren()))
     {
       if (child != background && child->isVisible())
         lowest = std::min(lowest, child->getZOrder());

@@ -7,6 +7,8 @@
 
 namespace mita3d {
 inline constexpr float SwatDuration = 2.8f;
+// The optional looped idle: played under everything else while asked for (pose's idleTime), skipped when missing
+inline constexpr char const* IdleAnimation = "Mita_Greeting";
 inline constexpr float ModelYaw = -24.f * 3.14159265f / 180.f;
 inline constexpr float GazeYawRange = 0.43f;
 // Displeased, the irises turn this much more to the viewer than her face (they rest a little to her right)
@@ -39,8 +41,12 @@ public:
     ~Model();
     Model(Model const&) = delete;
     Model& operator=(Model const&) = delete;
+    // idleTime: seconds into the looped idle (IdleAnimation), negative for none
     void pose(double seconds, float exitWeight, glm::vec2 gaze = {}, glm::vec2 headGaze = {}, float swatTime = -1.f,
-              float facing = 0.f);
+              float facing = 0.f, float idleTime = -1.f, float idleWeight = 1.f, bool idleLoop = true);
+    // The model has the idle (and how long one loop is)
+    bool hasIdle() const;
+    float idleDuration() const;
     std::vector<Mesh> meshes;
     std::vector<Image> images;
 #ifdef MITA3D_TOOLING

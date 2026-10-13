@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MitaPlan.hpp"
+#include "GreetingPlan.hpp"
 
 #include <Geode/Geode.hpp>
 
@@ -28,7 +29,16 @@ public:
   void setExitHovered(bool value) { m_exitHovered = value; }
   void setExitConfirmation(bool value) { m_exitConfirmation = value; }
   void setMenuGazeTarget(std::optional<cocos2d::CCPoint> target) { m_menuGazeTarget = target; }
+  // Loops the model's idle animation (mita3d::IdleAnimation) while on; the main menu turns it on
+  void setIdleLoop(bool value)
+  {
+    if (value && !m_idleLoop)
+      m_idleTime = 0;
+    m_idleLoop = value;
+  }
   bool is3D() const { return m_renderer != nullptr; }
+  float greetingDuration() const;
+  void setGreeting(greeting::State const& state);
 
   // Never claims a touch: it only sparks
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
@@ -121,6 +131,10 @@ protected:
   float m_gazeHold = 0;
   std::vector<double> m_faceClicks;
   float m_swatTime = -1;
+  bool m_idleLoop = false;
+  float m_idleTime = 0;
+  bool m_greeting = false;
+  greeting::State m_greetingState;
   float m_swatCooldown = 0;
   std::optional<cocos2d::CCPoint> m_menuGazeTarget;
   float m_renderWait = 0;

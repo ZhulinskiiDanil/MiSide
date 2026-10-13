@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include "../../src/ui/GreetingPlan.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -95,6 +96,58 @@ int main(int argc, char** argv) {
             pose(-1);
             if (displacement() > 1e-6f) throw std::runtime_error("Swat leaves accumulated deformation after returning to idle");
         }
-        std::cout << "PASS: expressions, reversible pose, frame-independent animation, finite rig, continuous right-hand swat; changed face vertices " << changed << '\n';
+        // The looped idle: off unless asked for, moves her, stays finite, and the swat still starts and ends on it
+        if (!model.hasIdle() || std::abs(model.idleDuration() - 4.f) > 0.001f) throw std::runtime_error("Missing looped idle");
+        model.pose(1, 0);
+        auto still = model.meshes;
+        auto distance = [&](std::vector<mita3d::Mesh> const& from) {
+            float maximum = 0;
+            for (size_t mesh = 0; mesh < from.size(); ++mesh)
+                for (size_t v = 0; v < from[mesh].vertices.size(); ++v)
+                    maximum = std::max(maximum, glm::length(from[mesh].vertices[v].position - model.meshes[mesh].vertices[v].position));
+            return maximum;
+        };
+        float idleMotion = 0;
+        for (float idleTime : {0.5f, 1.f, 2.f, 3.f, 3.9f, 41.f}) {
+            model.pose(1, 0, {}, {}, -1.f, 0.f, idleTime);
+            for (auto const& mesh : model.meshes) for (auto const& v : mesh.vertices)
+                if (!std::isfinite(v.position.x) || !std::isfinite(v.position.y) || !std::isfinite(v.position.z) || glm::length(v.position) > 5.f)
+                    throw std::runtime_error("Idle creates invalid skinned geometry");
+            idleMotion = std::max(idleMotion, distance(still));
+            auto idle = model.meshes;
+            for (float endpoint : {0.f, mita3d::SwatDuration}) {
+                model.pose(1, 0, {}, {}, endpoint, 0.f, idleTime);
+                if (distance(idle) > 1e-6f) throw std::runtime_error("Swat does not start and end on the idle");
+            }
+        }
+        if (idleMotion < 0.01f) throw std::runtime_error("Idle does not move her");
+        model.pose(1, 0, {}, {}, -1.f, 0.f, 0.f);
+        auto loopStart = model.meshes;
+        model.pose(1, 0, {}, {}, -1.f, 0.f, model.idleDuration() - 0.001f);
+        std::cout << "Idle: " << model.idleDuration() << " s, largest motion " << idleMotion << " m, loop seam " << distance(loopStart) << " m\n";
+        // The greeting holds its end rather than wrapping, and hands every vertex back to the menu.
+        auto duration = model.idleDuration();
+        model.pose(1, 0, {}, {}, -1, 0, duration, 1, false);
+        auto last = model.meshes;
+        model.pose(1, 0, {}, {}, -1, 0, duration + 1, 1, false);
+        if (distance(last) > 1e-7f) throw std::runtime_error("Greeting wraps past its last frame");
+        model.pose(1, 0, {}, {}, -1, 0, duration, 0, false);
+        if (distance(still) > 1e-6f) throw std::runtime_error("Greeting does not return to the menu pose");
+        auto state = greeting::at(0, duration);
+        if (state.model != 0 || state.veil != 1 || state.showInterface) throw std::runtime_error("Greeting starts exposed");
+        auto previous = last;
+        for (float clock = duration; clock <= greeting::end(duration) + 0.01f; clock += 0.001f) {
+            state = greeting::at(clock, duration);
+            model.pose(1, 0, {}, {}, -1, 0, state.animation, state.weight, false);
+            // Skip the initial sample: blending begins slightly before the clip ends.
+            if (clock > duration + 0.001f && distance(previous) > 0.003f)
+                throw std::runtime_error("Greeting jumps during the return to the menu");
+            previous = model.meshes;
+        }
+        state = greeting::at(greeting::end(duration), duration);
+        if (!state.done || !state.showInterface || state.zoom != 0 || state.aura != 0 || state.weight != 0 || state.model != 1 || state.veil != 0)
+            throw std::runtime_error("Greeting leaves presentation offsets behind");
+        std::cout << "PASS: greeting last-frame hold, continuous blend and exact menu endpoint\n";
+        std::cout << "PASS: expressions, reversible pose, frame-independent animation, finite rig, continuous right-hand swat, looped idle; changed face vertices " << changed << '\n';
     } catch (std::exception const& e) { std::cerr << e.what() << '\n'; return 1; }
 }

@@ -162,8 +162,10 @@ void Renderer::abandonContext() {
     m->images.clear();
 }
 unsigned Renderer::texture() const { return m->output; }
+bool Renderer::hasIdle() const { return m->model.hasIdle(); }
+float Renderer::idleDuration() const { return m->model.idleDuration(); }
 void Renderer::render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze, float swatTime,
-                      float facing) {
+                      float facing, float idleTime, float idleWeight, bool idleLoop, float zoom) {
     State state;
     width = std::clamp(width, 64, static_cast<int>(2160 * CanvasAspect)); height = std::clamp(height, 64, 2160);
     if (width != m->width || height != m->height) {
@@ -184,7 +186,7 @@ void Renderer::render(int width, int height, double seconds, float exitWeight, g
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) throw std::runtime_error("Incomplete Mita render FBO");
         m->width = width; m->height = height;
     }
-    m->model.pose(seconds, exitWeight, gaze, headGaze, swatTime, facing);
+    m->model.pose(seconds, exitWeight, gaze, headGaze, swatTime, facing, idleTime, idleWeight, idleLoop);
     glBindFramebuffer(GL_FRAMEBUFFER, m->fbo); glViewport(0, 0, width, height);
     for (auto cap : State::caps) glDisable(cap);
     glEnable(GL_DEPTH_TEST); glEnable(GL_MULTISAMPLE);
@@ -193,10 +195,12 @@ void Renderer::render(int width, int height, double seconds, float exitWeight, g
     glClearColor(0, 0, 0, 0); glClearDepth(1); glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Close-up from the crown, just above the frame, to below the collarbones: 0.32 metres of her high, seen from a
     // little above (the frame shorter by the tilt, so its top and bottom stay on her where they were); glTF is Y-up.
-    float halfHeight = 0.16f * std::cos(CameraPitch), halfWidth = halfHeight * width / height;
+    zoom = std::clamp(zoom, 0.f, 1.f);
+    float halfHeight = glm::mix(0.16f, 0.30f, zoom) * std::cos(CameraPitch), halfWidth = halfHeight * width / height;
+    float targetY = glm::mix(1.57f, 1.48f, zoom);
     float centerOffset = halfWidth * (2 * CanvasAnchorX - 1);
     auto camera = glm::ortho(-halfWidth - centerOffset, halfWidth - centerOffset, -halfHeight, halfHeight, 0.1f, 10.f) *
-        glm::lookAt(glm::vec3(0, 1.57f + 4 * std::tan(CameraPitch), 4), glm::vec3(0, 1.57f, 0), glm::vec3(0, 1, 0));
+        glm::lookAt(glm::vec3(0, targetY + 4 * std::tan(CameraPitch), 4), glm::vec3(0, targetY, 0), glm::vec3(0, 1, 0));
     glUseProgram(m->program); glUniformMatrix4fv(m->camera, 1, GL_FALSE, glm::value_ptr(camera));
     glBindVertexArray(m->vao); glBindBuffer(GL_ARRAY_BUFFER, m->vbo); glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibo);
     for (auto const& mesh : m->model.meshes) {
@@ -403,8 +407,10 @@ void Renderer::abandonContext() {
     m->images.clear();
 }
 unsigned Renderer::texture() const { return m->output; }
+bool Renderer::hasIdle() const { return m->model.hasIdle(); }
+float Renderer::idleDuration() const { return m->model.idleDuration(); }
 void Renderer::render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze, float swatTime,
-                      float facing) {
+                      float facing, float idleTime, float idleWeight, bool idleLoop, float zoom) {
     State state;
     width = std::clamp(width, 64, static_cast<int>(2160 * CanvasAspect)); height = std::clamp(height, 64, 2160);
     if (width != m->width || height != m->height) {
@@ -432,7 +438,7 @@ void Renderer::render(int width, int height, double seconds, float exitWeight, g
         }
         m->width = width; m->height = height;
     }
-    m->model.pose(seconds, exitWeight, gaze, headGaze, swatTime, facing);
+    m->model.pose(seconds, exitWeight, gaze, headGaze, swatTime, facing, idleTime, idleWeight, idleLoop);
     glBindFramebuffer(GL_FRAMEBUFFER, m->fbo); glViewport(0, 0, width, height);
     for (auto cap : State::caps) glDisable(cap);
     glEnable(GL_DEPTH_TEST);
@@ -441,10 +447,12 @@ void Renderer::render(int width, int height, double seconds, float exitWeight, g
     glClearColor(0, 0, 0, 0); glClearDepthf(1); glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Close-up from the crown, just above the frame, to below the collarbones: 0.32 metres of her high, seen from a
     // little above (the frame shorter by the tilt, so its top and bottom stay on her where they were); glTF is Y-up.
-    float halfHeight = 0.16f * std::cos(CameraPitch), halfWidth = halfHeight * width / height;
+    zoom = std::clamp(zoom, 0.f, 1.f);
+    float halfHeight = glm::mix(0.16f, 0.30f, zoom) * std::cos(CameraPitch), halfWidth = halfHeight * width / height;
+    float targetY = glm::mix(1.57f, 1.48f, zoom);
     float centerOffset = halfWidth * (2 * CanvasAnchorX - 1);
     auto camera = glm::ortho(-halfWidth - centerOffset, halfWidth - centerOffset, -halfHeight, halfHeight, 0.1f, 10.f) *
-        glm::lookAt(glm::vec3(0, 1.57f + 4 * std::tan(CameraPitch), 4), glm::vec3(0, 1.57f, 0), glm::vec3(0, 1, 0));
+        glm::lookAt(glm::vec3(0, targetY + 4 * std::tan(CameraPitch), 4), glm::vec3(0, targetY, 0), glm::vec3(0, 1, 0));
     glUseProgram(m->program); glUniformMatrix4fv(m->camera, 1, GL_FALSE, glm::value_ptr(camera));
     glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
     glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
@@ -479,7 +487,9 @@ Renderer::Renderer(std::filesystem::path const&) {
 Renderer::~Renderer() = default;
 void Renderer::abandonContext() {}
 unsigned Renderer::texture() const { return 0; }
-void Renderer::render(int, int, double, float, glm::vec2, glm::vec2, float, float) {}
+bool Renderer::hasIdle() const { return false; }
+float Renderer::idleDuration() const { return 0; }
+void Renderer::render(int, int, double, float, glm::vec2, glm::vec2, float, float, float, float, bool, float) {}
 bool Renderer::hit(float, float) const { return false; }
 }
 #endif

@@ -16,7 +16,9 @@ public:
     Renderer(Renderer const&) = delete;
     Renderer& operator=(Renderer const&) = delete;
     void render(int width, int height, double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze = {}, float swatTime = -1.f,
-                float facing = 0.f);
+                float facing = 0.f, float idleTime = -1.f, float idleWeight = 1.f, bool idleLoop = true, float zoom = 0.f);
+    bool hasIdle() const;
+    float idleDuration() const;
     unsigned texture() const;
     bool hit(float u, float v) const;
     void abandonContext();

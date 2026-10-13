@@ -47,8 +47,20 @@ struct Model::Data {
         std::vector<float> times;
         std::vector<glm::vec4> values;
     };
+    // Its keys either side of t, and how far between them
+    struct Key { size_t a, b; float u; };
+    static Key at(Channel const& c, float t) {
+        size_t b = std::upper_bound(c.times.begin(), c.times.end(), t) - c.times.begin();
+        b = std::min(b, c.times.size() - 1);
+        size_t a = b ? b - 1 : 0;
+        float dt = c.times[b] - c.times[a];
+        return {a, b, dt > 0 ? glm::clamp((t - c.times[a]) / dt, 0.f, 1.f) : 0.f};
+    }
     std::vector<Source> sources;
-    std::vector<Channel> channels;
+    std::vector<Channel> channels, idleChannels;
+    // Per node: rotation, translation, scale set by the idle in this pose
+    std::vector<std::array<bool, 3>> idled;
+    float idleDuration = 0;
     std::vector<glm::vec3> translations, scales;
     std::vector<glm::quat> rotations;
     std::vector<glm::mat4> world;
@@ -94,7 +106,7 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
         images.push_back({{p, p + image.buffer_view->size}});
     }
     auto n = raw->nodes_count;
-    m->translations.resize(n); m->scales.resize(n); m->rotations.resize(n);
+    m->translations.resize(n); m->scales.resize(n); m->rotations.resize(n); m->idled.resize(n);
     m->world.resize(n);
     auto visit = [&](auto&& self, cgltf_node* node) -> void {
         m->order.push_back(node - raw->nodes);
@@ -163,30 +175,42 @@ Model::Model(std::filesystem::path const& path) : m(std::make_unique<Data>()) {
         }
     }
     require(m->head >= 0 && m->eyes[0] >= 0 && m->eyes[1] >= 0 && !meshes.empty(), "Mita rig does not match");
-    cgltf_animation* swat = nullptr;
-    for (size_t i = 0; i < raw->animations_count; ++i)
-        if (raw->animations[i].name && std::string(raw->animations[i].name) == "Mita_Swat") swat = &raw->animations[i];
-    require(swat != nullptr, "Missing Mita_Swat animation");
-    auto& animation = *swat;
-    for (size_t i = 0; i < animation.channels_count; ++i) {
-        auto& c = animation.channels[i];
-        if (c.target_path == cgltf_animation_path_type_weights) continue; // Expressions are interactive.
-        require(c.target_node && c.sampler && c.sampler->interpolation == cgltf_interpolation_type_linear,
-                "Unsupported swat interpolation");
-        Data::Channel channel{static_cast<size_t>(c.target_node - raw->nodes), c.target_path, {}, {}};
-        for (size_t k = 0; k < c.sampler->input->count; ++k) {
-            channel.times.push_back(read(c.sampler->input, k).x);
-            channel.values.push_back(read(c.sampler->output, k));
+    auto find = [&](char const* name) -> cgltf_animation* {
+        for (size_t i = 0; i < raw->animations_count; ++i)
+            if (raw->animations[i].name && std::string(raw->animations[i].name) == name) return &raw->animations[i];
+        return nullptr;
+    };
+    // Its channels into `out`; returns how long it is
+    auto load = [&](cgltf_animation const& animation, std::vector<Data::Channel>& out) {
+        float duration = 0;
+        for (size_t i = 0; i < animation.channels_count; ++i) {
+            auto& c = animation.channels[i];
+            if (c.target_path == cgltf_animation_path_type_weights) continue; // Expressions are interactive.
+            require(c.target_node && c.sampler && c.sampler->interpolation == cgltf_interpolation_type_linear,
+                    "Unsupported animation interpolation");
+            Data::Channel channel{static_cast<size_t>(c.target_node - raw->nodes), c.target_path, {}, {}};
+            for (size_t k = 0; k < c.sampler->input->count; ++k) {
+                channel.times.push_back(read(c.sampler->input, k).x);
+                channel.values.push_back(read(c.sampler->output, k));
+            }
+            require(!channel.times.empty(), "Empty animation channel");
+            duration = std::max(duration, channel.times.back());
+            out.push_back(std::move(channel));
         }
-        require(!channel.times.empty(), "Empty swat channel");
-        m->duration = std::max(m->duration, channel.times.back());
-        m->channels.push_back(std::move(channel));
-    }
+        return duration;
+    };
+    auto swat = find("Mita_Swat");
+    require(swat != nullptr, "Missing Mita_Swat animation");
+    m->duration = load(*swat, m->channels);
     require(m->duration > 0, "Empty swat animation");
+    if (auto idle = find(IdleAnimation)) m->idleDuration = load(*idle, m->idleChannels);
     require(std::abs(m->duration - SwatDuration) < 0.001f, "Unexpected Mita_Swat duration");
     pose(0, 0);
 }
-void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze, float swatTime, float facing) {
+bool Model::hasIdle() const { return m->idleDuration > 0; }
+float Model::idleDuration() const { return m->idleDuration; }
+void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 headGaze, float swatTime, float facing,
+                 float idleTime, float idleWeight, bool idleLoop) {
     auto raw = m->gltf.get();
     float t = glm::clamp(swatTime, 0.f, m->duration);
     float swatWeight = swatTime >= 0 && swatTime < m->duration ?
@@ -195,19 +219,45 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
         m->translations[i] = glm::make_vec3(raw->nodes[i].translation);
         m->rotations[i] = glm::make_quat(raw->nodes[i].rotation);
         m->scales[i] = glm::make_vec3(raw->nodes[i].scale);
+        m->idled[i] = {false, false, false};
+    }
+    // The menu rests on the swat's first frame, including channels absent from the greeting.
+    for (auto const& c : m->channels) {
+        if (c.path == cgltf_animation_path_type_rotation) m->rotations[c.node] = quaternion(c.values.front());
+        else if (c.path == cgltf_animation_path_type_translation) m->translations[c.node] = glm::vec3(c.values.front());
+        else if (c.path == cgltf_animation_path_type_scale) m->scales[c.node] = glm::vec3(c.values.front());
+    }
+    idleWeight = idleTime >= 0 && hasIdle() ? glm::clamp(idleWeight, 0.f, 1.f) : 0.f;
+    // A one-shot holds its last frame while blending back into the menu.
+    if (idleTime >= 0 && m->idleDuration > 0) {
+        float it = idleLoop ? std::fmod(idleTime, m->idleDuration) : std::min(idleTime, m->idleDuration);
+        for (auto const& c : m->idleChannels) {
+            auto k = Data::at(c, it);
+            if (c.path == cgltf_animation_path_type_rotation) {
+                m->rotations[c.node] = glm::normalize(glm::slerp(m->rotations[c.node], glm::slerp(quaternion(c.values[k.a]), quaternion(c.values[k.b]), k.u), idleWeight));
+                m->idled[c.node][0] = true;
+            } else if (c.path == cgltf_animation_path_type_translation) {
+                m->translations[c.node] = glm::mix(m->translations[c.node], glm::vec3(glm::mix(c.values[k.a], c.values[k.b], k.u)), idleWeight);
+                m->idled[c.node][1] = true;
+            } else if (c.path == cgltf_animation_path_type_scale) {
+                m->scales[c.node] = glm::mix(m->scales[c.node], glm::vec3(glm::mix(c.values[k.a], c.values[k.b], k.u)), idleWeight);
+                m->idled[c.node][2] = true;
+            }
+        }
     }
     for (auto const& c : m->channels) {
-        size_t b = std::upper_bound(c.times.begin(), c.times.end(), t) - c.times.begin();
-        b = std::min(b, c.times.size() - 1);
-        size_t a = b ? b - 1 : 0;
-        float dt = c.times[b] - c.times[a];
-        float u = dt > 0 ? glm::clamp((t - c.times[a]) / dt, 0.f, 1.f) : 0.f;
-        if (c.path == cgltf_animation_path_type_rotation)
-            m->rotations[c.node] = glm::normalize(glm::slerp(quaternion(c.values.front()), glm::slerp(quaternion(c.values[a]), quaternion(c.values[b]), u), swatWeight));
-        else if (c.path == cgltf_animation_path_type_translation)
-            m->translations[c.node] = glm::vec3(glm::mix(c.values.front(), glm::mix(c.values[a], c.values[b], u), swatWeight));
-        else if (c.path == cgltf_animation_path_type_scale)
-            m->scales[c.node] = glm::vec3(glm::mix(c.values.front(), glm::mix(c.values[a], c.values[b], u), swatWeight));
+        auto k = Data::at(c, t);
+        auto const& idled = m->idled[c.node];
+        if (c.path == cgltf_animation_path_type_rotation) {
+            auto from = idled[0] ? m->rotations[c.node] : quaternion(c.values.front());
+            m->rotations[c.node] = glm::normalize(glm::slerp(from, glm::slerp(quaternion(c.values[k.a]), quaternion(c.values[k.b]), k.u), swatWeight));
+        } else if (c.path == cgltf_animation_path_type_translation) {
+            auto from = idled[1] ? glm::vec4(m->translations[c.node], 0) : c.values.front();
+            m->translations[c.node] = glm::vec3(glm::mix(from, glm::mix(c.values[k.a], c.values[k.b], k.u), swatWeight));
+        } else if (c.path == cgltf_animation_path_type_scale) {
+            auto from = idled[2] ? glm::vec4(m->scales[c.node], 0) : c.values.front();
+            m->scales[c.node] = glm::vec3(glm::mix(from, glm::mix(c.values[k.a], c.values[k.b], k.u), swatWeight));
+        }
     }
     gaze = glm::clamp(gaze, glm::vec2(-1), glm::vec2(1));
     headGaze = glm::clamp(headGaze, glm::vec2(-1), glm::vec2(1));
@@ -239,6 +289,11 @@ void Model::pose(double seconds, float exitWeight, glm::vec2 gaze, glm::vec2 hea
                              -0.24f, 0.24f) * (1 - swatWeight);
             pitch = -glm::clamp(gaze.y * 0.29f - headGaze.y * HeadPitchRange + CameraPitch - headUp, -0.24f, 0.24f) *
                     (1 - swatWeight);
+        }
+        if (!idleLoop) {
+            yaw *= 1 - idleWeight;
+            pitch *= 1 - idleWeight;
+            roll *= 1 - idleWeight;
         }
         if (yaw || pitch || roll) {
             auto pivot = glm::vec3(world[3]);

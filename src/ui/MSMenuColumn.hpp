@@ -40,7 +40,7 @@ public:
   // Quit
   MSMenuItem* getExit() const;
   // MAIN MENU, the rows and Quit, from the top: what goes as a page comes in over the menu (the logo stays)
-  ms::wave::Steps pageSteps();
+  ms::wave::Steps pageSteps(bool includeLogo = false);
   // The quit confirmation takes the list's place: the rows, Quit and the subtitle fade out and take nothing from
   // the first frame (Quit stops leaning away), the logo stays. Back: they fade in, and if the keys chose Quit,
   // Quit is chosen again

@@ -179,9 +179,11 @@ void MSMenuColumn::notifyExitHover(bool hovered)
 
 MSMenuItem* MSMenuColumn::getExit() const { return m_exit; }
 
-ms::wave::Steps MSMenuColumn::pageSteps()
+ms::wave::Steps MSMenuColumn::pageSteps(bool includeLogo)
 {
   ms::wave::Steps steps;
+  if (includeLogo && ms::wave::shows(m_logoArt))
+    steps.push_back({{m_logoArt}, false});
   if (ms::wave::shows(m_subtitle))
     steps.push_back({{m_subtitle}});
   for (auto row : m_rows)
