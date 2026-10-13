@@ -1,3 +1,10 @@
+# v1.4.0
+
+* Mita closer (from the crown to the collarbones), seen from a little above, in a faint purple evening light
+* Hovering EXIT only changes her mood; asked whether to quit, she looks down into the camera, a little upset
+* The menu's top row has her look up as in MiSide; her picture no longer stretched at 1440p
+* Sliders and values fade with their rows when pages change
+
 # v1.3.0
 
 * Pages as in MiSide: the title and rows slide out to the right as the next page's come in from the left, a step apart; the logo, the background and Mita stay
