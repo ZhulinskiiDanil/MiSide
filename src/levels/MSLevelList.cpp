@@ -276,7 +276,13 @@ bool MSLevelList::onKey(enumKeyCodes key)
   return true;
 }
 
-void MSLevelList::scrollWheel(float y, float x)
+bool MSLevelList::scrollWheel(float y, float x)
+{
+  this->scrollWheelImpl(y, x);
+  return true;
+}
+
+void MSLevelList::scrollWheelImpl(float y, float x)
 {
   if (!this->canUse())
     return;

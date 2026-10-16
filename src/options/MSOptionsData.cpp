@@ -90,6 +90,7 @@ class $modify(MSMoreOptionsData, MoreOptionsLayer)
   }
 };
 
+
 class $modify(MSMoreVideoOptionsData, MoreVideoOptionsLayer)
 {
   struct Fields
@@ -151,6 +152,8 @@ class $modify(MSTextAreaData, TextArea)
   }
 };
 
+// GD 2.209 reworked this screen; the hooked functions are gone
+#if GEODE_COMP_GD_VERSION < 22090
 class $modify(MSKeybindingsData, KeybindingsLayer)
 {
   struct Fields
@@ -164,6 +167,8 @@ class $modify(MSKeybindingsData, KeybindingsLayer)
     return KeybindingsLayer::addKeyPair(action, key);
   }
 };
+#endif
+
 
 namespace ms::options
 {
@@ -190,7 +195,11 @@ namespace ms::options
   std::vector<KeyPair> const& keyPairs(KeybindingsLayer* layer)
   {
     static std::vector<KeyPair> const NONE;
+#if GEODE_COMP_GD_VERSION < 22090
     return layer ? static_cast<MSKeybindingsData*>(layer)->m_fields->m_pairs : NONE;
+#else
+    return NONE; // KeybindingsLayer was reworked in 2.209
+#endif
   }
 
   std::vector<CCMenuItemToggler*> togglers(CCNode* layer)

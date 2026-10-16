@@ -459,6 +459,8 @@ namespace
   }
 } // namespace
 
+// GD 2.209 reworked this screen; the hooked functions are gone
+#if GEODE_COMP_GD_VERSION < 22090
 class $modify(MSUIOptionsLayer, UIOptionsLayer)
 {
   bool init(bool dual)
@@ -469,6 +471,8 @@ class $modify(MSUIOptionsLayer, UIOptionsLayer)
     return true;
   }
 };
+#endif
+
 
 class $modify(MSUIPOptionsLayer, UIPOptionsLayer)
 {

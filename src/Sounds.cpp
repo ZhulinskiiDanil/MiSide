@@ -83,6 +83,8 @@ class $modify(MSSoundToggler, CCMenuItemToggler)
 };
 
 // Switch Kategory for More Options' pages
+// GD 2.209 reworked this screen; the hooked functions are gone
+#if GEODE_COMP_GD_VERSION < 22090
 class $modify(MSSoundMoreOptions, MoreOptionsLayer)
 {
   void onNextPage(CCObject* sender)
@@ -97,6 +99,8 @@ class $modify(MSSoundMoreOptions, MoreOptionsLayer)
     ms::playSound(Theme::get().tabSound);
   }
 };
+#endif
+
 
 // The icon kit: Switch Kategory for its tabs, Gift Poof when an icon is put on (not for a locked one)
 class $modify(MSSoundGarage, GJGarageLayer)

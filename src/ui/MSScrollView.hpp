@@ -32,7 +32,8 @@ public:
   // Taking no input (the screen is going)
   void setActive(bool active);
 
-  void scrollWheel(float y, float x) override;
+  bool scrollWheel(float y, float x) override;
+  void scrollWheelImpl(float y, float x);
   void update(float dt) override;
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
   void ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;

@@ -885,7 +885,13 @@ void MSPauseColumn::update(float dt)
   }
 }
 
-void MSPauseColumn::scrollWheel(float y, float)
+bool MSPauseColumn::scrollWheel(float y, float x)
+{
+  this->scrollWheelImpl(y, x);
+  return true;
+}
+
+void MSPauseColumn::scrollWheelImpl(float y, float)
 {
   if (y == 0 || !this->canUse())
     return;

@@ -87,7 +87,8 @@ public:
   // While a wave moves its rows, the list doesn't lay them out
   ms::wave::Steps pageSteps();
 
-  void scrollWheel(float y, float x) override;
+  bool scrollWheel(float y, float x) override;
+  void scrollWheelImpl(float y, float x);
   void update(float dt) override;
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
   void ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;

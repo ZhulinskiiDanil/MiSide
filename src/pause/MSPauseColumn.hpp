@@ -99,7 +99,8 @@ public:
 
   void update(float dt) override;
   // Over a slider's row, the wheel moves it as Left/Right do; elsewhere it scrolls a long column
-  void scrollWheel(float y, float x) override;
+  bool scrollWheel(float y, float x) override;
+  void scrollWheelImpl(float y, float x);
   bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
   void ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;
   void ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent* event) override;

@@ -726,7 +726,13 @@ bool MSAchievementList::onKey(enumKeyCodes key)
   return true;
 }
 
-void MSAchievementList::scrollWheel(float y, float x)
+bool MSAchievementList::scrollWheel(float y, float x)
+{
+  this->scrollWheelImpl(y, x);
+  return true;
+}
+
+void MSAchievementList::scrollWheelImpl(float y, float x)
 {
   if (!this->canUse() || y == 0)
     return;

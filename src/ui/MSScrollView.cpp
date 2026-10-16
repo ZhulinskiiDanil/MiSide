@@ -177,7 +177,13 @@ void MSScrollView::place()
   m_thumb->setVisible(share < 1);
 }
 
-void MSScrollView::scrollWheel(float y, float)
+bool MSScrollView::scrollWheel(float y, float x)
+{
+  this->scrollWheelImpl(y, x);
+  return true;
+}
+
+void MSScrollView::scrollWheelImpl(float y, float)
 {
   if (!this->canUse() || y == 0)
     return;
