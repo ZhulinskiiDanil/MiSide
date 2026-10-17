@@ -95,9 +95,15 @@ protected:
     if (!this->initOptions(en ? "KEYS" : "КЛАВИШИ"))
       return false;
     this->addBottomButton(en ? "GD WINDOW" : "ОКНО GD", Theme::get().screenButtonWidth, [] {
+#if GEODE_COMP_GD_VERSION >= 22090
+      return; // the vanilla window is gone in GD 2.209
+#endif
       if (auto layer = KeybindingsLayer::create())
         layer->show();
     });
+#if GEODE_COMP_GD_VERSION >= 22090
+    return false; // GD 2.209 removed or rebuilt this vanilla screen
+#endif
     auto layer = this->drive(KeybindingsLayer::create());
     if (!layer)
       return false;
@@ -160,6 +166,9 @@ protected:
     m_more = more;
     auto first = group.pages.empty() ? 0 : group.pages.front();
     this->addBottomButton(en ? "GD WINDOW" : "ОКНО GD", Theme::get().screenButtonWidth, [first] {
+#if GEODE_COMP_GD_VERSION >= 22090
+      return; // the vanilla window is gone in GD 2.209
+#endif
       if (auto layer = MoreOptionsLayer::create())
       {
         layer->show();
@@ -424,6 +433,9 @@ protected:
     m_vanilla = std::move(vanilla);
     this->addBottomButton(en ? "GD WINDOW" : "ОКНО GD", Theme::get().screenButtonWidth,
                           [this] { this->openVanilla(); });
+#if GEODE_COMP_GD_VERSION >= 22090
+    return false; // GD 2.209 removed or rebuilt this vanilla screen
+#endif
     m_options = this->drive(OptionsLayer::create());
     m_more = this->drive(MoreOptionsLayer::create());
     if (!m_options || !m_more)

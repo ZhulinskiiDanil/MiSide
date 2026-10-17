@@ -33,11 +33,17 @@ protected:
     auto en = english();
     if (!this->initOptions(en ? "EDITOR OPTIONS" : "НАСТРОЙКИ РЕДАКТОРА"))
       return false;
+#if GEODE_COMP_GD_VERSION >= 22090
+    return false; // GD 2.209 removed or rebuilt this vanilla screen
+#endif
     m_layer = this->drive(EditorOptionsLayer::create());
     if (!m_layer)
       return false;
     this->addBottomButton(en ? "GD WINDOW" : "ОКНО GD", Theme::get().screenButtonWidth, [this] {
       this->close([] {
+#if GEODE_COMP_GD_VERSION >= 22090
+        return; // the vanilla window is gone in GD 2.209
+#endif
         if (auto layer = EditorOptionsLayer::create())
           layer->show();
       });

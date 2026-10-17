@@ -823,13 +823,17 @@ namespace ms::options
     std::vector<Known> known = {
       {ms::options::gd(&SongInfoLayer::onDownload), "DOWNLOAD SOUNDTRACK", "СКАЧАТЬ САУНДТРЕК", "Downloads the song to play it in the editor's levels.",
        "Скачивает песню, чтобы использовать её в уровнях редактора."},
+#if GEODE_COMP_GD_VERSION < 22090 // the button is gone in GD 2.209
       {ms::options::gd(&SongInfoLayer::onMenuMusic), "MENU MUSIC", "МУЗЫКА В МЕНЮ", "Plays this song in GD's menu.", "Эта песня играет в меню GD."},
+#endif
       {ms::options::gd(&SongInfoLayer::onPracticeMusic), "PRACTICE MUSIC", "МУЗЫКА В ПРАКТИКЕ", "Plays this song in practice mode.",
        "Эта песня играет в режиме практики."},
       {ms::options::gd(&SongInfoLayer::onBPM), "BPM", "BPM", "GD's beat guide for this song.", "Метки ритма GD для этой песни."},
       {ms::options::gd(&SongInfoLayer::onNG), nullptr, nullptr, "The artist's page.", "Страница автора."},
       {ms::options::gd(&SongInfoLayer::onYT), nullptr, nullptr, "The artist's YouTube.", "YouTube автора."},
+#if GEODE_COMP_GD_VERSION < 22090 // the button is gone in GD 2.209
       {ms::options::gd(&SongInfoLayer::onFB), nullptr, nullptr, "The artist's page.", "Страница автора."},
+#endif
     };
     std::string title = LevelTools::getAudioTitle(songID);
     if (auto screen = MSWindowScreen::create(ms::options::upper(title), window, std::move(known),

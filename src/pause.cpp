@@ -491,6 +491,9 @@ class $modify(MSPauseLayer, PauseLayer)
     }
     if (f.m_options)
       ms::options::dispose(f.m_options);
+#if GEODE_COMP_GD_VERSION >= 22090
+    return false; // GD 2.209 removed or rebuilt this vanilla screen
+#endif
     f.m_options = GameOptionsLayer::create(level);
     if (!f.m_options)
       return false;

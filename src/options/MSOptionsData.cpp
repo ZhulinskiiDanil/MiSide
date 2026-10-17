@@ -81,6 +81,7 @@ class $modify(MSMoreOptionsData, MoreOptionsLayer)
     std::vector<ms::options::Toggle> m_toggles;
   };
 
+#if GEODE_COMP_GD_VERSION < 22090 // no 2.209 address
   void addToggle(char const* label, char const* key, char const* description)
   {
     // GD's own page for it: ten a page, counted before it's added
@@ -88,6 +89,8 @@ class $modify(MSMoreOptionsData, MoreOptionsLayer)
     MoreOptionsLayer::addToggle(label, key, description);
     record(this, m_fields->m_toggles, label, key ? key : "", description, page);
   }
+#endif
+
 };
 
 
